@@ -128,6 +128,14 @@ async def collect_lowest_offer_via_browser(target: TargetConfig, artifacts_dir: 
         page = await browser.new_page(viewport={"width": 1440, "height": 2400})
         try:
             await page.goto(target.url, wait_until=target.browser.wait_until, timeout=45000)
+            
+            # CI 환경(Headless)에서는 렌더링이 늦어질 수 있으므로 추가 대기
+            try:
+                await page.wait_for_load_state("networkidle", timeout=5000)
+            except Exception:
+                pass
+            await page.wait_for_timeout(3000)
+
             for selector in target.browser.click_selectors:
                 locator = page.locator(selector)
                 if await locator.count() > 0:
