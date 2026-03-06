@@ -44,17 +44,25 @@ jobs:
           GCS_BUCKET: ${{ secrets.GCS_BUCKET }}
           PYTHONPATH: src
         run: |
-          # 1. Sync DB from GCS
-          python -m tracker.main sync-from-gcs || echo "First run, no DB in GCS yet"
-          
-          # 2. Collect Prices
-          python -m tracker.main once
-          
-          # 3. Export Dashboard UI
-          python -m tracker.main export-ui
-          
-          # 4. Sync Result back to GCS
-          python -m tracker.main sync-to-gcs
+           # 1. Sync DB from GCS
+           python -m tracker.main sync-from-gcs || echo "First run, no DB in GCS yet"
+           
+           # 2. Collect Prices
+           python -m tracker.main once
+           
+           # 3. Export Dashboard UI
+           python -m tracker.main export-ui
+           
+           # 4. Sync Result back to GCS
+           python -m tracker.main sync-to-gcs
+
+      - name: Upload Debug Artifacts on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-screenshots
+          path: artifacts/
+          retention-days: 3
 
       - name: Upload Dashboard to GitHub Pages
         uses: actions/upload-pages-artifact@v3
