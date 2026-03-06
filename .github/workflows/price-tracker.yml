@@ -42,8 +42,7 @@ jobs:
           NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
           NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
           GCS_BUCKET: ${{ secrets.GCS_BUCKET }}
-          # Path to GCS credentials if using a service account key
-          # GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GCP_SA_KEY_PATH }}
+          PYTHONPATH: src
         run: |
           # 1. Sync DB from GCS
           python -m tracker.main sync-from-gcs || echo "First run, no DB in GCS yet"
