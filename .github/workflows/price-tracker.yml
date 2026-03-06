@@ -45,15 +45,15 @@ jobs:
           PYTHONPATH: src
         run: |
            # 1. Sync DB from GCS
-           python -m tracker.main sync-from-gcs || echo "First run, no DB in GCS yet"
+           python -m tracker.main sync-from-gcs || echo "First run or GCS unavailable, starting fresh"
            
-           # 2. Collect Prices
-           python -m tracker.main once
+           # 2. Collect Prices (|| true ensures we always continue to save what we collected)
+           python -m tracker.main once || echo "Some items failed, continuing with partial results"
            
            # 3. Export Dashboard UI
            python -m tracker.main export-ui
            
-           # 4. Sync Result back to GCS
+           # 4. Sync Result back to GCS (always run to preserve data)
            python -m tracker.main sync-to-gcs
 
       - name: Upload Debug Artifacts on Failure
