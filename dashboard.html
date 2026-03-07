@@ -98,16 +98,71 @@
             border-radius: 10px;
         }
 
+        /* Checkbox styles */
+        .sidebar-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px 12px;
+            border-bottom: 1px solid var(--glass-border);
+            margin-bottom: 8px;
+        }
+
+        .select-all-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .product-checkbox,
+        #selectAllCheckbox {
+            width: 14px;
+            height: 14px;
+            accent-color: var(--accent-primary);
+            cursor: pointer;
+        }
+
+        .sidebar-footer {
+            padding: 12px 16px;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .btn-excel {
+            width: 100%;
+            padding: 10px;
+            border-radius: 12px;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-excel:hover {
+            background: rgba(16, 185, 129, 0.2);
+            transform: translateY(-1px);
+        }
+
         .product-item {
-            padding: 20px 24px;
-            border-radius: 18px;
-            margin-bottom: 12px;
+            padding: 10px 16px;
+            border-radius: 12px;
+            margin-bottom: 4px;
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             border: 1px solid transparent;
             background: rgba(255, 255, 255, 0.03);
             position: relative;
             overflow: hidden;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .product-item:hover {
@@ -133,10 +188,15 @@
             box-shadow: 0 0 15px var(--accent-primary);
         }
 
+        .product-info {
+            flex: 1;
+            min-width: 0;
+        }
+
         .product-name {
-            font-size: 15px;
+            font-size: 12px;
             font-weight: 600;
-            margin-bottom: 10px;
+            margin-bottom: 3px;
             display: block;
             white-space: nowrap;
             overflow: hidden;
@@ -152,7 +212,7 @@
 
         .product-price {
             font-weight: 700;
-            font-size: 17px;
+            font-size: 13px;
             color: #fff;
         }
 
@@ -438,6 +498,8 @@
 
             .main-content {
                 padding: 32px 20px;
+                overflow-y: visible;
+                height: auto;
             }
 
             .stats-grid {
@@ -459,9 +521,19 @@
             <div class="logo-icon">✨</div>
             <div class="logo-text">INSIGHT PRO</div>
         </div>
+        <div class="sidebar-toolbar">
+            <label class="select-all-label">
+                <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)">
+                전체선택
+            </label>
+            <span id="checkedCount" style="font-size:11px;color:var(--text-muted);">0개 선택</span>
+        </div>
         <ul class="product-list" id="productList">
             <!-- Loading -->
         </ul>
+        <div class="sidebar-footer">
+            <button class="btn-excel" onclick="downloadExcel()">📥 선택 상품 엑셀 다운로드</button>
+        </div>
     </div>
 
     <div class="main-content">
@@ -563,6 +635,16 @@
             return new Intl.NumberFormat('ko-KR').format(num) + '원';
         }
 
+        function updateCheckedCount() {
+            const count = document.querySelectorAll('.product-checkbox:checked').length;
+            document.getElementById('checkedCount').textContent = count + '개 선택';
+        }
+
+        function toggleSelectAll(el) {
+            document.querySelectorAll('.product-checkbox').forEach(cb => cb.checked = el.checked);
+            updateCheckedCount();
+        }
+
         function renderProductList() {
             const list = document.getElementById('productList');
             list.innerHTML = dashboardData.products.map((p, index) => {
@@ -573,10 +655,14 @@
 
                 return `
                     <li class="product-item" onclick="selectProduct(${index})">
-                        <span class="product-name">${p.name}</span>
-                        <div class="product-meta">
-                            <span class="product-price">${formatPrice(p.current_price)}</span>
-                            <span class="change-badge ${badgeClass}">${trendIcon} ${change}</span>
+                        <input type="checkbox" class="product-checkbox" data-index="${index}"
+                            onclick="event.stopPropagation(); updateCheckedCount();">
+                        <div class="product-info">
+                            <span class="product-name">${p.name}</span>
+                            <div class="product-meta">
+                                <span class="product-price">${formatPrice(p.current_price)}</span>
+                                <span class="change-badge ${badgeClass}">${trendIcon} ${change}</span>
+                            </div>
                         </div>
                     </li>
                 `;
@@ -665,36 +751,33 @@
         }
 
         function downloadExcel() {
-            const product = dashboardData.products.find(p => p.name === document.getElementById('selectedTitle').innerText);
-            if (!product || !product.history || product.history.length === 0) {
-                alert("다운로드할 데이터가 없습니다.");
+            const checked = document.querySelectorAll('.product-checkbox:checked');
+            if (checked.length === 0) {
+                alert("체크박스로 다운로드할 상품을 선택하세요.");
                 return;
             }
 
-            // CSV 헤더
-            let csvContent = "\uFEFF수집 일시,판매 가격,판매처,상태\n"; // \uFEFF for Excel UTF-8 BOM
+            const indices = Array.from(checked).map(cb => parseInt(cb.dataset.index));
+            const products = indices.map(i => dashboardData.products[i]);
 
-            product.history.slice().reverse().forEach(h => {
-                const date = new Date(h.t);
-                const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+            // CSV 헤더 (BOM 포함)
+            let csvContent = "\uFEFF상품명,수집 일시,판매 가격(원),판매처\n";
 
-                // CSV 행 추가 (이스케이프 처리 포함)
-                const price = h.p;
-                const seller = `"${product.seller.replace(/"/g, '""')}"`;
-                const status = "SUCCESS";
-
-                csvContent += `${dateStr},${price},${seller},${status}\n`;
+            products.forEach(product => {
+                product.history.slice().reverse().forEach(h => {
+                    const date = new Date(h.t);
+                    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+                    const name = `"${product.name.replace(/"/g, '""')}"`;
+                    const seller = `"${(product.seller || '').replace(/"/g, '""')}"`;
+                    csvContent += `${name},${dateStr},${h.p},${seller}\n`;
+                });
             });
 
-            // Blob 생성 및 다운로드 트리거
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            const url = URL.createObjectURL(blob);
-
-            link.setAttribute("href", url);
-            link.setAttribute("download", `${product.name}_가격이력_${new Date().getTime()}.csv`);
+            const link = document.createElement('a');
+            link.setAttribute('href', URL.createObjectURL(blob));
+            link.setAttribute('download', `가격이력_${products.length}개_${Date.now()}.csv`);
             link.style.visibility = 'hidden';
-
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
