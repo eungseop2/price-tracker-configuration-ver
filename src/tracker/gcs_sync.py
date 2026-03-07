@@ -17,6 +17,7 @@ def upload_db(bucket_name: str, source_file: str, dest_name: str = "price_tracke
     """SQLite DB를 GCS로 업로드합니다."""
     if not bucket_name:
         return
+    bucket_name = bucket_name.strip()  # 앞뒤 공백 제거 (Secret 오입력 방지)
     try:
         storage_client = _get_client()
         if not storage_client:
@@ -33,6 +34,7 @@ def download_db(bucket_name: str, dest_file: str, source_name: str = "price_trac
     """GCS에서 SQLite DB를 다운로드합니다."""
     if not bucket_name:
         return False
+    bucket_name = bucket_name.strip()  # 앞뒤 공백 제거 (Secret 오입력 방지)
     try:
         storage_client = _get_client()
         if not storage_client:
