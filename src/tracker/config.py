@@ -39,8 +39,6 @@ class TargetConfig:
     query: str | None = None
     url: str | None = None
     fallback_url: str | None = None
-    certified_item_id: str | None = None  # 인증 거래처 mallProductId (certified_mall_product_id 와 호환)
-    certified_mall_names: list[str] = field(default_factory=list) # 인증 거래처 몰 이름 리스트
     category: str = "기타"  # 상품 카테고리 (분류용)
     match: MatchConfig = field(default_factory=MatchConfig)
     request: RequestConfig = field(default_factory=RequestConfig)
@@ -116,10 +114,6 @@ def validate_config(app: AppConfig, extra_errors: list[str] | None = None) -> No
         if t.fallback_url and t.mode != "api_query":
             errors.append(f"[{t.name}] fallback_url은 api_query 모드에서만 사용할 수 있습니다.")
 
-        # 인증점 필드 검사
-        if t.certified_item_id is not None and not isinstance(t.certified_item_id, str):
-            errors.append(f"[{t.name}] 인증점 기능 사용 시 mallProductId 기준 ID를 문자열로 입력해야 합니다. (현재 타입: {type(t.certified_item_id).__name__})")
-
         # 페이지 범위 검사
         if t.request.pages < 1:
             errors.append(f"[{t.name}] pages는 1 이상이어야 합니다.")
@@ -190,22 +184,6 @@ def load_config(path: str | Path) -> AppConfig:
                 request=_to_request(item.get("request")),
                 browser=_to_browser(item.get("browser")),
             )
-
-            # 인증점 ID 파싱 (certified_item_id 우선, 없으면 certified_mall_product_id)
-            c_id = item.get("certified_item_id")
-            c_mall_id = item.get("certified_mall_product_id")
-            if c_id is not None and c_mall_id is not None and str(c_id) != str(c_mall_id):
-                errors.append(f"targets[{i}]에 'certified_item_id'와 'certified_mall_product_id'가 다르게 입력되었습니다.")
-                continue
-            
-            final_c_id = c_id if c_id is not None else c_mall_id
-            target.certified_item_id = str(final_c_id) if final_c_id is not None else None
-            
-            # 인증점 몰 이름 파싱
-            c_mall_names = item.get("certified_mall_names", [])
-            if isinstance(c_mall_names, str):
-                c_mall_names = [c_mall_names]
-            target.certified_mall_names = [str(n) for n in (c_mall_names or [])]
             
             app.targets.append(target)
         except Exception as e:

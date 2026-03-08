@@ -4,7 +4,6 @@ import argparse
 import asyncio
 import logging
 import os
-import sys
 import time
 from pathlib import Path
 
@@ -16,7 +15,6 @@ from .config import TargetConfig, load_config
 from .db import ObservationStore
 from .naver_api import (
     NaverShoppingSearchClient,
-    collect_certified_rank,
     collect_lowest_offer_via_api,
 )
 from .notifier import send_price_alert
@@ -68,13 +66,13 @@ async def _collect_one(client: NaverShoppingSearchClient, target: TargetConfig, 
     raise ValueError(f"지원하지 않는 mode: {target.mode}")
 
 
-async def run_once(config_path: str, db_path: str, artifacts_dir: str) -> tuple[int, int]:
+async def run_once(config_path: str, db_path: str, artifacts_dir: str) -> tuple[int, int, dict]:
     load_dotenv(override=False)
     email_from = os.getenv("EMAIL_FROM", "")
     email_password = os.getenv("EMAIL_APP_PASSWORD", "")
     email_to = os.getenv("EMAIL_TO", "")
     changed_items: list[dict] = []  # 가격 변동 항목 수집용
-    # load_config 내부에서 validate_config를 호출하여 실패 시 ValueError 발생 (Fail-Fast)
+    
     app_config = load_config(config_path)
     store = ObservationStore(db_path)
 
@@ -83,8 +81,6 @@ async def run_once(config_path: str, db_path: str, artifacts_dir: str) -> tuple[
     failed_targets = []
     fallback_used_count = 0
     alerts_triggered_count = 0
-    certified_calc_success = 0
-    certified_null_count = 0
     
     client = NaverShoppingSearchClient(timeout_seconds=app_config.timeout_seconds)
     for target in app_config.targets:
@@ -118,44 +114,7 @@ async def run_once(config_path: str, db_path: str, artifacts_dir: str) -> tuple[
             else:
                 result["price_change_status"] = None
 
-            # 3. 인증 거래처 순위 수집 (추가 API 호출 필요)
-            rank_data = collect_certified_rank(client, app_config, target)
-            if not rank_data and target.url and target.certified_mall_names:
-                # API로 못 찾았는데 URL과 인증점 정보가 있으면 브라우저로 한 번 더 시도 (특히 카탈로그 건)
-                logger.info("인증점 API 결과 없음 -> Browser 스크래핑으로 보완 | %s", target.name)
-                try:
-                    # 임시 타겟을 만들어 브라우저 모드로 실행
-                    temp_target = TargetConfig(
-                        name=target.name,
-                        mode="browser_url",
-                        url=target.url,
-                        browser=target.browser,
-                        match=target.match,
-                        certified_item_id=target.certified_item_id,
-                        certified_mall_names=target.certified_mall_names
-                    )
-                    br_result = await collect_lowest_offer_via_browser(temp_target, artifacts_dir)
-                    if br_result.get("certified_price"):
-                        rank_data = {
-                            "certified_price": br_result["certified_price"],
-                            "rank": br_result["rank"],
-                            "total": br_result["total"],
-                            "certified_lowest_price": br_result["certified_lowest_price"],
-                            "certified_between_non_auth_count": br_result["certified_between_non_auth_count"],
-                            "certified_cheaper_non_auth_count": br_result["certified_cheaper_non_auth_count"]
-                        }
-                except Exception as e:
-                    logger.warning("인증점 브라우저 수집 실패 | %s | %s", target.name, e)
-
-            if rank_data:
-                result["certified_price"] = rank_data["certified_price"]
-                result["certified_rank"] = rank_data["rank"]
-                result["certified_total_sellers"] = rank_data["total"]
-                result["certified_lowest_price"] = rank_data.get("certified_lowest_price")
-                result["certified_between_non_auth_count"] = rank_data.get("certified_between_non_auth_count")
-                result["certified_cheaper_non_auth_count"] = rank_data.get("certified_cheaper_non_auth_count")
-
-            # 4. 필수 필드 기본값 보장 (의미 오염 방지 및 DB 정합성)
+            # 3. 필수 필드 기본값 보장 (의미 오염 방지 및 DB 정합성)
             result.setdefault("fallback_used", 0)
             result.setdefault("config_mode", target.mode)
             result.setdefault("source_mode", target.mode)
@@ -169,10 +128,6 @@ async def run_once(config_path: str, db_path: str, artifacts_dir: str) -> tuple[
                 fallback_used_count += 1
             if result.get("alert_triggered"):
                 alerts_triggered_count += 1
-            if result.get("certified_price") is not None:
-                certified_calc_success += 1
-            else:
-                certified_null_count += 1
 
             store.insert(result)
             if result.get("success"):
@@ -215,7 +170,12 @@ async def run_once(config_path: str, db_path: str, artifacts_dir: str) -> tuple[
     if changed_items:
         send_price_alert(changed_items, email_from, email_password, email_to)
 
-    return ok, fail, {"failed_targets": failed_targets, "fallback_used_count": fallback_used_count, "alerts_triggered_count": alerts_triggered_count, "certified_calc_success": certified_calc_success, "certified_null_count": certified_null_count}
+    summary = {
+        "failed_targets": failed_targets,
+        "fallback_used_count": fallback_used_count,
+        "alerts_triggered_count": alerts_triggered_count
+    }
+    return ok, fail, summary
 
 
 async def run_daemon(config_path: str, db_path: str, artifacts_dir: str, interval_seconds: int) -> None:

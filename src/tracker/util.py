@@ -59,6 +59,11 @@ def all_keywords_present(text: str, keywords: Iterable[str]) -> bool:
     return all(normalize_for_match(k) in haystack for k in keywords)
 
 
+def any_keyword_present(text: str, keywords: Iterable[str]) -> bool:
+    haystack = normalize_for_match(text)
+    return any(normalize_for_match(k) in haystack for k in keywords)
+
+
 def format_price(value: int | None) -> str:
     """정수 가격을 '12,345원' 형식의 문자열로 변환합니다."""
     if value is None:

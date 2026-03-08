@@ -31,12 +31,6 @@ CREATE TABLE IF NOT EXISTS observations (
     price_delta INTEGER,
     price_delta_pct REAL,
     alert_triggered INTEGER DEFAULT 0,
-    certified_price INTEGER,
-    certified_rank INTEGER,
-    certified_total_sellers INTEGER,
-    certified_lowest_price INTEGER,
-    certified_between_non_auth_count INTEGER,
-    certified_cheaper_non_auth_count INTEGER,
     image_url TEXT
 );
 
@@ -44,6 +38,8 @@ CREATE INDEX IF NOT EXISTS idx_observations_target_time
 ON observations(target_name, collected_at DESC);
 """
 
+# 인증점 관련 컬럼들은 스키마 정의에서 제거하지만, 
+# 마이그레이션 로직에서는 DB 호환성을 위해 남겨두거나 필요한 것만 유지합니다.
 _MIGRATION_COLUMNS = [
     ("config_mode", "TEXT"),
     ("fallback_used", "INTEGER DEFAULT 0"),
@@ -53,12 +49,6 @@ _MIGRATION_COLUMNS = [
     ("price_delta_pct", "REAL"),
     ("alert_triggered", "INTEGER DEFAULT 0"),
     ("product_id", "TEXT"),
-    ("certified_price", "INTEGER"),
-    ("certified_rank", "INTEGER"),
-    ("certified_total_sellers", "INTEGER"),
-    ("certified_lowest_price", "INTEGER"),
-    ("certified_between_non_auth_count", "INTEGER"),
-    ("certified_cheaper_non_auth_count", "INTEGER"),
     ("image_url", "TEXT"),
 ]
 
@@ -68,7 +58,6 @@ def _migrate(conn: sqlite3.Connection) -> None:
     existing = {row[1] for row in conn.execute("PRAGMA table_info(observations)").fetchall()}
     for col_name, col_type in _MIGRATION_COLUMNS:
         if col_name not in existing:
-            # SQLite는 DEFAULT 값을 포함한 컬럼 추가를 지원합니다.
             conn.execute(f"ALTER TABLE observations ADD COLUMN {col_name} {col_type}")
     conn.commit()
 
@@ -109,12 +98,6 @@ class ObservationStore:
             "price_delta",
             "price_delta_pct",
             "alert_triggered",
-            "certified_price",
-            "certified_rank",
-            "certified_total_sellers",
-            "certified_lowest_price",
-            "certified_between_non_auth_count",
-            "certified_cheaper_non_auth_count",
             "image_url",
         ]
         values = [payload.get(col) for col in columns]
@@ -136,6 +119,19 @@ class ObservationStore:
             (target_name,),
         ).fetchone()
         return dict(row) if row else None
+
+    def get_price_history(self, target_name: str, limit: int = 20) -> list[dict[str, Any]]:
+        """특정 상품의 최근 수집 이력을 반환합니다."""
+        rows = self.conn.execute(
+            """
+            SELECT * FROM observations
+            WHERE target_name = ?
+            ORDER BY collected_at DESC, id DESC
+            LIMIT ?
+            """,
+            (target_name, limit),
+        ).fetchall()
+        return [dict(r) for r in rows]
 
     def get_dashboard_data(self, categories: dict[str, str] | None = None) -> dict[str, Any]:
         """대시보드 시각화용 통합 데이터를 반환합니다 (7일/30일/90일 분석 포함)."""
@@ -181,8 +177,6 @@ class ObservationStore:
 
             if not hist_90d:
                 continue
-
-            prices_90d = [r["price"] for r in hist_90d]
             
             # 기간별 평균 계산 함수
             def calc_avg(days):
@@ -203,12 +197,6 @@ class ObservationStore:
                 "avg_90d": calc_avg(90),
                 "all_time_low": all_time_low,
                 "all_time_high": all_time_high,
-                "certified_price": latest["certified_price"],
-                "certified_rank": latest["certified_rank"],
-                "certified_total": latest["certified_total_sellers"],
-                "certified_lowest_price": latest["certified_lowest_price"],
-                "certified_between_count": latest["certified_between_non_auth_count"],
-                "certified_cheaper_count": latest["certified_cheaper_non_auth_count"],
                 "image_url": latest["image_url"],
                 "history": [
                     {"t": r["collected_at"], "p": r["price"]} for r in hist_90d[-200:] # 차트용 200개로 확장
@@ -227,7 +215,6 @@ class ObservationStore:
         return str(out)
 
     def export_latest_csv(self, out_path: str) -> str:
-        # (기존 CSV 내보내기 로직은 유지하되 새 컬럼 반영)
         query = """
         WITH ranked AS (
           SELECT
@@ -251,8 +238,7 @@ class ObservationStore:
             writer.writerow([
                 "target_name", "collected_at", "config_mode", "source_mode", "fallback_used", "success", "status",
                 "title", "price", "seller_name", "price_change_status", "prev_price",
-                "price_delta", "price_delta_pct", "product_url", "error_message",
-                "certified_lowest_price", "certified_between_non_auth_count", "certified_cheaper_non_auth_count", "image_url"
+                "price_delta", "price_delta_pct", "product_url", "error_message", "image_url"
             ])
             for r_raw in rows:
                 r = dict(r_raw)
@@ -260,8 +246,6 @@ class ObservationStore:
                     r["target_name"], r["collected_at"], r.get("config_mode"), r["source_mode"], r.get("fallback_used", 0), r["success"], r["status"],
                     r["title"], r["price"], r["seller_name"], r["price_change_status"], r["prev_price"],
                     r["price_delta"], r["price_delta_pct"], r["product_url"], r["error_message"],
-                    r.get("certified_price"), r.get("certified_rank"), r.get("certified_total_sellers"),
-                    r.get("certified_lowest_price"), r.get("certified_between_non_auth_count"), r.get("certified_cheaper_non_auth_count"),
                     r.get("image_url")
                 ])
         return str(out)
@@ -287,7 +271,6 @@ class ObservationStore:
                 elif status_cls == "PRICE_UP": status_color = "#ef4444"  # 빨강
                 elif status_cls == "PRICE_SAME": status_color = "#6b7280" # 중립 회색
                 
-                # 수집 오류인 경우 배경색 강조
                 row_style = ""
                 if not rec.get("success"):
                     row_style = 'style="background: #2d0a0a"'  # 더 어두운 빨강 배경 (success=0)
@@ -296,7 +279,6 @@ class ObservationStore:
                 pct_str = f"{delta_pct:+.1f}%" if delta_pct is not None else "-"
                 delta_str = f"{rec.get('price_delta'):+,}" if rec.get("price_delta") is not None else "-"
 
-                # 수집 경로 표시
                 cfg_m = py_html.escape(str(rec.get("config_mode") or "-"))
                 src_m = py_html.escape(str(rec.get("source_mode") or "-"))
                 route_html = f"{cfg_m} &rarr; {src_m}"
@@ -344,7 +326,7 @@ class ObservationStore:
   </section>"""
             sections.append(section)
 
-        html = f"""<!DOCTYPE html>
+        html_content = f"""<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
@@ -364,7 +346,7 @@ class ObservationStore:
 </html>"""
         out = Path(out_path).resolve()
         ensure_dir(out.parent)
-        out.write_text(html, encoding="utf-8")
+        out.write_text(html_content, encoding="utf-8")
         return str(out)
 
     def close(self) -> None:

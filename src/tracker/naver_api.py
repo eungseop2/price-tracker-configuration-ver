@@ -2,21 +2,15 @@ from __future__ import annotations
 
 import os
 from dataclasses import asdict
-from typing import Any
+from typing import Any, Iterable
 
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 from .config import AppConfig, TargetConfig
-from .util import all_keywords_present, clean_text, parse_int
+from .util import all_keywords_present, any_keyword_present, clean_text, parse_int
 
-
-def any_keyword_present(text: str, keywords: Iterable[str]) -> bool:
-    """텍스트 내에 키워드 중 하나라도 포함되어 있는지 확인 (util에서 제거되어 내부 구현)"""
-    from .util import normalize_for_match
-    haystack = normalize_for_match(text)
-    return any(normalize_for_match(k) in haystack for k in keywords)
 
 SHOP_API_URL = "https://openapi.naver.com/v1/search/shop.json"
 
@@ -146,6 +140,7 @@ def collect_lowest_offer_via_api(client: NaverShoppingSearchClient, app_config: 
             "error_message": "조건에 맞는 상품을 찾지 못했습니다.",
         }
 
+    # 가격과 판매처 이름을 기준으로 정렬하여 최우선 상품 선택
     best = min(candidates, key=lambda x: (x["price"], x["seller_name"] or "zzzz"))
     return {
         "target_name": target.name,
@@ -155,130 +150,3 @@ def collect_lowest_offer_via_api(client: NaverShoppingSearchClient, app_config: 
         **best,
         "error_message": None,
     }
-
-
-def collect_certified_rank(
-    client: NaverShoppingSearchClient,
-    app_config: AppConfig,
-    target: TargetConfig,
-) -> dict[str, Any] | None:
-    """인증 거래처 순위 카운팅.
-    
-    API 결과 내에서 인증점(mallProductId)을 찾아 순위를 계산합니다.
-    """
-    if not target.certified_item_id and not target.certified_mall_names:
-        return None
-    if not target.query:
-        return None
-
-    cert_id = str(target.certified_item_id or "").strip()
-    cert_mall_names = [n.strip() for n in target.certified_mall_names if n.strip()]
-    catalog_id = str(target.match.product_id or "").strip()
-
-    if not cert_id and not cert_mall_names:
-        return None
-
-    try:
-        # 1. 카탈로그 ID가 있으면 그것으로, 없으면 쿼리로 검색 (최대 200개)
-        search_query = catalog_id if catalog_id else target.query
-        items = []
-        for start_idx in (1, 101):
-            payload = client.search(
-                query=search_query,
-                display=100,
-                start=start_idx,
-                exclude=app_config.exclude,
-            )
-            fetched = payload.get("items", []) or []
-            items.extend(fetched)
-            if len(fetched) < 100:
-                break
-        
-        # 2. 결과가 없으면 상품명으로 재시도 (최대 200개)
-        if not items and catalog_id:
-            for start_idx in (1, 101):
-                payload = client.search(
-                    query=target.query, 
-                    display=100, 
-                    start=start_idx,
-                    exclude=app_config.exclude
-                )
-                fetched = payload.get("items", []) or []
-                items.extend(fetched)
-                if len(fetched) < 100:
-                    break
-
-        valid_items = []
-        for item in items:
-            mid = str(item.get("mallProductId", "")).strip()
-            p_id = str(item.get("productId", "")).strip()
-            m_name = clean_text(item.get("mallName", ""))
-            
-            # 카탈로그 ID가 지정된 경우, 해당 카탈로그 아이템만 포함 (노이즈 제거)
-            if catalog_id and p_id != catalog_id:
-                continue
-                
-            price = parse_int(item.get("lprice"), default=0)
-            if price > 0:
-                valid_items.append({"id": mid, "mall_name": m_name, "price": price})
-
-        if not valid_items:
-            return None
-
-        # 가격순 정렬
-        valid_items.sort(key=lambda x: x["price"])
-        
-        # 중복 제거 (입점 몰 기준) - 동일한 몰에서 여러 ID가 나올 수 있으므로 ID+몰이름 조합 또는 ID 기준
-        seen = set()
-        unique_items = []
-        for v in valid_items:
-            if v["id"] not in seen:
-                unique_items.append(v)
-                seen.add(v["id"])
-        
-        # 우리 거래처 찾기 (ID 매칭 또는 몰 이름 매칭)
-        def is_certified(v):
-            if cert_id and (cert_id == v["id"] or cert_id in v["id"] or v["id"] in cert_id):
-                return True
-            m_name = v.get("mall_name", "") or ""
-            # 1. 사용자가 명시한 몰 이름들 확인
-            if any(name in m_name for name in cert_mall_names):
-                return True
-            # 2. 범용 인증점 키워드 확인
-            if "정품인증점" in m_name or "공식인증점" in m_name:
-                return True
-            return False
-
-        certified_candidates = [v for v in unique_items if is_certified(v)]
-            
-        if not certified_candidates:
-            return None
-
-        # 인증점 중 최저가 선택
-        certified = min(certified_candidates, key=lambda x: x["price"])
-        cert_price = certified["price"]
-        cert_id_found = certified["id"]
-
-        # 순위: 나보다 싸거나 같은 가격의 업체 수
-        rank = sum(1 for v in unique_items if v["price"] <= cert_price)
-        total = len(unique_items)
-        
-        lowest_price = unique_items[0]["price"]
-
-        # 최저가 < price < 인증가 인 업체 수 (인증점 제외)
-        between_count = sum(1 for v in unique_items if v["id"] != cert_id_found and lowest_price < v["price"] < cert_price)
-        # 인증점보다 싼 업체 수
-        cheaper_count = sum(1 for v in unique_items if v["id"] != cert_id_found and v["price"] < cert_price)
-
-        return {
-            "certified_price": cert_price,
-            "rank": rank,
-            "total": total,
-            "certified_lowest_price": lowest_price,
-            "certified_between_non_auth_count": between_count,
-            "certified_cheaper_non_auth_count": cheaper_count
-        }
-
-    except Exception:
-        return None
-

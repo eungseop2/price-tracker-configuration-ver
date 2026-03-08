@@ -62,55 +62,6 @@ def _flatten_ld_json_payloads(values: list[Any]) -> list[dict[str, Any]]:
     return deduped
 
 
-def _calculate_certified_data(offers: list[dict[str, Any]], target: TargetConfig) -> dict[str, Any] | None:
-    if not offers:
-        return None
-
-    cert_id = str(target.certified_item_id or "").strip()
-    cert_mall_names = [n.strip() for n in target.certified_mall_names if n.strip()]
-
-    # 가격순 정렬
-    unique_items = sorted(offers, key=lambda x: x["price"])
-    
-    # 우리 거래처 찾기 (ID 매칭 또는 몰 이름 매칭)
-    def is_certified(v):
-        m_name = v.get("seller_name", "") or ""
-        # 1. 사용자가 명시한 몰 이름 포함 여부 확인
-        if any(name in m_name for name in cert_mall_names):
-            return True
-        # 2. 네이버 카탈로그 표준 노출 명칭인 '정품인증점' 확인
-        if "정품인증점" in m_name or "공식인증점" in m_name:
-            return True
-        return False
-
-    certified_candidates = [v for v in unique_items if is_certified(v)]
-    if not certified_candidates:
-        return None
-
-    certified = min(certified_candidates, key=lambda x: x["price"])
-    cert_price = certified["price"]
-    cert_seller = certified["seller_name"]
-    
-    lowest_price = unique_items[0]["price"]
-
-    # 순위: 나보다 싸거나 같은 가격의 업체 수
-    rank = sum(1 for v in unique_items if v["price"] <= cert_price)
-    total = len(unique_items)
-    
-    # 최저가 < price < 인증가 인 업체 수 (인증점 제외)
-    between_count = sum(1 for v in unique_items if v["seller_name"] != cert_seller and lowest_price < v["price"] < cert_price)
-    # 인증점보다 싼 업체 수
-    cheaper_count = sum(1 for v in unique_items if v["seller_name"] != cert_seller and v["price"] < cert_price)
-
-    return {
-        "certified_price": cert_price,
-        "rank": rank,
-        "total": total,
-        "certified_lowest_price": lowest_price,
-        "certified_between_non_auth_count": between_count,
-        "certified_cheaper_non_auth_count": cheaper_count
-    }
-
 
 async def _extract_from_ld_json(page) -> list[dict[str, Any]]:
     handles = await page.locator(JSON_SCRIPT_SELECTOR).all()
@@ -207,7 +158,7 @@ async def collect_lowest_offer_via_browser(target: TargetConfig, artifacts_dir: 
 
             best = min(offers, key=lambda x: (parse_int(x.get("price"), 0), clean_text(x.get("seller_name"))))
             
-            res = {
+            return {
                 "target_name": target.name,
                 "source_mode": target.mode,
                 "success": 1,
@@ -225,12 +176,5 @@ async def collect_lowest_offer_via_browser(target: TargetConfig, artifacts_dir: 
                 },
                 "error_message": None,
             }
-
-            # 인증점 순위 정보도 함께 계산하여 포함
-            cert_data = _calculate_certified_data(offers, target)
-            if cert_data:
-                res.update(cert_data)
-            
-            return res
         finally:
             await browser.close()
