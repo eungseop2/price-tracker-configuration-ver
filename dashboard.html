@@ -16,8 +16,10 @@
             --accent-secondary: #00d0ff;
             --text-main: #191f28;
             --text-muted: #4e5968;
-            --price-down: #ef4444;
-            --price-up: #3182f7;
+            --price-down: #3182f7;
+            /* 낮음: 파란색으로 변경 */
+            --price-up: #ef4444;
+            /* 높음: 빨간색으로 변경 */
             --glass-border: rgba(0, 0, 0, 0.05);
             --toss-blue: #3182f7;
             --toss-grey: #f2f4f6;
@@ -249,13 +251,13 @@
         }
 
         .badge-down {
-            background: rgba(239, 68, 68, 0.08);
-            color: #ef4444;
+            background: rgba(49, 130, 247, 0.08);
+            color: var(--price-down);
         }
 
         .badge-up {
-            background: rgba(49, 130, 247, 0.08);
-            color: #3182f7;
+            background: rgba(239, 68, 68, 0.08);
+            color: var(--price-up);
         }
 
         .badge-none {
@@ -933,11 +935,10 @@
             };
             setDiff('avg7dDiff', product.current_price, product.avg_7d);
             setDiff('avg30dDiff', product.current_price, product.avg_30d);
-            document.getElementById('currentDiff').innerText = product.status === 'PRICE_DOWN' ? '최근 하락세 감지 ✅' : (product.status === 'PRICE_UP' ? '가격 상승중 주의 ⚠️' : '현재가 유지 중');
+            document.getElementById('currentDiff').innerText = product.status === 'PRICE_DOWN' ? '최근 하락세 감지 ✅' : (product.status === 'PRICE_UP' ? '가격 상승 중 주의 ⚠️' : '현재가 유지 중');
 
-            const badgeContainer = document.getElementById('priceBadgeContainer');
             if (product.current_price <= product.all_time_low && product.all_time_low > 0) {
-                badgeContainer.innerHTML = `<div class="chart-badge" style="background: rgba(16, 185, 129, 0.1); color: #ef4444;">✨ 현재 역대 최저가 달성 중!</div>`;
+                badgeContainer.innerHTML = `<div class="chart-badge" style="background: rgba(49, 130, 247, 0.1); color: #3182f7;">✨ 현재 역대 최저가 달성 중!</div>`;
             } else {
                 const pctFromLow = (((product.current_price - product.all_time_low) / product.all_time_low) * 100).toFixed(1);
                 badgeContainer.innerHTML = `<div class="chart-badge">역대 최저가 대비 +${pctFromLow}% 높음</div>`;
