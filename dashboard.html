@@ -959,7 +959,16 @@
 
         function renderCategoryTabs() {
             const container = document.getElementById('categoryTabs');
-            const categories = ['전체', ...new Set(dashboardData.products.map(p => p.category).filter(c => c))];
+            const order = ['전체', '버즈', '워치', '핏', '기타'];
+            const existingCategories = new Set(dashboardData.products.map(p => p.category).filter(c => c));
+
+            // 정의된 순서대로 정렬하되, 목록에 없는 카테고리는 뒤로 보냄
+            const categories = order.filter(cat => cat === '전체' || existingCategories.has(cat));
+
+            // 혹시 order에 없는 새 카테고리가 있다면 추가
+            existingCategories.forEach(cat => {
+                if (!order.includes(cat)) categories.push(cat);
+            });
 
             container.innerHTML = categories.map(cat => `
                 <div class="category-pill ${cat === selectedCategory ? 'active' : ''}" 
