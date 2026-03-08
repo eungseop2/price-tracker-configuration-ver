@@ -799,6 +799,7 @@
 </head>
 
 <body>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar(false)"></div>
     <div class="sidebar" id="sidebar">
         <div class="logo-container" onclick="location.reload(true)" style="cursor: pointer;">
             <div class="logo-icon" id="appLogoContainer">
@@ -929,12 +930,11 @@
         function toggleSidebar(open) {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebarOverlay');
-            if (open) {
-                sidebar.classList.add('open');
-                overlay.classList.add('show');
-            } else {
-                sidebar.classList.remove('open');
-                overlay.classList.remove('show');
+            if (sidebar) {
+                sidebar.classList.toggle('open', open);
+            }
+            if (overlay) {
+                overlay.classList.toggle('show', open);
             }
         }
 
