@@ -24,6 +24,7 @@
             --toss-blue: #3182f7;
             --toss-grey: #f2f4f6;
             --card-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+            --bg-soft: #f8f9fa;
         }
 
         * {
@@ -505,166 +506,299 @@
             }
         }
 
+        /* header layout */
+        .header-main-row {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            min-width: 0;
+            width: 100%;
+        }
+
+        .selected-image-container {
+            width: 60px;
+            height: 60px;
+            border-radius: 14px;
+            overflow: hidden;
+            background: #ffffff;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            flex-shrink: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .selected-image-container img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .header-title {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .header-title h1 {
+            word-break: keep-all;
+            overflow-wrap: anywhere;
+        }
+
+        .header-subtitle {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .header-btn {
+            width: auto;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .catalog-btn {
+            background: var(--toss-blue);
+            color: #ffffff;
+        }
+
+        .catalog-btn:hover {
+            background: #2b74e0;
+            transform: translateY(-1px);
+        }
+
+        /* chart */
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .chart-filters {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .filter-pill {
+            white-space: nowrap;
+        }
+
         @media (max-width: 1024px) {
             .sidebar {
-                width: 300px;
+                width: 280px;
             }
 
             .main-content {
-                padding: 32px 40px;
+                padding: 32px;
             }
         }
 
         @media (max-width: 768px) {
             body {
                 flex-direction: column;
-                height: 100vh;
-                overflow: hidden;
+                height: auto;
+                overflow-y: auto;
             }
 
+            /* 사이드바 전체 sticky 해제 */
             .sidebar {
-                position: fixed;
-                left: -100%;
-                top: 0;
-                bottom: 0;
-                width: 300px;
-                height: 100vh;
-                transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                box-shadow: 20px 0 40px rgba(0, 0, 0, 0.1);
+                width: 100%;
+                height: auto;
+                position: static;
+                border-right: none;
+                border-bottom: 1px solid var(--glass-border);
+                padding: 12px 0 0;
+                box-shadow: none;
+                background: var(--bg-soft);
             }
 
-            .sidebar.open {
-                left: 0;
+            .sidebar-overlay {
+                display: none !important;
             }
 
-            .sidebar-overlay.show {
-                display: block;
+            /* 로고는 줄이고, 선택 툴바는 숨기지 말고 compact하게 유지 */
+            .logo-container {
+                margin-bottom: 8px;
+                padding: 0 16px;
             }
 
-            .mobile-menu-btn {
+            .sidebar-toolbar {
                 display: flex;
-                flex-shrink: 0;
+                align-items: center;
+                justify-content: space-between;
+                padding: 0 16px 10px;
+            }
+
+            /* 카테고리 탭도 가로 스크롤 유지 */
+            .category-tabs {
+                padding: 0 16px 12px;
+                margin-bottom: 8px;
+            }
+
+            /* 헤더에 같은 기능이 있으니 모바일에선 사이드바 하단 다운로드 버튼 숨김 */
+            .sidebar-footer {
+                display: none;
+            }
+
+            .product-list {
+                display: flex;
+                flex-direction: row;
+                overflow-x: auto;
+                overflow-y: hidden;
+                padding: 0 16px 12px;
+                gap: 12px;
+                -webkit-overflow-scrolling: touch;
+                scroll-snap-type: x proximity;
+            }
+
+            .product-item {
+                flex: 0 0 75%;
+                min-width: 0;
+                scroll-snap-align: start;
+                margin-bottom: 0;
+                padding: 12px;
+                border-radius: 16px;
+                border: 1px solid var(--glass-border);
             }
 
             .main-content {
-                padding: 16px;
-                height: 100vh;
-                overflow-x: hidden;
-                overflow-y: auto;
+                padding: 24px 16px;
+                height: auto;
             }
 
             header {
                 flex-direction: column;
-                align-items: stretch;
-                gap: 12px;
-                margin-bottom: 20px;
-                margin-top: 0;
-                padding-bottom: 16px;
-                border-bottom: 1px solid var(--glass-border);
+                align-items: flex-start;
+                gap: 16px;
+                margin-bottom: 28px;
+                padding-bottom: 0;
+                border-bottom: none;
             }
 
-            .header-info-wrapper {
+            .mobile-menu-btn {
+                display: none;
+                /* 상단 리스트 방식으로 바꿨으므로 메뉴 버튼 불필요 */
+            }
+
+            .header-main-row {
                 width: 100%;
-                gap: 12px !important;
-                align-items: center !important;
-                /* 상단 정렬보다 센터 정렬이 썸네일과 조화로움 */
-            }
-
-            .header-title {
-                text-align: left;
-                flex: 1;
-                min-width: 0;
-                /* 텍스트 생략을 위해 필요 */
-            }
-
-            .header-title h1 {
-                font-size: 18px;
-                line-height: 1.3;
-                margin-bottom: 2px;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-
-            .header-subtitle {
-                display: block;
-            }
-
-            .seller-info {
-                padding: 0;
-                background: transparent;
-                box-shadow: none;
-                font-size: 13px;
-                width: 100%;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
+                align-items: flex-start;
+                gap: 16px;
             }
 
             .header-actions {
                 width: 100%;
-                margin-top: 4px;
-                display: flex;
-                justify-content: flex-start;
+                gap: 8px;
+                margin-top: 0;
             }
 
-            #catalogBtn {
-                width: auto !important;
-                /* 전체 너비 대신 적당한 크기 유지 */
-                padding: 8px 16px !important;
-                font-size: 13px !important;
-                border-radius: 10px !important;
-                display: inline-flex !important;
+            .header-actions>* {
+                flex: 1 1 calc(50% - 4px);
+                min-width: 0;
+            }
+
+            .stat-card {
+                padding: 20px 16px;
             }
 
             .stats-grid {
                 grid-template-columns: repeat(2, 1fr);
-                gap: 10px;
+                gap: 12px;
+            }
+
+            .chart-header {
+                flex-direction: column;
+                align-items: stretch;
                 margin-bottom: 20px;
             }
 
-            .stat-card {
-                padding: 16px;
-                border-radius: 18px;
+            .chart-filters {
+                width: 100%;
             }
 
-            .stat-label {
-                font-size: 12px;
-                margin-bottom: 8px;
+            .filter-pill {
+                flex: 1 1 calc(50% - 4px);
+                text-align: center;
+                justify-content: center;
             }
 
-            .stat-value {
-                font-size: 17px;
-            }
-
-            .chart-section,
-            .history-section {
-                padding: 16px;
-                margin-bottom: 16px;
-                border-radius: 18px;
+            .chart-section {
+                padding: 24px 16px;
+                border-radius: 20px;
             }
 
             .chart-container {
                 height: 240px;
             }
 
-            .history-title,
-            .chart-title {
-                font-size: 16px;
-                margin-bottom: 16px;
+            .history-section {
+                padding: 24px 16px;
+                border-radius: 20px;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            table {
+                min-width: 450px;
             }
         }
 
         @media (max-width: 480px) {
+            .header-main-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .selected-image-container {
+                width: 56px;
+                height: 56px;
+            }
+
+            .header-title h1 {
+                font-size: 22px;
+                line-height: 1.3;
+            }
+
+            .header-actions>* {
+                flex: 1 1 100%;
+                width: 100%;
+            }
+
             .stats-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .product-item {
+                flex: 0 0 85%;
+            }
+
+            .chart-section,
+            .history-section {
+                padding: 20px 16px;
             }
         }
     </style>
 </head>
 
 <body>
-    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar(false)"></div>
     <div class="sidebar" id="sidebar">
         <div class="logo-container">
             <div class="logo-icon">✨</div>
@@ -690,27 +824,28 @@
 
     <div class="main-content">
         <header>
-            <!-- Top Row: Menu + Image + Title -->
-            <div class="header-main-row" style="display: flex; align-items: center; gap: 12px; width: 100%;">
-                <button class="mobile-menu-btn" onclick="toggleSidebar(true)">☰</button>
-                <div id="selectedImageContainer"
-                    style="width: 50px; height: 50px; border-radius: 12px; overflow: hidden; background: #ffffff; border: 1px solid rgba(0,0,0,0.05); flex-shrink: 0; display: none; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
-                    <img id="selectedImage" src="" alt=""
-                        style="max-width: 100%; max-height: 100%; object-fit: contain;">
+            <div class="header-main-row">
+                <div id="selectedImageContainer" class="selected-image-container">
+                    <img id="selectedImage" src="" alt="">
                 </div>
-                <div class="header-title" style="flex: 1; min-width: 0;">
-                    <h1 id="selectedTitle" style="margin-bottom: 2px;">안녕하세요</h1>
-                    <div class="seller-info" id="sellerInfo" style="font-size: 13px; color: var(--text-muted);">
-                        상품을 선택하세요
+
+                <div class="header-title">
+                    <h1 id="selectedTitle">Welcome</h1>
+                    <div class="header-subtitle">
+                        <div class="seller-info" id="sellerInfo">
+                            상품을 선택하여 분석을 시작하세요
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Bottom Row/Action: Catalog Button -->
-            <div class="header-actions" style="margin-top: 12px;">
-                <a href="#" id="catalogBtn" target="_blank" class="btn-excel"
-                    style="width: auto; padding: 10px 20px; text-decoration: none; display: flex; align-items: center; justify-content: center; background: var(--toss-blue); color: #ffffff; font-size: 14px; border-radius: 12px; transition: all 0.2s;">
-                    <span>🛒 카탈로그 바로가기</span>
+            <div class="header-actions">
+                <button onclick="downloadExcel()" class="btn-excel header-btn">
+                    <span>엑셀 다운로드</span>
+                </button>
+
+                <a href="#" id="catalogBtn" target="_blank" class="btn-excel header-btn catalog-btn">
+                    <span>카탈로그 바로가기</span>
                 </a>
             </div>
         </header>
