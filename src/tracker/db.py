@@ -148,6 +148,10 @@ class ObservationStore:
         }
 
         for name in target_names:
+            # targets.yaml에 정의되지 않은 상품(과거 기록)은 제외
+            if name not in categories:
+                continue
+
             # 1. 최신 정보 가져오기
             latest = self.get_latest_success(name)
             if not latest:
