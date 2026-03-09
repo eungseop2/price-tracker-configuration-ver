@@ -10,7 +10,7 @@ def send_price_alert(
     changes: list[dict],
     email_from: str,
     email_password: str,
-    email_to: str,
+    email_to: str | list[str],
 ) -> bool:
     """가격 변동 항목 리스트를 이메일로 알립니다. 성공 시 True 반환."""
     if not all([email_from, email_password, email_to]):
@@ -31,7 +31,12 @@ def send_price_alert(
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
         msg["From"] = email_from
-        recipients = [e.strip() for e in email_to.split(",") if e.strip()]
+        
+        if isinstance(email_to, list):
+            recipients = [e.strip() for e in email_to if e.strip()]
+        else:
+            recipients = [e.strip() for e in email_to.split(",") if e.strip()]
+            
         msg["To"] = ", ".join(recipients)
         msg.attach(MIMEText(html_body, "html", "utf-8"))
 
@@ -39,7 +44,7 @@ def send_price_alert(
             server.login(email_from, email_password)
             server.sendmail(email_from, recipients, msg.as_string())
 
-        logger.info("가격 변동 이메일 발송 완료 → %s", email_to)
+        logger.info("가격 변동 이메일 발송 완료 → %s", ", ".join(recipients))
         return True
     except Exception as e:
         logger.error("이메일 발송 실패: %s", e)

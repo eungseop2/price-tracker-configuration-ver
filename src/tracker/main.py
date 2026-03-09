@@ -67,10 +67,6 @@ async def _collect_one(client: NaverShoppingSearchClient, target: TargetConfig, 
 
 
 async def run_once(config_path: str, db_path: str, artifacts_dir: str) -> tuple[int, int, dict]:
-    load_dotenv(override=False)
-    email_from = os.getenv("EMAIL_FROM", "")
-    email_password = os.getenv("EMAIL_APP_PASSWORD", "")
-    email_to = os.getenv("EMAIL_TO", "")
     changed_items: list[dict] = []  # 가격 변동 항목 수집용
     
     app_config = load_config(config_path)
@@ -168,7 +164,12 @@ async def run_once(config_path: str, db_path: str, artifacts_dir: str) -> tuple[
 
     # 이메일 알림 발송 (변동된 항목이 있을 때만)
     if changed_items:
-        send_price_alert(changed_items, email_from, email_password, email_to)
+        send_price_alert(
+            changed_items,
+            app_config.email.email_from,
+            app_config.email.email_password,
+            app_config.email.email_to
+        )
 
     summary = {
         "failed_targets": failed_targets,

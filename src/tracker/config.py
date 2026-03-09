@@ -16,6 +16,13 @@ class MatchConfig:
 
 
 @dataclass
+class EmailConfig:
+    email_from: str | None = None
+    email_password: str | None = None
+    email_to: list[str] = field(default_factory=list)
+
+
+@dataclass
 class RequestConfig:
     pages: int = 1
     sort: str = "asc"
@@ -51,6 +58,7 @@ class AppConfig:
     exclude: str = "used:cbshop"
     timeout_seconds: int = 20
     alert_threshold_percent: float = 5.0
+    email: EmailConfig = field(default_factory=EmailConfig)
     targets: list[TargetConfig] = field(default_factory=list)
 
 
@@ -127,12 +135,17 @@ def validate_config(app: AppConfig, extra_errors: list[str] | None = None) -> No
 
 
 def load_config(path: str | Path) -> AppConfig:
+    import os
+    from dotenv import load_dotenv
+    load_dotenv(override=False)
+    
     path = Path(path)
     if not path.exists():
         raise FileNotFoundError(f"설정 파일을 찾을 수 없습니다: {path}")
 
     raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     common = raw.get("common", {}) or {}
+    email_raw = common.get("email", {}) or {}
 
     errors = []
     
@@ -155,11 +168,26 @@ def load_config(path: str | Path) -> AppConfig:
         errors.append(f"common.alert_threshold_percent 값이 올바르지 않습니다: {common.get('alert_threshold_percent')}")
         alert_threshold_percent = 5.0
 
+    # 1-1. 이메일 설정 파싱 (YAML -> 환경변수 순서로 우선순위)
+    email_from = email_raw.get("from") or os.getenv("EMAIL_FROM")
+    email_password = email_raw.get("password") or os.getenv("EMAIL_APP_PASSWORD")
+    
+    to_raw = email_raw.get("to") or os.getenv("EMAIL_TO", "")
+    if isinstance(to_raw, list):
+        email_to = [str(x).strip() for x in to_raw if x]
+    else:
+        email_to = [x.strip() for x in str(to_raw).split(",") if x.strip()]
+
     app = AppConfig(
         display=display,
         exclude=str(common.get("exclude", "used:cbshop")),
         timeout_seconds=timeout_seconds,
         alert_threshold_percent=alert_threshold_percent,
+        email=EmailConfig(
+            email_from=email_from,
+            email_password=email_password,
+            email_to=email_to
+        ),
         targets=[],
     )
 
