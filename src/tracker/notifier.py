@@ -31,12 +31,13 @@ def send_price_alert(
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
         msg["From"] = email_from
-        msg["To"] = email_to
+        recipients = [e.strip() for e in email_to.split(",") if e.strip()]
+        msg["To"] = ", ".join(recipients)
         msg.attach(MIMEText(html_body, "html", "utf-8"))
 
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             server.login(email_from, email_password)
-            server.sendmail(email_from, email_to, msg.as_string())
+            server.sendmail(email_from, recipients, msg.as_string())
 
         logger.info("가격 변동 이메일 발송 완료 → %s", email_to)
         return True
