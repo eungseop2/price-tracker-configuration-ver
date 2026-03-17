@@ -92,6 +92,7 @@ def _normalized_item(item: dict[str, Any]) -> dict[str, Any]:
         "product_type": int(item.get("productType", 0) or 0),
         "product_url": item.get("link"),
         "image_url": item.get("image"),
+        "search_rank": item.get("_search_rank"),
         "raw_payload": item,
     }
 
@@ -114,7 +115,10 @@ def collect_lowest_offer_via_api(client: NaverShoppingSearchClient, app_config: 
             filter_=target.request.filter,
             exclude=app_config.exclude,
         )
-        items.extend(payload.get("items", []) or [])
+        page_items = payload.get("items", []) or []
+        for i, itm in enumerate(page_items, start=len(items) + 1):
+            itm["_search_rank"] = i
+        items.extend(page_items)
 
     candidates = [_normalized_item(item) for item in items if _item_matches(target, item)]
     candidates = [c for c in candidates if c["price"] > 0]

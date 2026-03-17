@@ -31,11 +31,30 @@ CREATE TABLE IF NOT EXISTS observations (
     price_delta INTEGER,
     price_delta_pct REAL,
     alert_triggered INTEGER DEFAULT 0,
-    image_url TEXT
+    image_url TEXT,
+    search_rank INTEGER
 );
 
 CREATE INDEX IF NOT EXISTS idx_observations_target_time
 ON observations(target_name, collected_at DESC);
+
+CREATE TABLE IF NOT EXISTS ranking_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    query TEXT NOT NULL,
+    rank INTEGER NOT NULL,
+    collected_at TEXT NOT NULL,
+    title TEXT,
+    price INTEGER,
+    seller_name TEXT,
+    product_id TEXT,
+    product_type INTEGER,
+    product_url TEXT,
+    image_url TEXT,
+    is_ad INTEGER DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_ranking_query_time
+ON ranking_history(query, collected_at DESC);
 """
 
 # 인증점 관련 컬럼들은 스키마 정의에서 제거하지만, 
@@ -50,6 +69,7 @@ _MIGRATION_COLUMNS = [
     ("alert_triggered", "INTEGER DEFAULT 0"),
     ("product_id", "TEXT"),
     ("image_url", "TEXT"),
+    ("search_rank", "INTEGER"),
 ]
 
 
@@ -99,6 +119,7 @@ class ObservationStore:
             "price_delta_pct",
             "alert_triggered",
             "image_url",
+            "search_rank",
         ]
         values = [payload.get(col) for col in columns]
         self.conn.execute(
@@ -133,14 +154,10 @@ class ObservationStore:
         ).fetchall()
         return [dict(r) for r in rows]
 
-    def get_dashboard_data(self, categories: dict[str, str] | None = None) -> dict[str, Any]:
+    def get_dashboard_data(self, targets: list[TargetConfig]) -> dict[str, Any]:
         """대시보드 시각화용 통합 데이터를 반환합니다 (7일/30일/90일 분석 포함)."""
-        categories = categories or {}
-        target_names = [
-            r[0] for r in self.conn.execute(
-                "SELECT DISTINCT target_name FROM observations ORDER BY target_name"
-            ).fetchall()
-        ]
+        target_map = {t.name: t for t in targets}
+        target_names = list(target_map.keys())
 
         data = {
             "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -148,9 +165,7 @@ class ObservationStore:
         }
 
         for name in target_names:
-            # targets.yaml에 정의되지 않은 상품(과거 기록)은 제외
-            if name not in categories:
-                continue
+            t_config = target_map[name]
 
             # 1. 최신 정보 가져오기
             latest = self.get_latest_success(name)
@@ -190,7 +205,8 @@ class ObservationStore:
 
             product_data = {
                 "name": name,
-                "category": categories.get(name, "기타"),
+                "category": t_config.category,
+                "rank_query": t_config.rank_query,
                 "current_price": latest["price"],
                 "seller": latest["seller_name"] or "네이버",
                 "status": latest["price_change_status"],
@@ -202,6 +218,7 @@ class ObservationStore:
                 "all_time_low": all_time_low,
                 "all_time_high": all_time_high,
                 "image_url": latest["image_url"],
+                "search_rank": latest.get("search_rank"),
                 "history": [
                     {"t": r["collected_at"], "p": r["price"]} for r in hist_90d[-200:] # 차트용 200개로 확장
                 ]
@@ -242,7 +259,7 @@ class ObservationStore:
             writer.writerow([
                 "target_name", "collected_at", "config_mode", "source_mode", "fallback_used", "success", "status",
                 "title", "price", "seller_name", "price_change_status", "prev_price",
-                "price_delta", "price_delta_pct", "product_url", "error_message", "image_url"
+                "price_delta", "price_delta_pct", "product_url", "error_message", "image_url", "search_rank"
             ])
             for r_raw in rows:
                 r = dict(r_raw)
@@ -250,7 +267,7 @@ class ObservationStore:
                     r["target_name"], r["collected_at"], r.get("config_mode"), r["source_mode"], r.get("fallback_used", 0), r["success"], r["status"],
                     r["title"], r["price"], r["seller_name"], r["price_change_status"], r["prev_price"],
                     r["price_delta"], r["price_delta_pct"], r["product_url"], r["error_message"],
-                    r.get("image_url")
+                    r.get("image_url"), r.get("search_rank")
                 ])
         return str(out)
 
@@ -299,6 +316,7 @@ class ObservationStore:
           <td style="color:#94a3b8">{format_price(rec.get('prev_price'))}</td>
           <td style="color:{status_color}">{delta_str}</td>
           <td style="color:{status_color}; font-weight:700">{pct_str}</td>
+          <td style="font-size:12px; color:#94a3b8">{py_html.escape(str(rec.get('search_rank') or '-'))}</td>
           <td style="color:{status_color}; font-size:12px; font-weight:700">{py_html.escape(str(status_cls or ""))}</td>
           <td style="font-size:11px; color:#cbd5e1">{py_html.escape(str(rec.get('status') or ''))}</td>
         </tr>""")
@@ -318,6 +336,7 @@ class ObservationStore:
             <th style="padding:10px; text-align:left">이전가</th>
             <th style="padding:10px; text-align:left">변동액</th>
             <th style="padding:10px; text-align:left">변동률</th>
+            <th style="padding:10px; text-align:left">순위</th>
             <th style="padding:10px; text-align:left">변동상태</th>
             <th style="padding:10px; text-align:left">수집상태</th>
           </tr>
@@ -352,6 +371,68 @@ class ObservationStore:
         ensure_dir(out.parent)
         out.write_text(html_content, encoding="utf-8")
         return str(out)
+
+    def close(self) -> None:
+        self.conn.close()
+
+
+class RankingStore:
+    def __init__(self, db_path: str) -> None:
+        db_path = str(Path(db_path).resolve())
+        ensure_dir(Path(db_path).parent)
+        self.conn = sqlite3.connect(db_path)
+        self.conn.row_factory = sqlite3.Row
+        self.conn.executescript(SCHEMA_SQL)
+        
+        # [Migration] is_ad 컬럼 추가 (기존 DB 대응)
+        try:
+            self.conn.execute("ALTER TABLE ranking_history ADD COLUMN is_ad INTEGER DEFAULT 0")
+        except sqlite3.OperationalError:
+            pass # 이미 컬럼이 존재함
+            
+        self.conn.commit()
+
+    def insert_ranking_batch(self, rows: list[dict[str, Any]]) -> None:
+        if not rows:
+            return
+        columns = [
+            "query", "rank", "collected_at", "title", "price",
+            "seller_name", "product_id", "product_type", "product_url", "image_url", "is_ad"
+        ]
+        
+        values = []
+        for row in rows:
+            values.append([row.get(col) for col in columns])
+            
+        self.conn.executemany(
+            f"INSERT INTO ranking_history ({','.join(columns)}) VALUES ({','.join(['?'] * len(columns))})",
+            values
+        )
+        self.conn.commit()
+
+    def get_latest_rankings(self, query: str, limit: int = 15) -> list[dict[str, Any]]:
+        # 가장 최근 수집된 시간을 찾음
+        recent_time_row = self.conn.execute(
+            "SELECT collected_at FROM ranking_history WHERE query = ? ORDER BY collected_at DESC LIMIT 1", 
+            (query,)
+        ).fetchone()
+        
+        if not recent_time_row:
+            return []
+            
+        recent_time = recent_time_row["collected_at"]
+        
+        rows = self.conn.execute(
+            """
+            SELECT * FROM ranking_history 
+            WHERE query = ? AND collected_at = ?
+            ORDER BY rank ASC
+            LIMIT ?
+            """,
+            (query, recent_time, limit)
+        ).fetchall()
+        
+        return [dict(r) for r in rows]
 
     def close(self) -> None:
         self.conn.close()

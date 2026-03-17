@@ -20,7 +20,6 @@ class BrowserScrapeError(RuntimeError):
     pass
 
 
-
 def _flatten_ld_json_payloads(values: list[Any]) -> list[dict[str, Any]]:
     offers: list[dict[str, Any]] = []
 
@@ -45,6 +44,7 @@ def _flatten_ld_json_payloads(values: list[Any]) -> list[dict[str, Any]]:
                     normalized["title"] = clean_text(value)
 
             if normalized.get("price"):
+                normalized["search_rank"] = len(offers) + 1
                 offers.append(normalized)
 
             for value in node.values():
@@ -60,7 +60,6 @@ def _flatten_ld_json_payloads(values: list[Any]) -> list[dict[str, Any]]:
         seen.add(key)
         deduped.append(offer)
     return deduped
-
 
 
 async def _extract_from_ld_json(page) -> list[dict[str, Any]]:
@@ -109,12 +108,18 @@ async def _extract_from_dom(page, target: TargetConfig) -> list[dict[str, Any]]:
                     "price": price,
                     "seller_name": seller or None,
                     "product_url": page.url,
+                    "search_rank": i + 1,
                 }
             )
     return offers
 
 
 async def collect_lowest_offer_via_browser(target: TargetConfig, artifacts_dir: str = "./artifacts") -> dict[str, Any]:
+    """브라우저를 이용해 최저가를 수집합니다. (collect_current_offer_via_browser와 동일)"""
+    return await collect_current_offer_via_browser(target, artifacts_dir)
+
+
+async def collect_current_offer_via_browser(target: TargetConfig, artifacts_dir: str = "./artifacts") -> dict[str, Any]:
     if not target.url:
         raise ValueError(f"target '{target.name}' 에 url 이 없습니다.")
 
@@ -126,13 +131,13 @@ async def collect_lowest_offer_via_browser(target: TargetConfig, artifacts_dir: 
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
+        # 뷰포트를 넓게 설정하여 반응형 웹 대응
         page = await browser.new_page(viewport={"width": 1440, "height": 2400})
         try:
             await page.goto(target.url, wait_until=target.browser.wait_until, timeout=45000)
             
             from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 
-            # CI 환경(Headless)에서는 렌더링이 늦어질 수 있으므로 추가 대기
             try:
                 await page.wait_for_load_state("networkidle", timeout=5000)
             except PlaywrightTimeoutError:
@@ -154,7 +159,7 @@ async def collect_lowest_offer_via_browser(target: TargetConfig, artifacts_dir: 
                 html_path.write_text(await page.content(), encoding="utf-8")
                 if target.browser.take_screenshot_on_failure:
                     await page.screenshot(path=str(screenshot_dir / f"{target.name.replace('/', '_')}.png"), full_page=True)
-                raise BrowserScrapeError("브라우저 페이지에서 가격/셀러를 추출하지 못했습니다. selector 조정이 필요할 수 있습니다.")
+                raise BrowserScrapeError("가격 추출 실패")
 
             best = min(offers, key=lambda x: (parse_int(x.get("price"), 0), clean_text(x.get("seller_name"))))
             
@@ -169,6 +174,7 @@ async def collect_lowest_offer_via_browser(target: TargetConfig, artifacts_dir: 
                 "product_id": None,
                 "product_type": None,
                 "product_url": best.get("product_url") or page.url,
+                "search_rank": best.get("search_rank"),
                 "raw_payload": {
                     "url": page.url,
                     "browser": asdict(target.browser),

@@ -7,6 +7,7 @@
     <title>웨어러블 가격 조사 - 최저가 트래커</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <style>
         :root {
             --bg-color: #f2f4f6;
@@ -849,9 +850,130 @@
 
             .chart-section,
             .history-section {
-                padding: 20px 16px;
+                padding: 16px;
             }
         }
+
+        /* ----- 신규 탭 네비게이션 ----- */
+        .view-tabs {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            border-bottom: 2px solid var(--glass-border);
+            padding-bottom: 8px;
+        }
+
+        .view-tab {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 8px 12px;
+            position: relative;
+            transition: color 0.2s;
+        }
+
+        .view-tab:hover {
+            color: var(--text-main);
+        }
+
+        .view-tab.active {
+            color: var(--toss-blue);
+        }
+
+        .view-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--toss-blue);
+            border-radius: 3px 3px 0 0;
+        }
+
+        .view-content {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .view-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ----- 랭킹 테이블 UI (Stitch MCP 참고) ----- */
+        .ranking-card {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            border-radius: 16px;
+            background: #ffffff;
+            border: 1px solid var(--glass-border);
+            margin-bottom: 12px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .ranking-card:hover {
+            box-shadow: var(--card-shadow);
+            transform: translateY(-2px);
+        }
+        .ranking-card .rank-num {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--text-muted);
+            width: 40px;
+            text-align: center;
+        }
+        .ranking-card .rank-num.top1 { color: var(--accent-primary); }
+        .ranking-card .thumb {
+            width: 80px;
+            height: 80px;
+            border-radius: 12px;
+            object-fit: contain;
+            background: var(--bg-soft);
+            padding: 4px;
+        }
+        .ranking-card-body {
+            flex: 1;
+            min-width: 0;
+        }
+        .ranking-card-body .mall {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--toss-blue);
+            margin-bottom: 4px;
+        }
+        .ranking-card-body .title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 6px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .ranking-card-body .price {
+            font-size: 18px;
+            font-weight: 800;
+        }
+        .ranking-card-meta {
+            text-align: right;
+            padding-right: 16px;
+        }
+        .ranking-card-meta .pid {
+            font-size: 11px;
+            color: var(--text-muted);
+            background: var(--toss-grey);
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+
     </style>
 </head>
 
@@ -902,84 +1024,110 @@
             </div>
 
             <div class="header-actions">
-                <button onclick="downloadExcel()" class="btn-excel header-btn">
-                    <span>엑셀 다운로드</span>
-                </button>
-
-                <a href="#" id="catalogBtn" target="_blank" class="btn-excel header-btn catalog-btn">
-                    <span>카탈로그 바로가기</span>
+                <span id="rankBadge" class="header-btn" style="background:#f2f4f6; color:#191f28; border:1px solid #e5e8eb; display:none;">| 네이버랭킹 -위</span>
+                <a href="#" target="_blank" class="header-btn catalog-btn" id="catalogBtn" style="display:none;">
+                    네이버 쇼핑 보기
                 </a>
             </div>
         </header>
 
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-label">현재 최저가</div>
-                <div class="stat-value" id="currentPriceStat">-</div>
-                <div class="stat-diff" id="currentDiff">-</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">역대 최저가</div>
-                <div class="stat-value" id="allTimeLow" style="color: #ef4444;">-</div>
-                <div class="stat-diff" id="lowDiff" style="background: rgba(239, 68, 68, 0.05); color: #ef4444;">BEST
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">역대 최고가</div>
-                <div class="stat-value" id="allTimeHigh" style="color: var(--toss-blue);">-</div>
-                <div class="stat-diff" id="highDiff"
-                    style="background: rgba(49, 130, 247, 0.05); color: var(--toss-blue);">PEAK</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">7일 평균</div>
-                <div class="stat-value" id="avg7d">-</div>
-                <div class="stat-diff" id="avg7dDiff">-</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">30일 평균</div>
-                <div class="stat-value" id="avg30d">-</div>
-                <div class="stat-diff" id="avg30dDiff">-</div>
-            </div>
+        <!-- 뷰 스위치 탭 -->
+        <div class="view-tabs">
+            <div class="view-tab active" onclick="switchView('priceView')" id="tabPrice">실시간 최저가 추적</div>
+            <div class="view-tab" onclick="switchView('rankingView')" id="tabRanking">키워드 Top 10 랭킹</div>
         </div>
 
-        <div class="chart-section">
-            <div class="chart-header">
-                <div class="chart-title">가격 변동 추이</div>
-                <div class="chart-filters">
-                    <div class="filter-pill" onclick="changeChartDays(7, this)">7일</div>
-                    <div class="filter-pill" onclick="changeChartDays(30, this)">30일</div>
-                    <div class="filter-pill active" onclick="changeChartDays(90, this)">90일</div>
-                    <div class="filter-pill" onclick="changeChartDays(0, this)">전체</div>
-                    <div class="date-filter-container">
-                        <input type="date" id="startDate" class="date-input" onchange="customDateFilter()">
-                        <span style="font-size: 12px; color: var(--text-muted);">~</span>
-                        <input type="date" id="endDate" class="date-input" onchange="customDateFilter()">
+        <!-- 최고가 추적 뷰 -->
+        <div id="priceView" class="view-content active">
+            <div class="stats-grid" id="stats-container">
+                <div class="stat-card">
+                    <div class="stat-label">현재 최저가</div>
+                    <div class="stat-value" id="currentPriceStat">-</div>
+                    <div class="stat-diff" id="currentDiff">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">역대 최저가</div>
+                    <div class="stat-value" id="allTimeLow" style="color: #ef4444;">-</div>
+                    <div class="stat-diff" id="lowDiff" style="background: rgba(239, 68, 68, 0.05); color: #ef4444;">BEST
                     </div>
                 </div>
+                <div class="stat-card">
+                    <div class="stat-label">역대 최고가</div>
+                    <div class="stat-value" id="allTimeHigh" style="color: var(--toss-blue);">-</div>
+                    <div class="stat-diff" id="highDiff"
+                        style="background: rgba(49, 130, 247, 0.05); color: var(--toss-blue);">PEAK</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">7일 평균</div>
+                    <div class="stat-value" id="avg7d">-</div>
+                    <div class="stat-diff" id="avg7dDiff">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">30일 평균</div>
+                    <div class="stat-value" id="avg30d">-</div>
+                    <div class="stat-diff" id="avg30dDiff">-</div>
+                </div>
             </div>
-            <div class="chart-container">
-                <canvas id="priceChart"></canvas>
+
+            <div class="chart-section">
+                <div class="chart-header">
+                    <div class="chart-title">가격 변동 추이</div>
+                    <div class="chart-filters">
+                        <div class="filter-pill" onclick="changeChartDays(7, this)">7일</div>
+                        <div class="filter-pill" onclick="changeChartDays(30, this)">30일</div>
+                        <div class="filter-pill active" onclick="changeChartDays(90, this)">90일</div>
+                        <div class="filter-pill" onclick="changeChartDays(0, this)">전체</div>
+                        <div class="date-filter-container">
+                            <input type="date" id="startDate" class="date-input" onchange="customDateFilter()">
+                            <span style="font-size: 12px; color: var(--text-muted);">~</span>
+                            <input type="date" id="endDate" class="date-input" onchange="customDateFilter()">
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="priceChart"></canvas>
+                </div>
+                <div id="priceBadgeContainer"></div>
             </div>
-            <div id="priceBadgeContainer"></div>
+
+            <div class="history-section">
+                <div class="history-title">시장가 히스토리</div>
+                <div class="table-container">
+                    <table id="historyTable">
+                        <thead>
+                            <tr>
+                                <th>수집 일시</th>
+                                <th>판매 가격</th>
+                                <th>변동</th>
+                                <th>판매처</th>
+                                <th>상태</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <div id="pagination" class="pagination"></div>
+            </div>
         </div>
 
-        <div class="history-section">
-            <div class="history-title">시장가 히스토리</div>
-            <div class="table-container">
-                <table id="historyTable">
-                    <thead>
-                        <tr>
-                            <th>수집 일시</th>
-                            <th>판매 가격</th>
-                            <th>변동</th>
-                            <th>판매처</th>
-                            <th>상태</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-            <div id="pagination" class="pagination"></div>
+        <!-- 랭킹 뷰 -->
+        <div id="rankingView" class="view-content">
+            <section class="history-section" style="min-height: 500px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                    <h2 class="history-title" style="margin-bottom: 0;">키워드 Top 10 노출 결과</h2>
+                    <span style="font-size: 13px; color: var(--text-muted);" id="rankingUpdateTime"></span>
+                </div>
+
+                <!-- 키워드 전환 탭 추가 -->
+                <div id="ranking-keyword-tabs" style="display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap;">
+                </div>
+
+                <div id="ranking-list-container">
+                    <div style="text-align: center; color: var(--text-muted); padding: 40px;">
+                        데이터를 불러오는 중이거나 이 타겟의 랭킹 기록이 없습니다.
+                    </div>
+                </div>
+            </section>
         </div>
     </div>
 
@@ -1033,10 +1181,21 @@
             } catch (e) {
                 console.error("Dashboard init failed:", e);
                 const list = document.getElementById('productList');
+                let helpMsg = "";
+                if (window.location.protocol === 'file:') {
+                    helpMsg = `<div style="margin-top:20px; padding:15px; background:#fef3c7; color:#92400e; border-radius:8px; line-height:1.6;">
+                        <strong>💡 로컬 파일 보안 정책 안내</strong><br>
+                        브라우저 보안상 파일을 바로 열면 데이터를 불러올 수 없습니다.<br>
+                        터미널에서 아래 명령어를 실행한 후 접속해주세요:<br>
+                        <code>python -m src.tracker.main serve</code><br>
+                        접속 주소: <a href="http://localhost:8000" target="_blank">http://localhost:8000</a>
+                    </div>`;
+                }
                 list.innerHTML = `<div style="padding: 20px; color: #ef4444; font-size: 13px;">
                     ⚠️ 데이터를 불러오지 못했습니다.<br>
                     <small>${e.message}</small><br>
-                    <button onclick="init()" style="margin-top:10px; padding:5px 10px; cursor:pointer;">다시 시도</button>
+                    ${helpMsg}
+                    <button onclick="init()" style="margin-top:15px; padding:8px 16px; background:#4f46e5; color:white; border:none; border-radius:4px; cursor:pointer;">다시 시도</button>
                 </div>`;
             }
         }
@@ -1119,7 +1278,19 @@
             if (product.image_url) { imgEl.src = product.image_url; imgContainer.style.display = 'flex'; }
             else { imgContainer.style.display = 'none'; }
 
-            document.getElementById('sellerInfo').innerHTML = `<span class="seller-tag">${product.seller}</span>에서 실시간 최저가 수집 중`;
+            const rankHtml = product.search_rank ? ` <span style="margin: 0 8px; color: var(--glass-border);">|</span> <span style="color:var(--toss-blue); font-weight:700;">네이버랭킹 ${product.search_rank}위</span>` : '';
+            const keywordHtml = ` <span style="margin: 0 8px; color: var(--glass-border);">|</span> <span style="font-size:12px; color:var(--text-muted);">검색키워드: "${product.rank_query || product.name}"</span>`;
+            document.getElementById('sellerInfo').innerHTML = `<span class="seller-tag">${product.seller}</span>에서 실시간 최저가 수집 중${rankHtml}${keywordHtml}`;
+            
+            // 랭킹 헤더에 키워드 표시 (그룹화된 rank_query 사용)
+            const rankingListTitle = document.querySelector('.ranking-list-title');
+            const displayKeyword = product.rank_query || product.name;
+            if (rankingListTitle) {
+                rankingListTitle.innerHTML = `검색키워드: "${displayKeyword}" <small style="font-weight:400; font-size:12px; color:var(--text-muted); margin-left:8px;">(정확도 랭킹순 상위 10개)</small>`;
+            }
+
+            renderRankingView(displayKeyword);
+
             const catalogBtn = document.getElementById('catalogBtn');
             if (product.product_id) { catalogBtn.href = `https://search.shopping.naver.com/catalog/${product.product_id}`; catalogBtn.style.display = 'flex'; }
             else { catalogBtn.style.display = 'none'; }
@@ -1214,6 +1385,7 @@
             renderChart(history);
             currentFilteredHistory = history.slice().reverse();
             renderTable();
+            renderRankingView(product.rank_query || product.name);
         }
 
         function renderChart(history) {
@@ -1317,18 +1489,180 @@
         function downloadExcel() {
             const checked = document.querySelectorAll('.product-checkbox:checked');
             if (checked.length === 0) { alert("다운로드할 상품을 선택하세요."); return; }
-            let csvContent = "\uFEFF상품명,수집일시,가격,판매처\n";
+            
+            // 1. 현재 최저가 시트 데이터 준비
+            const currentData = [["상품명", "현재 최저가", "판매처", "수집시간", "네이버 랭킹", "수집 키워드"]];
+            // 2. 가격 히스토리 시트 데이터 준비
+            const historyData = [["상품명", "수집일시", "가격", "판매처"]];
+            // 3. 키워드 랭킹 시트 데이터 준비
+            const rankingData = [["검색 키워드", "순위", "상품명(네이버)", "가격", "판매처", "수집시간"]];
+
+            const addedKeywords = new Set();
+
             Array.from(checked).forEach(cb => {
                 const p = dashboardData.products[cb.dataset.index];
+                
+                // 최신 수집 시간 추출
+                let lastTime = "-";
+                if (p.history && p.history.length > 0) {
+                    const d = new Date(p.history[p.history.length - 1].t);
+                    lastTime = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+                }
+
+                // 현재 정보 추가
+                currentData.push([
+                    p.name, 
+                    p.current_price, 
+                    p.seller, 
+                    lastTime,
+                    p.search_rank || "-", 
+                    p.rank_query || p.name
+                ]);
+
+                // 히스토리 정보 추가
                 p.history.forEach(h => {
                     const d = new Date(h.t);
-                    csvContent += `"${p.name}","${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}","${h.p}","${p.seller}"\n`;
+                    const formattedDate = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+                    historyData.push([p.name, formattedDate, h.p, p.seller]);
+                });
+
+                // 랭킹 정보 추가 (중복 방지)
+                const kw = p.rank_query || p.name;
+                const keywordsToProcess = [kw];
+                if (kw.includes("갤럭시")) {
+                    const short = kw.replace("갤럭시", "").trim();
+                    if (short) keywordsToProcess.push(short);
+                }
+
+                keywordsToProcess.forEach(targetK => {
+                    if (!addedKeywords.has(targetK) && dashboardData.rankings && dashboardData.rankings[targetK]) {
+                        addedKeywords.add(targetK);
+                        dashboardData.rankings[targetK].forEach(r => {
+                            const d = new Date(r.collected_at);
+                            const formattedDate = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+                            rankingData.push([
+                                targetK,
+                                r.rank,
+                                r.title,
+                                r.price,
+                                r.seller_name,
+                                formattedDate
+                            ]);
+                        });
+                    }
                 });
             });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }));
-            link.download = `가격리포트_${Date.now()}.csv`;
-            link.click();
+
+            // Workbook 생성
+            const wb = XLSX.utils.book_new();
+            
+            // 시트 1: 현재 요약
+            const wsCurrent = XLSX.utils.aoa_to_sheet(currentData);
+            XLSX.utils.book_append_sheet(wb, wsCurrent, "현재_최저가_목록");
+            
+            // 시트 2: 가격 히스토리
+            const wsHistory = XLSX.utils.aoa_to_sheet(historyData);
+            XLSX.utils.book_append_sheet(wb, wsHistory, "가격_히스토리");
+
+            // 시트 3: 키워드 랭킹
+            const wsRanking = XLSX.utils.aoa_to_sheet(rankingData);
+            XLSX.utils.book_append_sheet(wb, wsRanking, "키워드_TOP10_랭킹");
+
+            // 파일 저장
+            XLSX.writeFile(wb, `웨어러블_가격분석_${new Date().toISOString().slice(0, 10)}.xlsx`);
+        }
+
+        /* ----- V2: 탭 전환 및 랭킹 뷰 로직 ----- */
+        function switchView(viewId) {
+            document.querySelectorAll('.view-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.view-content').forEach(content => content.classList.remove('active'));
+            
+            if(viewId === 'priceView') {
+                document.getElementById('tabPrice').classList.add('active');
+            } else {
+                document.getElementById('tabRanking').classList.add('active');
+            }
+            document.getElementById(viewId).classList.add('active');
+        }
+
+        let currentRankingKeyword = "";
+
+        function renderRankingView(keyword) {
+            if (!keyword) return;
+            currentRankingKeyword = keyword;
+            const container = document.getElementById('ranking-list-container');
+            const tabsContainer = document.getElementById('ranking-keyword-tabs');
+            const timeEl = document.getElementById('rankingUpdateTime');
+            
+            // 키워드 목록 생성 (갤럭시 포함/제외)
+            let keywords = [keyword];
+            if (keyword.includes("갤럭시")) {
+                const short = keyword.replace("갤럭시", "").trim();
+                if (short && short !== keyword) keywords.push(short);
+            }
+
+            // 중복 제거
+            keywords = [...new Set(keywords)];
+
+            // "갤럭시"가 없는 짧은 키워드를 앞으로 정렬 (사용자 요청: 디폴트값)
+            keywords.sort((a, b) => {
+                const hasA = a.includes("갤럭시");
+                const hasB = b.includes("갤럭시");
+                if (!hasA && hasB) return -1;
+                if (hasA && !hasB) return 1;
+                return a.length - b.length;
+            });
+
+            // 탭 버튼 생성
+            tabsContainer.innerHTML = keywords.map(k => `
+                <button class="filter-pill ${k === keywords[0] ? 'active' : ''}" onclick="updateRankingData('${k}', '${keyword}')">${k}</button>
+            `).join('');
+
+            // 첫 번째 키워드(짧은 것)를 기본으로 데이터 로드
+            updateRankingData(keywords[0], keyword);
+        }
+
+        function updateRankingData(targetK, baseK) {
+            const container = document.getElementById('ranking-list-container');
+            const timeEl = document.getElementById('rankingUpdateTime');
+            
+            // 탭 활성화 상태 업데이트
+            document.querySelectorAll('#ranking-keyword-tabs .filter-pill').forEach(btn => {
+                btn.classList.toggle('active', btn.innerText === targetK);
+            });
+
+            if (!dashboardData.rankings || !dashboardData.rankings[targetK]) {
+                container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 40px;">[${targetK}]에 대한 데이터가 아직 수집되지 않았습니다.</div>`;
+                timeEl.innerText = "";
+                return;
+            }
+
+            const rankings = dashboardData.rankings[targetK].slice(0, 10);
+            if (rankings.length > 0) {
+                const date = new Date(rankings[0].collected_at);
+                timeEl.innerText = '수집: ' + date.toLocaleString();
+            }
+
+            let html = '';
+            rankings.forEach((item) => {
+                const rank = item.rank;
+                const isTop1 = rank === 1 ? 'top1' : '';
+                const imgUrl = item.image_url || 'https://via.placeholder.com/80?text=No+Img';
+                
+                html += `
+                <div class="ranking-card" onclick="window.open('${item.product_url || '#'}', '_blank')">
+                    <div class="rank-num ${isTop1}">${rank}</div>
+                    <img class="thumb" src="${imgUrl}" alt="thumbnail"/>
+                    <div class="ranking-card-body">
+                        <div class="mall">${item.seller_name || '네이버쇼핑'}</div>
+                        <div class="title">${item.title}</div>
+                        <div class="price">${formatPrice(item.price)}</div>
+                    </div>
+                </div>
+                `;
+            });
+
+            container.innerHTML = html;
         }
 
         init();

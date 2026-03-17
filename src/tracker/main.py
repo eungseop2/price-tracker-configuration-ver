@@ -10,12 +10,17 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from .alert import check_and_alert
-from .browser_scraper import BrowserScrapeError, collect_lowest_offer_via_browser
+from .browser_scraper import (
+    BrowserScrapeError,
+    collect_lowest_offer_via_browser,
+    collect_current_offer_via_browser
+)
 from .config import TargetConfig, load_config
-from .db import ObservationStore
+from .db import ObservationStore, RankingStore
 from .naver_api import (
     NaverShoppingSearchClient,
     collect_lowest_offer_via_api,
+    _normalized_item,
 )
 from .notifier import send_price_alert
 from .util import calc_change_metrics, dump_json, utc_now_iso
@@ -60,38 +65,37 @@ async def _collect_one(client: NaverShoppingSearchClient, target: TargetConfig, 
             
         return result
 
-    if target.mode == "browser_url":
-        return await collect_lowest_offer_via_browser(target, artifacts_dir=artifacts_dir)
-        
-    raise ValueError(f"지원하지 않는 mode: {target.mode}")
+    elif target.mode == "browser_url":
+        result = await collect_lowest_offer_via_browser(target, artifacts_dir)
+        return result
+
+    else:
+        raise ValueError(f"지원하지 않는 수집 모드: {target.mode}")
 
 
-async def run_once(config_path: str, db_path: str, artifacts_dir: str) -> tuple[int, int, dict]:
-    changed_items: list[dict] = []  # 가격 변동 항목 수집용
-    
-    app_config = load_config(config_path)
-    store = ObservationStore(db_path)
-
+async def run_once(app_config, artifacts_dir: str, db_path: str) -> None:
     ok = 0
     fail = 0
-    failed_targets = []
     fallback_used_count = 0
     alerts_triggered_count = 0
+    changed_items = []
     
+    store = ObservationStore(db_path)
     client = NaverShoppingSearchClient(timeout_seconds=app_config.timeout_seconds)
+
     for target in app_config.targets:
         logger.info("수집 시작 | %s | mode=%s", target.name, target.mode)
         try:
-            result = await _collect_one(client, target, app_config, artifacts_dir)
-            result["collected_at"] = utc_now_iso()
-
-            # 1. 직전 성공 기록 조회
+            # 직전 성공 기록 조회 (가격 변동 체크용)
             prev_success = store.get_latest_success(target.name)
             prev_price = prev_success["price"] if prev_success else None
-            
-            # 2. 가격 변동 및 상태 계산 (부호 기반 판정)
-            current_price = result.get("price")
+
+            result = await _collect_one(client, target, app_config, artifacts_dir)
+            result["collected_at"] = utc_now_iso()
             result["config_mode"] = target.mode
+
+            # 가격 변동 및 상태 계산
+            current_price = result.get("price")
             if current_price is not None:
                 if prev_price is None:
                     result["price_change_status"] = "FIRST_SEEN"
@@ -110,38 +114,33 @@ async def run_once(config_path: str, db_path: str, artifacts_dir: str) -> tuple[
             else:
                 result["price_change_status"] = None
 
-            # 3. 필수 필드 기본값 보장 (의미 오염 방지 및 DB 정합성)
+            # 필수 필드 보장
             result.setdefault("fallback_used", 0)
-            result.setdefault("config_mode", target.mode)
-            result.setdefault("source_mode", target.mode)
-            result["alert_triggered"] = result.get("alert_triggered", 0)
-
-            # 4. 가격 하락 알림 체크 (하락폭 기준)
-            alert_active = check_and_alert(result, prev_price, app_config.alert_threshold_percent)
-            result["alert_triggered"] = 1 if alert_active else 0
+            result["alert_triggered"] = 0
             
-            if result.get("fallback_used"):
-                fallback_used_count += 1
-            if result.get("alert_triggered"):
-                alerts_triggered_count += 1
-
-            store.insert(result)
+            # 알림 체크
             if result.get("success"):
-                ok += 1
-                status = result.get("price_change_status")
-                logger.info("수집 완료 | %s | %s", target.name, status)
-                # 가격 변동 항목 수집 (이메일 알림용)
-                if status in ("PRICE_DOWN", "PRICE_UP"):
+                alert_active = check_and_alert(result, prev_price, app_config.alert_threshold_percent)
+                result["alert_triggered"] = 1 if alert_active else 0
+                
+                if result.get("alert_triggered"):
+                    alerts_triggered_count += 1
                     changed_items.append(result)
+
+                ok += 1
+                if result.get("fallback_used"):
+                    fallback_used_count += 1
+                
+                logger.info("수집 완료 | %s | %s", target.name, result.get("price_change_status"))
+                store.insert(result)
             else:
                 fail += 1
-                failed_targets.append(target.name)
                 logger.warning("수집 미일치 | %s | %s", target.name, result.get("status"))
+                store.insert(result)
 
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             fail += 1
-            failed_targets.append(target.name)
-            logger.exception("수집 실패 | %s | %s", target.name, exc)
+            logger.exception("수집 실패 | %s", target.name)
             store.insert({
                 "target_name": target.name,
                 "config_mode": target.mode,
@@ -160,9 +159,58 @@ async def run_once(config_path: str, db_path: str, artifacts_dir: str) -> tuple[
                 "alert_triggered": 0
             })
 
+    # ---------- [랭킹 수집 최적화 루틴] ----------
+    unique_rank_queries = {t.rank_query for t in app_config.targets if t.rank_query}
+    # "갤럭시"가 포함된 경우 제외된 버전도 수집 목록에 추가
+    expanded_queries = set()
+    for q in unique_rank_queries:
+        expanded_queries.add(q)
+        if "갤럭시" in q:
+            short_q = q.replace("갤럭시", "").strip()
+            if short_q:
+                expanded_queries.add(short_q)
+    
+    logger.info("고유 랭킹 키워드 수집 시작 (%d개 -> 확장 %d개)", len(unique_rank_queries), len(expanded_queries))
+    
+    r_store = RankingStore(db_path)
+    rank_collected_at = utc_now_iso()
+    
+    for r_query in expanded_queries:
+        try:
+            logger.info(f"랭킹 수집 중 (API): {r_query}")
+            # Naver API 검색 (sim=네이버 랭킹순)
+            rank_payload = client.search(query=r_query, display=15, sort="sim")
+            rank_items = rank_payload.get("items", [])
+            
+            rows_to_insert = []
+            for rank, item in enumerate(rank_items, start=1):
+                norm = _normalized_item(item)
+                rows_to_insert.append({
+                    "query": r_query,
+                    "rank": rank,
+                    "collected_at": rank_collected_at,
+                    "title": norm.get("title"),
+                    "price": norm.get("price"),
+                    "seller_name": norm.get("seller_name"),
+                    "product_id": norm.get("product_id"),
+                    "product_type": norm.get("product_type"),
+                    "product_url": norm.get("product_url"),
+                    "image_url": norm.get("image_url"),
+                    "is_ad": 0
+                })
+            
+            if rows_to_insert:
+                r_store.insert_ranking_batch(rows_to_insert)
+                logger.info(f"랭킹 수집 완료: {r_query} ({len(rows_to_insert)}개)")
+            else:
+                logger.warning(f"랭킹 수집 결과 없음: {r_query}")
+        except Exception as e:
+            logger.error(f"랭킹 수집 실패 ({r_query}): {e}")
+    
+    r_store.close()
     store.close()
 
-    # 이메일 알림 발송 (변동된 항목이 있을 때만)
+    # 이메일 알림
     if changed_items:
         send_price_alert(
             changed_items,
@@ -171,141 +219,83 @@ async def run_once(config_path: str, db_path: str, artifacts_dir: str) -> tuple[
             app_config.email.email_to
         )
 
-    summary = {
-        "failed_targets": failed_targets,
-        "fallback_used_count": fallback_used_count,
-        "alerts_triggered_count": alerts_triggered_count
-    }
-    return ok, fail, summary
+    logger.info("최종 결과 | OK: %d, FAIL: %d, Fallback: %d, Alert: %d", ok, fail, fallback_used_count, alerts_triggered_count)
 
 
-async def run_daemon(config_path: str, db_path: str, artifacts_dir: str, interval_seconds: int) -> None:
-    error_count = 0
-    while True:
-        start_time = time.monotonic()
-        try:
-            ok, fail, _ = await run_once(config_path, db_path, artifacts_dir)
-            logger.info("1회차 완료 | ok=%s fail=%s", ok, fail)
-            error_count = 0  # 성공 시 초기화
-        except Exception as e:
-            error_count += 1
-            logger.error("루프 실행 중 예외 발생: %s", e)
-            
-        elapsed = time.monotonic() - start_time
-        
-        # 에러 시 기하급수적 백오프 (최대 10회 = 10분 정도 연장)
-        penalty = min(600, error_count * 60) if error_count > 0 else 0
-        sleep_for = max(0.0, (interval_seconds + penalty) - elapsed)
-        
-        if error_count > 0:
-            logger.warning("연속 에러 %d회. 다음 실행 대기 | %.2f초 (백오프 %d초 적용)", error_count, sleep_for, penalty)
-        else:
-            logger.info("다음 실행 대기 | %.2f초", sleep_for)
-            
-        await asyncio.sleep(sleep_for)
-
-
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Naver Shopping lowest-price tracker")
-    parser.add_argument("command", choices=["once", "daemon", "export-latest", "export-html", "export-ui", "sync-from-gcs", "sync-to-gcs"])
-    parser.add_argument("--config", default="./targets.yaml", help="YAML config path")
-    parser.add_argument("--db", default=os.getenv("DB_PATH", "./price_tracker.sqlite3"), help="SQLite DB path")
-    parser.add_argument("--artifacts-dir", default="./artifacts", help="HTML/screenshot artifact directory")
-    parser.add_argument("--interval", type=int, default=int(os.getenv("COLLECT_INTERVAL", "3600")), help="daemon mode polling interval seconds")
-    parser.add_argument("--out", default="./latest.csv", help="CSV output path for export-latest")
-    parser.add_argument("--html-out", default="./price_report.html", help="HTML output path for export-html")
-    parser.add_argument("--limit", type=int, default=20, help="export-html record limit per target")
-    parser.add_argument("--summary-json", type=str, default=None, help="JSON file path to write run summary")
-    parser.add_argument("--strict-exit", action="store_true", help="Exit 1 if any target fails (for actions testing)")
-    parser.add_argument("--verbose", action="store_true")
-    return parser
-
-
-def main() -> int:
-    parser = build_parser()
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Naver Shopping Price Tracker")
+    parser.add_argument("command", choices=["once", "monitor", "export-ui", "serve"], help="실행할 커맨드")
+    parser.add_argument("--config", default="targets.yaml", help="설정 파일 경로")
+    parser.add_argument("--db", default="price_tracker.sqlite3", help="DB 파일 경로")
+    parser.add_argument("--interval", type=int, default=3600, help="모니터링 주기 (초)")
+    parser.add_argument("--verbose", action="store_true", help="상세 로그 출력")
     args = parser.parse_args()
-    setup_logging(verbose=args.verbose)
-    load_dotenv(override=False)
+
+    setup_logging(args.verbose)
+    load_dotenv()
 
     try:
-        if args.command == "once":
-            ok, fail, summary_dict = asyncio.run(run_once(args.config, args.db, args.artifacts_dir))
-            if args.summary_json:
-                out = Path(args.summary_json).resolve()
-                out.parent.mkdir(parents=True, exist_ok=True)
-                out.write_text(dump_json({"ok": ok, "fail": fail, **summary_dict}), encoding="utf-8")
-                logger.info(f"Summary JSON 저장됨: {args.summary_json}")
-            
-            if args.strict_exit and fail > 0:
-                return 1
-
-            # 부분 실패(fail > 0)하더라도, 적어도 하나라도 성공했으면(ok > 0) 전체 파이프라인을 이어가도록 0 반환
-            return 0 if (ok > 0 or fail == 0) else 1
-
-        if args.command == "daemon":
-            asyncio.run(run_daemon(args.config, args.db, args.artifacts_dir, args.interval))
-            return 0
-
-        if args.command == "export-latest":
-            store = ObservationStore(args.db)
-            out_path = store.export_latest_csv(args.out)
-            store.close()
-            logger.info("CSV 생성 완료 | %s", out_path)
-            return 0
-
-        if args.command == "export-html":
-            store = ObservationStore(args.db)
-            out_path = store.export_html_report(args.html_out, limit=args.limit)
-            store.close()
-            logger.info("HTML 리포트 생성 완료 | %s", out_path)
-            return 0
-        if args.command == "export-ui":
-            from .config import load_config
-            app_cfg = load_config(args.config)
-            categories = {t.name: t.category for t in app_cfg.targets}
-            
-            store = ObservationStore(args.db)
-            data = store.get_dashboard_data(categories=categories)
-            store.close()
-            
-            # JSON 저장 (dashboard_data.json이 즉시 덮어쓰기되어 Race 발생 방지용)
-            json_path = Path("./dashboard_data.json").resolve()
-            tmp_path = json_path.with_name(json_path.name + ".tmp")
-            tmp_path.write_text(dump_json(data), encoding="utf-8")
-            tmp_path.replace(json_path)
-            
-            logger.info("대시보드 업데이트 완료. dashboard_data.json 저장됨.")
-            return 0
-
-        if args.command == "sync-from-gcs":
-            import os
-            from .gcs_sync import download_db
-            bucket = os.getenv("GCS_BUCKET")
-            if not bucket:
-                logger.error("GCS_BUCKET 환경변수가 설정되지 않았습니다.")
-                return 1
-            download_db(bucket, args.db)
-            logger.info("GCS에서 DB 다운로드 완료")
-            return 0
-
-        if args.command == "sync-to-gcs":
-            import os
-            from .gcs_sync import upload_db
-            bucket = os.getenv("GCS_BUCKET")
-            if not bucket:
-                logger.error("GCS_BUCKET 환경변수가 설정되지 않았습니다.")
-                return 1
-            upload_db(bucket, args.db)
-            logger.info("GCS로 DB 업로드 완료")
-            return 0
-
+        app_config = load_config(args.config)
     except Exception as e:
-        logger.error("실행 도중 오류 발생: %s", e)
-        return 1
+        logger.error("설정 로드 실패: %s", e)
+        return
 
-    parser.print_help()
-    return 2
+    if args.command == "once":
+        asyncio.run(run_once(app_config, "artifacts", args.db))
+
+    elif args.command == "monitor":
+        logger.info("%d초 간격으로 모니터링을 시작합니다...", args.interval)
+        while True:
+            try:
+                asyncio.run(run_once(app_config, "artifacts", args.db))
+            except Exception as e:
+                logger.exception("모니터링 루프 중 오류 발생")
+            time.sleep(args.interval)
+
+    elif args.command == "export-ui":
+        store = ObservationStore(args.db)
+        r_store = RankingStore(args.db)
+        try:
+            dashboard_raw = store.get_dashboard_data(app_config.targets)
+            
+            # 고유 랭킹 키워드별 최신 데이터 수집 (확장 버전 포함)
+            rankings = {}
+            unique_rank_queries = {t.rank_query for t in app_config.targets if t.rank_query}
+            
+            expanded_queries = set()
+            for q in unique_rank_queries:
+                expanded_queries.add(q)
+                if "갤럭시" in q:
+                    short_q = q.replace("갤럭시", "").strip()
+                    if short_q:
+                        expanded_queries.add(short_q)
+
+            for rq in expanded_queries:
+                latest = r_store.get_latest_rankings(rq)
+                if latest:
+                    rankings[rq] = latest
+            
+            data = {
+                "products": dashboard_raw["products"],
+                "rankings": rankings,
+                "updated_at": dashboard_raw["generated_at"]
+            }
+            Path("dashboard_data.json").write_text(dump_json(data), encoding="utf-8")
+            logger.info("UI 데이터 내보내기 완료: dashboard_data.json")
+        finally:
+            store.close()
+            r_store.close()
+
+    elif args.command == "serve":
+        # 간단한 HTTP 서버 실행 (대시보드 확인용)
+        import http.server
+        import socketserver
+        PORT = 8000
+        Handler = http.server.SimpleHTTPRequestHandler
+        with socketserver.TCPServer(("", PORT), Handler) as httpd:
+            logger.info("http://localhost:%d 에서 대시보드 서비스를 시작합니다.", PORT)
+            httpd.serve_forever()
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()

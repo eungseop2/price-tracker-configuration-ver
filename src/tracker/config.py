@@ -25,7 +25,7 @@ class EmailConfig:
 @dataclass
 class RequestConfig:
     pages: int = 1
-    sort: str = "asc"
+    sort: str = "sim"
     filter: str | None = None
 
 
@@ -44,6 +44,7 @@ class TargetConfig:
     name: str
     mode: str
     query: str | None = None
+    rank_query: str | None = None
     url: str | None = None
     fallback_url: str | None = None
     category: str = "기타"  # 상품 카테고리 (분류용)
@@ -205,6 +206,7 @@ def load_config(path: str | Path) -> AppConfig:
                 name=str(name),
                 mode=str(mode),
                 query=item.get("query"),
+                rank_query=item.get("rank_query") or str(name),
                 url=item.get("url"),
                 fallback_url=item.get("fallback_url"),
                 category=str(item.get("category", "기타")),
