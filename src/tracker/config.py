@@ -169,11 +169,11 @@ def load_config(path: str | Path) -> AppConfig:
         errors.append(f"common.alert_threshold_percent 값이 올바르지 않습니다: {common.get('alert_threshold_percent')}")
         alert_threshold_percent = 5.0
 
-    # 1-1. 이메일 설정 파싱 (YAML -> 환경변수 순서로 우선순위)
-    email_from = email_raw.get("from") or os.getenv("EMAIL_FROM")
-    email_password = email_raw.get("password") or os.getenv("EMAIL_APP_PASSWORD")
+    # 1-1. 이메일 설정 파싱 (환경변수 -> YAML 순서로 우선순위)
+    email_from = os.getenv("EMAIL_FROM") or email_raw.get("from")
+    email_password = os.getenv("EMAIL_APP_PASSWORD") or email_raw.get("password")
     
-    to_raw = email_raw.get("to") or os.getenv("EMAIL_TO", "")
+    to_raw = os.getenv("EMAIL_TO") or email_raw.get("to", "")
     if isinstance(to_raw, list):
         email_to = [str(x).strip() for x in to_raw if x]
     else:
