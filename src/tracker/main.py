@@ -244,11 +244,12 @@ async def run_once(app_config, artifacts_dir: str, db_path: str, summary_json: s
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Naver Shopping Price Tracker")
-    parser.add_argument("command", choices=["once", "monitor", "export-ui", "serve", "sync-from-gcs", "sync-to-gcs", "daily-report"], help="실행할 커맨드")
+    parser.add_argument("command", choices=["once", "monitor", "export-ui", "serve", "sync-from-gcs", "sync-to-gcs", "daily-report", "export-report"], help="실행할 커맨드")
     parser.add_argument("--config", default="targets.yaml", help="설정 파일 경로")
     parser.add_argument("--db", default="price_tracker.sqlite3", help="DB 파일 경로")
     parser.add_argument("--interval", type=int, default=3600, help="모니터링 주기 (초)")
     parser.add_argument("--summary-json", help="수집 결과 요약을 저장할 JSON 경로")
+    parser.add_argument("--output", help="파일 저장 경로 (export-report 등에서 사용)")
     parser.add_argument("--verbose", action="store_true", help="상세 로그 출력")
     args = parser.parse_args()
 
@@ -333,6 +334,13 @@ def main() -> None:
 
     elif args.command == "daily-report":
         send_daily_report(args.db, app_config.email.email_from, app_config.email.email_password, app_config.email.email_to, app_config.targets)
+
+    elif args.command == "export-report":
+        from .report import generate_daily_report_html
+        html = generate_daily_report_html(args.db, app_config.targets)
+        out_path = args.output or "daily_report.html"
+        Path(out_path).write_text(html, encoding="utf-8")
+        logger.info(f"보고서 저장 완료: {out_path}")
 
 
 if __name__ == "__main__":

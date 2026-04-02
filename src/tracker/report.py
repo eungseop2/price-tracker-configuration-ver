@@ -10,18 +10,15 @@ from .util import format_price
 
 logger = logging.getLogger("tracker.report")
 
-def send_daily_report(db_path: str, email_from: str, email_password: str, email_to: str | list[str], targets: list[TargetConfig]) -> bool:
-    if not all([email_from, email_password, email_to]):
-        logger.info("이메일 설정이 없어 데일리 리포트 알림을 건너뜁니다.")
-        return False
-        
+def generate_daily_report_html(db_path: str, targets: list[TargetConfig]) -> str:
+    """최근 10일간의 가격 동향 HTML 보고서를 생성합니다."""
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     
     # 10일치 날짜 계산 (KST 기준)
     now_utc = datetime.now(timezone.utc)
     now_kst = now_utc + timedelta(hours=9)
-    # 오늘 포함 گذشته 10일
+    # 오늘 포함 과거 10일
     dates_kst = [(now_kst - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(9, -1, -1)]
     
     cutoff_utc = now_utc - timedelta(days=12)
@@ -78,7 +75,7 @@ def send_daily_report(db_path: str, email_from: str, email_password: str, email_
     html_body = f"""
     <html><body style="font-family:sans-serif;max-width:900px;margin:auto;padding:20px">
     <h2 style="color:#1e293b">📊 최근 10일 모델별 최저가 일일 리포트</h2>
-    <p style="color:#64748b;font-size:14px;margin-bottom:20px">KST 기준, 매일 수집된 가격 중 최저가를 보여줍니다.</p>
+    <p style="color:#64748b;font-size:14px;margin-bottom:20px">KST 기준, 매일 수집된 가격 중 최저가를 보여줍니다. (생성: {now_kst.strftime('%Y-%m-%d %H:%M:%S')} KST)</p>
     <div style="overflow-x:auto;">
         <table style="width:100%; border-collapse:collapse; font-size:13px; min-width:800px;">
             <thead>
@@ -93,15 +90,27 @@ def send_daily_report(db_path: str, email_from: str, email_password: str, email_
         </table>
     </div>
     <div style="margin-top:32px;text-align:center">
-        <a href="https://eungseop2.github.io/Lowest-Price-Tracker/" 
+        <a href="https://youngseop77.github.io/price-tracker-configuration-ver/" 
            style="background-color:#2563eb;color:white;padding:12px 24px;text-decoration:none;border-radius:6px;font-weight:bold;display:inline-block">
            📊 대시보드 바로가기
         </a>
     </div>
     </body></html>
     """
+    return html_body
+
+
+def send_daily_report(db_path: str, email_from: str, email_password: str, email_to: str | list[str], targets: list[TargetConfig]) -> bool:
+    if not all([email_from, email_password, email_to]):
+        logger.info("이메일 설정이 없어 데일리 리포트 알림을 건너뜁니다.")
+        return False
+        
+    html_body = generate_daily_report_html(db_path, targets)
     
-    subject = f"[Price Insight Pro] 최근 10일 가격 동향 리포트 ({dates_kst[-1]})"
+    # 10일치 날짜 계산 (제목용)
+    now_kst = datetime.now(timezone.utc) + timedelta(hours=9)
+    date_str = now_kst.strftime("%Y-%m-%d")
+    subject = f"📊 [Daily Report] {date_str} 최저가 변동 요약"
     
     try:
         msg = MIMEMultipart("alternative")

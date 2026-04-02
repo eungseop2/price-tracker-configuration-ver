@@ -7,10 +7,10 @@
 1. **가격 변동 정밀 감지**: 직전 성공 수집값과 비교하여 `PRICE_DOWN`, `PRICE_UP`, `PRICE_SAME` 상태를 기록합니다.
 2. **API → 브라우저 자동 폴백**: API 검색 결과가 없을(`NO_MATCH`) 경우 자동으로 Playwright 브라우저를 구동하여 수집을 보완합니다.
 3. **가격 하락 알림**: 직전 가격 대비 설정된 임계값(기본 5%) 이상 하락 시 `price_alerts.log`에 기록하고 경고를 출력합니다.
-4. **고도화된 리포트**: `export-html` 명령으로 가격 변동 이력이 컬러로 시각화된 HTML 리포트를 생성합니다.
-5. **안전한 데몬 운영**: `asyncio.sleep`과 `time.monotonic`을 사용하여 이벤트 루프 블로킹 없이 안정적인 주행을 지원합니다.
+4. **일일 리포트 자동화**: `export-report` 명령으로 최근 10일간의 가격 동향을 요약한 HTML 리포트를 생성하며, 설정 시 이메일 발송이 가능합니다.
+5. **웹 대시보드 제공**: `export-ui`를 통해 Chart.js 기반의 세련된 대시보드용 데이터를 생성하며, GitHub Pages를 통해 배포됩니다.
 6. **강력한 설정 검증**: 실행 전 `targets.yaml`의 모든 설정 오류를 전수 조사하여 즉시 리포트합니다 (Fail-Fast).
-7. **DB 자동 마이그레이션**: 컬럼이 추가되어도 기존 DB 손실 없이 자동으로 스키마를 갱신합니다.
+7. **GCS 원격 동기화**: Google Cloud Storage와 연동하여 여러 환경에서 동일한 DB를 공유하고 데이터를 영구 보존합니다.
 
 ## 🚀 빠른 시작
 
@@ -29,14 +29,21 @@ cp targets.example.yaml targets.yaml
 
 ### 실행 및 리포트
 ```bash
-# 1회 즉시 실행
-PYTHONPATH=./src python -m tracker.main once
+# 1. 1회 즉시 수집
+export PYTHONPATH=src
+python -m tracker.main once
 
-# HTML 리포트 생성
-PYTHONPATH=./src python -m tracker.main export-html --html-out report.html
+# 2. 실시간 모니터링 데몬 (기본 1시간 간격)
+python -m tracker.main monitor --interval 3600
 
-# 데몬 모드 (30분 간격)
-PYTHONPATH=./src python -m tracker.main daemon --interval 1800
+# 3. 대시보드 UI 데이터 내보내기 (dashboard_data.json 생성)
+python -m tracker.main export-ui
+
+# 4. 일일 가격 변동 HTML 리포트 생성
+python -m tracker.main export-report --output daily_report.html
+
+# 5. 로컬에서 대시보드 서버 실행 (http://localhost:8000)
+python -m tracker.main serve
 ```
 
 ## ⚙️ 설정 가이드
