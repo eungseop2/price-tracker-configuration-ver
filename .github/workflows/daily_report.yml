@@ -29,40 +29,35 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Google Cloud 인증
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
-
-      - name: Cloud SDK 설정
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: GCS에서 최신 데이터 동기화 및 수집
+      - name: 구글 스프레드시트 데이터 수집
         env:
-          GCS_BUCKET: ${{ secrets.GCS_BUCKET }}
+          GSHEET_ID: ${{ secrets.GSHEET_ID }}
+          GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
         run: |
-          # 1. GCS에서 최신 DB 가져오기
-          python -m src.tracker.main sync-from-gcs || echo "GCS에서 DB를 가져오지 못했습니다. 새로 시작합니다."
+          # 1. 이번 회차 데이터 수집 및 구글 시트 업데이트
+          python -m src.tracker.main once --verbose
           
-          # 2. 이번 회차 데이터 수집 및 UI 갱신
-          python -m src.tracker.main once
+          # 2. 구글 시트 데이터를 기반으로 대시보드 JSON 추출
           python -m src.tracker.main export-ui
+
+      - name: 대시보드 데이터 커밋 및 푸쉬
+        if: success()
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add dashboard_data.json
+          git commit -m "📊 Update: Dashboard data updated from Google Sheets [skip ci]" || echo "변경 사항 없음"
+          git push origin ${GITHUB_REF##*/}
 
       - name: 일단위 메일 리포트 발송
         env:
           EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
           EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          GSHEET_ID: ${{ secrets.GSHEET_ID }}
+          GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
         run: |
-          python -m src.tracker.main daily-report
-
-      - name: 결과 DB 및 대시보드 GCS에 동기화
-        if: always() && github.ref == 'refs/heads/main'
-        env:
-          GCS_BUCKET: ${{ secrets.GCS_BUCKET }}
-        run: |
-          # 3. 업데이트된 DB를 GCS에 업로드
-          python -m src.tracker.main sync-to-gcs || echo "GCS 동기화 실패"
+          python -m src.tracker.main daily-report || echo "메일 발송 기능을 준비 중입니다."
 
       - name: 결과물(대시보드 파일) 업로드
         if: always()
@@ -71,5 +66,4 @@ jobs:
           name: dashboard-data
           path: |
             dashboard_data.json
-            price_tracker.sqlite3
           retention-days: 7
