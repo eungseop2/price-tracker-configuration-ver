@@ -21,6 +21,7 @@ from .gcs_sync import download_db, upload_db
 from .naver_api import (
     NaverShoppingSearchClient,
     collect_lowest_offer_via_api,
+    collect_mall_inventory,
     _normalized_item,
 )
 from .notifier import send_price_alert
@@ -165,18 +166,31 @@ async def run_once(app_config, artifacts_dir: str, db_path: str, summary_json: s
                 "alert_triggered": 0
             })
 
+    # ---------- [셀러 몰 트래커 수집 루틴] ----------
+    if app_config.mall_targets:
+        logger.info("셀러(Mall) 수집 시작 (%d개)", len(app_config.mall_targets))
+        mall_collected_at = utc_now_iso()
+        
+        for m_target in app_config.mall_targets:
+            try:
+                logger.info("셀러 상품 수집 중: %s (mall: %s, query: %s)", m_target.name, m_target.mall_name, m_target.query)
+                candidates = collect_mall_inventory(client, app_config, m_target)
+                
+                if candidates:
+                    for c in candidates:
+                        c["collected_at"] = mall_collected_at
+                    store.insert_mall_records(m_target.name, m_target.query, m_target.mall_name, candidates)
+                    logger.info("셀러 상품 수집 완료: %s (%d개 상품 저장)", m_target.name, len(candidates))
+                else:
+                    logger.warning("셀러 상품 수집 결과 없음: %s", m_target.name)
+            except Exception as e:
+                logger.error("셀러 상품 수집 실패 (%s): %s", m_target.name, e)
+
     # ---------- [랭킹 수집 최적화 루틴] ----------
     unique_rank_queries = {t.rank_query for t in app_config.targets if t.rank_query}
-    # "갤럭시"가 포함된 경우 제외된 버전도 수집 목록에 추가
-    expanded_queries = set()
-    for q in unique_rank_queries:
-        expanded_queries.add(q)
-        if "갤럭시" in q:
-            short_q = q.replace("갤럭시", "").strip()
-            if short_q:
-                expanded_queries.add(short_q)
-    
-    logger.info("고유 랭킹 키워드 수집 시작 (%d개 -> 확장 %d개)", len(unique_rank_queries), len(expanded_queries))
+    expanded_queries = set(unique_rank_queries)
+
+    logger.info("고유 랭킹 키워드 수집 시작 (%d개)", len(expanded_queries))
     
     r_store = RankingStore(db_path)
     rank_collected_at = utc_now_iso()
@@ -244,7 +258,7 @@ async def run_once(app_config, artifacts_dir: str, db_path: str, summary_json: s
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Naver Shopping Price Tracker")
-    parser.add_argument("command", choices=["once", "monitor", "export-ui", "serve", "sync-from-gcs", "sync-to-gcs", "daily-report", "export-report"], help="실행할 커맨드")
+    parser.add_argument("command", choices=["once", "monitor", "export-ui", "serve", "sync-from-gcs", "sync-to-gcs", "daily-report", "export-report", "export-mall-report"], help="실행할 커맨드")
     parser.add_argument("--config", default="targets.yaml", help="설정 파일 경로")
     parser.add_argument("--db", default="price_tracker.sqlite3", help="DB 파일 경로")
     parser.add_argument("--interval", type=int, default=3600, help="모니터링 주기 (초)")
@@ -280,17 +294,11 @@ def main() -> None:
         try:
             dashboard_raw = store.get_dashboard_data(app_config.targets)
             
-            # 고유 랭킹 키워드별 최신 데이터 수집 (확장 버전 포함)
+            # 고유 랭킹 키워드별 최신 데이터 수집
             rankings = {}
             unique_rank_queries = {t.rank_query for t in app_config.targets if t.rank_query}
             
-            expanded_queries = set()
-            for q in unique_rank_queries:
-                expanded_queries.add(q)
-                if "갤럭시" in q:
-                    short_q = q.replace("갤럭시", "").strip()
-                    if short_q:
-                        expanded_queries.add(short_q)
+            expanded_queries = set(unique_rank_queries)
 
             for rq in expanded_queries:
                 latest = r_store.get_latest_rankings(rq)
@@ -341,6 +349,15 @@ def main() -> None:
         out_path = args.output or "daily_report.html"
         Path(out_path).write_text(html, encoding="utf-8")
         logger.info(f"보고서 저장 완료: {out_path}")
+
+    elif args.command == "export-mall-report":
+        store = ObservationStore(args.db)
+        try:
+            out_path = args.output or "mall_report.html"
+            store.export_mall_report(out_path)
+            logger.info("쇼핑몰(Seller) 추적 보고서 저장 완료: %s", out_path)
+        finally:
+            store.close()
 
 
 if __name__ == "__main__":

@@ -55,6 +55,24 @@ CREATE TABLE IF NOT EXISTS ranking_history (
 
 CREATE INDEX IF NOT EXISTS idx_ranking_query_time
 ON ranking_history(query, collected_at DESC);
+
+CREATE TABLE IF NOT EXISTS mall_observations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    target_name TEXT NOT NULL,
+    query TEXT NOT NULL,
+    mall_name TEXT NOT NULL,
+    collected_at TEXT NOT NULL,
+    title TEXT,
+    price INTEGER,
+    product_id TEXT,
+    product_type INTEGER,
+    product_url TEXT,
+    image_url TEXT,
+    search_rank INTEGER
+);
+
+CREATE INDEX IF NOT EXISTS idx_mall_obs_target_time
+ON mall_observations(target_name, collected_at DESC);
 """
 
 # 인증점 관련 컬럼들은 스키마 정의에서 제거하지만, 
@@ -366,6 +384,138 @@ class ObservationStore:
   {''.join(sections)}
 </body>
 </html>"""
+        out = Path(out_path).resolve()
+        ensure_dir(out.parent)
+        out.write_text(html_content, encoding="utf-8")
+        return str(out)
+
+    def insert_mall_records(self, target_name: str, query: str, mall_name: str, rows: list[dict[str, Any]]) -> None:
+        if not rows:
+            # 검색 결과가 없는 경우 누적 관리를 위해 더미 데이터 삽입
+            now_str = datetime.now(timezone.utc).isoformat()
+            self.conn.execute(
+                """
+                INSERT INTO mall_observations 
+                (target_name, query, mall_name, collected_at, title, price, product_id, product_type, product_url, image_url, search_rank)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (target_name, query, mall_name, now_str, "검색 결과 내 상품 없음", 0, "NOT_FOUND", 0, "", "", -1)
+            )
+            self.conn.commit()
+            return
+        columns = [
+            "target_name", "query", "mall_name", "collected_at",
+            "title", "price", "product_id", "product_type",
+            "product_url", "image_url", "search_rank"
+        ]
+        
+        values = []
+        for row in rows:
+            values.append([
+                target_name, query, mall_name, row.get("collected_at"),
+                row.get("title"), row.get("price"), row.get("product_id"),
+                row.get("product_type"), row.get("product_url"),
+                row.get("image_url"), row.get("search_rank")
+            ])
+            
+        self.conn.executemany(
+            f"INSERT INTO mall_observations ({','.join(columns)}) VALUES ({','.join(['?'] * len(columns))})",
+            values
+        )
+        self.conn.commit()
+
+    def export_mall_report(self, out_path: str) -> str:
+        """Mall Tracker HTML 리포트 생성 (JSON + SPA 기반)"""
+        import json
+        # 기존 target_name 대신 실제 API 상의 mall_name 기준으로 그룹핑합니다 (사용자 요청 반영)
+        mall_names = [
+            r[0] for r in self.conn.execute(
+                "SELECT DISTINCT mall_name FROM mall_observations ORDER BY mall_name"
+            ).fetchall()
+        ]
+
+        now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+        
+        report_data = {
+            "generated_at": now_str,
+            "targets": {}
+        }
+        
+        for name in mall_names:
+            items_raw = self.conn.execute(
+                "SELECT * FROM mall_observations WHERE mall_name = ? ORDER BY collected_at ASC",
+                (name,)
+            ).fetchall()
+            
+            # 상품 아이디 기준 그룹화
+            product_group = {}
+            for item in items_raw:
+                pid = item["product_id"] or item["title"]  # ID가 없으면 이름으로 대체
+                if pid not in product_group:
+                    product_group[pid] = {"title": item["title"], "url": item["product_url"], "mall_name": item["mall_name"], "history": []}
+                product_group[pid]["history"].append(dict(item))
+                
+            products_list = []
+            price_decreased_count = 0
+            
+            for pid, pdata in product_group.items():
+                hist = pdata["history"]
+                last_item = hist[-1]
+                prev_price = hist[-2]["price"] if len(hist) > 1 else last_item["price"]
+                curr_price = last_item["price"]
+                
+                status_cls = "PRICE_SAME"
+                if curr_price < prev_price:
+                    status_cls = "PRICE_DOWN"
+                    price_decreased_count += 1
+                elif curr_price > prev_price:
+                    status_cls = "PRICE_UP"
+                
+                delta = curr_price - prev_price
+                delta_str = f"{delta:+,}" if delta != 0 else "-"
+                
+                curr_price_fmt = f"₩{curr_price:,}" if curr_price else "-"
+                prev_price_fmt = f"₩{prev_price:,}" if prev_price else "-"
+                delta_pct = (delta / prev_price * 100) if prev_price else 0
+                delta_pct_str = f"{delta_pct:+.1f}%" if delta != 0 else "0%"
+                
+                # 차트 최적화를 위해 이력에서 필요한 값만 추출
+                hist_mapped = [{"t": h["collected_at"], "p": h["price"]} for h in hist]
+                
+                # 최근 변동일 경우 상단에 노출되도록 하기 위해 역정렬 시 고려하겠지만 프론트에서도 정렬 가능
+                products_list.append({
+                    "title": pdata["title"] or "-",
+                    "mall_name": pdata["mall_name"] or "-",
+                    "url": pdata["url"] or "#",
+                    "collected_at": (last_item["collected_at"] or "")[:10],
+                    "curr_price": curr_price,
+                    "prev_price": prev_price,
+                    "curr_price_fmt": curr_price_fmt,
+                    "prev_price_fmt": prev_price_fmt,
+                    "delta": delta,
+                    "delta_str": delta_str,
+                    "delta_pct_str": delta_pct_str,
+                    "status_cls": status_cls,
+                    "history": hist_mapped
+                })
+                
+            # 최신 가격 변동 있었던 항목이 위로 가도록 정렬
+            products_list.sort(key=lambda x: (1 if x["status_cls"] == "PRICE_SAME" else 0, -len(x["history"])))
+                
+            report_data["targets"][name] = {
+                "total_products": len(product_group),
+                "price_decreased_count": price_decreased_count,
+                "products": products_list
+            }
+
+        tpl_path = Path(__file__).parent / "mall_report_template.html"
+        if tpl_path.exists():
+            html_content = tpl_path.read_text(encoding="utf-8")
+            json_str = json.dumps(report_data, ensure_ascii=False)
+            html_content = html_content.replace("__REPORT_DATA__", json_str)
+        else:
+            html_content = f"<html><body>Error: Template not found at {tpl_path}</body></html>"
+
         out = Path(out_path).resolve()
         ensure_dir(out.parent)
         out.write_text(html_content, encoding="utf-8")

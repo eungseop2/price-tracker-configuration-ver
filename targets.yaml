@@ -1,6 +1,6 @@
 common:
   exclude: used:cbshop
-  display: 50
+  display: 100
   timeout_seconds: 20
 targets:
 - name: S26 울트라 화이트 512GB
@@ -130,3 +130,33 @@ targets:
     price_selector: "[class^='style_price_num']"
     seller_selector: "[class^='style_mall_name']"
     offer_row_selector: "li[class^='style_seller_item']"
+
+mall_targets:
+  - name: "위드모바일 모니터링"
+    query: "갤럭시 S26 울트라 자급제"
+    mall_name: "위드모바일"
+    category: "스마트폰"
+    request:
+      pages: 1
+      sort: "sim"
+  - name: "쇼마젠시 모니터링"
+    query: "갤럭시 S26 울트라 자급제"
+    mall_name: "쇼마젠시"
+    category: "스마트폰"
+    request:
+      pages: 1
+      sort: "sim"
+  - name: "코잇 모니터링"
+    query: "갤럭시 S26 울트라 자급제"
+    mall_name: "코잇"
+    category: "스마트폰"
+    request:
+      pages: 1
+      sort: "sim"
+  - name: "케이원정보 모니터링"
+    query: "갤럭시 S26 울트라 자급제"
+    mall_name: "케이원정보"
+    category: "스마트폰"
+    request:
+      pages: 1
+      sort: "sim"

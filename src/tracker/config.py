@@ -54,6 +54,15 @@ class TargetConfig:
 
 
 @dataclass
+class MallTargetConfig:
+    name: str
+    query: str
+    mall_name: str
+    category: str = "기타"
+    request: RequestConfig = field(default_factory=RequestConfig)
+
+
+@dataclass
 class AppConfig:
     display: int = 100
     exclude: str = "used:cbshop"
@@ -61,6 +70,7 @@ class AppConfig:
     alert_threshold_percent: float = 5.0
     email: EmailConfig = field(default_factory=EmailConfig)
     targets: list[TargetConfig] = field(default_factory=list)
+    mall_targets: list[MallTargetConfig] = field(default_factory=list)
 
 
 def _to_match(raw: dict[str, Any] | None) -> MatchConfig:
@@ -127,6 +137,16 @@ def validate_config(app: AppConfig, extra_errors: list[str] | None = None) -> No
         if t.request.pages < 1:
             errors.append(f"[{t.name}] pages는 1 이상이어야 합니다.")
 
+    # mall_targets 검사
+    for t in app.mall_targets:
+        if t.name in names:
+            errors.append(f"중복된 타겟 이름 (mall_target): {t.name}")
+        names.add(t.name)
+        if not t.query:
+            errors.append(f"[{t.name}] mall_targets 에는 'query' 필드가 필수입니다.")
+        if not t.mall_name:
+            errors.append(f"[{t.name}] mall_targets 에는 'mall_name' 필드가 필수입니다.")
+
     # 알림 임계값 검사
     if not (0 < app.alert_threshold_percent < 100):
         errors.append(f"alert_threshold_percent 범위가 비정상적입니다 (0~100): {app.alert_threshold_percent}")
@@ -190,6 +210,7 @@ def load_config(path: str | Path) -> AppConfig:
             email_to=email_to
         ),
         targets=[],
+        mall_targets=[],
     )
 
     # 2. targets 섹션 파싱 (에러 누적)
@@ -218,6 +239,25 @@ def load_config(path: str | Path) -> AppConfig:
             app.targets.append(target)
         except Exception as e:
             errors.append(f"targets[{i}] ({item.get('name', 'unknown')}) 처리 중 오류: {e}")
+
+    # 3. mall_targets 섹션 파싱
+    for i, item in enumerate(raw.get("mall_targets", []) or []):
+        try:
+            name = item.get("name")
+            if not name:
+                errors.append(f"mall_targets[{i}]에 'name'이 누락되었습니다.")
+                continue
+
+            target = MallTargetConfig(
+                name=str(name),
+                query=str(item.get("query", "")),
+                mall_name=str(item.get("mall_name", "")),
+                category=str(item.get("category", "기타")),
+                request=_to_request(item.get("request"))
+            )
+            app.mall_targets.append(target)
+        except Exception as e:
+            errors.append(f"mall_targets[{i}] ({item.get('name', 'unknown')}) 처리 중 오류: {e}")
 
     if errors:
         # validate_config를 호출하기 전에 이미 수집된 에러가 있으면 여기서 던질 수도 있음

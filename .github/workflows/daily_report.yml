@@ -57,7 +57,7 @@ jobs:
           python -m src.tracker.main daily-report
 
       - name: 결과 DB 및 대시보드 GCS에 동기화
-        if: always()
+        if: always() && github.ref == 'refs/heads/main'
         env:
           GCS_BUCKET: ${{ secrets.GCS_BUCKET }}
         run: |

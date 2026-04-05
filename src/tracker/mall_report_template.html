@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html class="dark" lang="ko">
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>쇼핑몰(Seller) 추적 리포트</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@700;800&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#a3a6ff",
+                        "outline-variant": "#484847",
+                        "primary-fixed-dim": "#8387ff",
+                        "on-surface-variant": "#adaaaa",
+                        "surface-container-highest": "#262626",
+                        "tertiary-dim": "#ff6f7e",
+                        "on-primary-fixed-variant": "#0e009d",
+                        "surface-bright": "#2c2c2c",
+                        "tertiary": "#ff6f7e",
+                        "on-tertiary-container": "#100001",
+                        "surface": "#0e0e0e",
+                        "secondary-container": "#006c49",
+                        "surface-variant": "#262626",
+                        "tertiary-fixed": "#ff9099",
+                        "primary-container": "#9396ff",
+                        "surface-container-lowest": "#000000",
+                        "background": "#0e0e0e",
+                        "secondary-fixed": "#69f6b8",
+                        "on-tertiary": "#490010",
+                        "inverse-on-surface": "#565555",
+                        "error-dim": "#d73357",
+                        "on-error": "#490013",
+                        "secondary-dim": "#58e7ab",
+                        "on-secondary-fixed-variant": "#006544",
+                        "tertiary-fixed-dim": "#ff7986",
+                        "on-primary-container": "#0a0081",
+                        "outline": "#767575",
+                        "secondary": "#69f6b8",
+                        "surface-container-high": "#20201f",
+                        "secondary-fixed-dim": "#58e7ab",
+                        "surface-tint": "#a3a6ff",
+                        "tertiary-container": "#fc4563",
+                        "on-error-container": "#ffb2b9",
+                        "on-primary": "#0f00a4",
+                        "error": "#ff6e84",
+                        "on-tertiary-fixed-variant": "#780021",
+                        "on-secondary-container": "#e1ffec",
+                        "surface-container": "#1a1a1a",
+                        "surface-container-low": "#131313",
+                        "inverse-surface": "#fcf9f8",
+                        "on-background": "#ffffff",
+                        "on-surface": "#ffffff",
+                        "primary-fixed": "#9396ff",
+                        "on-secondary": "#005a3c",
+                        "on-secondary-fixed": "#00452d",
+                        "surface-dim": "#0e0e0e",
+                        "on-tertiary-fixed": "#39000b",
+                        "error-container": "#a70138",
+                        "inverse-primary": "#494bd7"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+            vertical-align: middle;
+        }
+        body {
+            background-color: #0e0e0e;
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            -webkit-font-smoothing: antialiased;
+            min-height: max(884px, 100dvh);
+        }
+        .glass-header {
+            background: rgba(19, 19, 19, 0.6);
+            backdrop-filter: blur(20px);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #484847;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="bg-surface selection:bg-primary/30 min-h-screen">
+    <!-- TopAppBar -->
+    <header class="fixed top-0 w-full z-50 glass-header flex items-center justify-between px-6 h-16 shadow-[0px_20px_40px_rgba(0,0,0,0.65)]">
+        <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-[#6366F1]">analytics</span>
+            <h1 class="font-['Manrope'] font-bold text-lg tracking-tight text-white cursor-pointer" onclick="window.location.href='dashboard.html'">🏢 메인 대시보드로 돌아가기</h1>
+            <span class="text-xs text-on-surface-variant font-medium ml-4">| 쇼핑몰(Seller) 추적 리포트</span>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="hidden md:flex items-center gap-2 px-3 py-1 bg-surface-container rounded-full text-xs font-medium text-on-surface-variant">
+                <span class="material-symbols-outlined text-xs">schedule</span>
+                <span id="genTime"></span>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex min-h-screen pt-16">
+        <!-- NavigationDrawer -->
+        <aside class="hidden md:flex flex-col pt-8 px-4 space-y-2 h-screen w-64 border-r border-[#484847]/15 bg-[#0e0e0e] sticky top-16">
+            <div class="px-4 mb-4">
+                <span class="text-[#ffffff] font-['Manrope'] font-bold text-xs uppercase tracking-[0.2em]">Sellers</span>
+            </div>
+            <nav id="tabsContainer" class="space-y-1">
+                <!-- Tabs will be rendered here -->
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-6 md:p-10 max-w-7xl mx-auto w-full">
+            <div class="mb-8">
+                <h2 id="currentCategoryTitle" class="font-headline text-3xl font-extrabold text-on-surface">셀러를 선택하세요</h2>
+            </div>
+
+            <!-- Bento Grid Layout -->
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-10">
+                <!-- Summary Card 1 -->
+                <div class="bg-surface-container-low rounded-xl p-6 flex flex-col justify-between border border-outline-variant/10">
+                    <div>
+                        <p class="text-on-surface-variant text-xs font-label uppercase tracking-widest mb-1">Total Products</p>
+                        <h3 id="statTotal" class="font-headline text-2xl font-bold">0</h3>
+                    </div>
+                </div>
+                <!-- Summary Card 2 -->
+                <div class="bg-surface-container-low rounded-xl p-6 flex flex-col justify-between border border-outline-variant/10">
+                    <div>
+                        <p class="text-on-surface-variant text-xs font-label uppercase tracking-widest mb-1">Price Decreased</p>
+                        <h3 id="statDecreased" class="font-headline text-2xl font-bold text-secondary">0</h3>
+                    </div>
+                </div>
+
+                <!-- Chart Section -->
+                <div class="lg:col-span-4 bg-surface-container rounded-2xl p-8 border border-outline-variant/10 shadow-2xl relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary-dim to-primary"></div>
+                    <div class="flex items-center justify-between mb-8">
+                        <div>
+                            <h4 class="font-headline text-xl font-bold text-white">최근 가격 추이</h4>
+                            <p class="text-on-surface-variant text-sm mt-1">상위 상품 가격 변동</p>
+                        </div>
+                    </div>
+                    <div class="w-full h-[400px] flex items-center justify-center bg-surface-container-lowest/30 rounded-xl relative p-4">
+                        <canvas id="priceChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Product Data Table -->
+                <div class="lg:col-span-4 mt-4 overflow-hidden rounded-2xl bg-surface-container-low border border-outline-variant/10">
+                    <div class="px-6 py-5 border-b border-outline-variant/10 flex items-center justify-between bg-surface-container-low/50">
+                        <h4 class="font-headline text-lg font-bold">상품 내역</h4>
+                        <div class="flex items-center gap-3">
+                            <div class="relative">
+                                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-lg">search</span>
+                                <input id="searchInput" onkeyup="filterTable()" class="bg-surface-container-lowest border-none rounded-full pl-10 pr-4 py-2 text-sm focus:ring-1 focus:ring-primary w-64 text-on-surface" placeholder="상품명 검색..." type="text"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto custom-scrollbar h-[500px]">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="sticky top-0 z-10">
+                                <tr class="bg-surface-container-low text-on-surface-variant text-[10px] uppercase tracking-widest font-label border-b border-outline-variant/5">
+                                    <th class="px-6 py-4 font-medium">최근 확인일</th>
+                                    <th class="px-6 py-4 font-medium">상품명</th>
+                                    <th class="px-6 py-4 font-medium">현재가</th>
+                                    <th class="px-6 py-4 font-medium">이전가</th>
+                                    <th class="px-6 py-4 font-medium">변동액</th>
+                                    <th class="px-6 py-4 font-medium">수집횟수</th>
+                                    <th class="px-6 py-4 font-medium text-right">상세조회</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody" class="divide-y divide-outline-variant/5">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Data Injection -->
+    <script>
+        const reportData = __REPORT_DATA__;
+        
+        // Settings
+        Chart.defaults.color = '#adaaaa';
+        Chart.defaults.font.family = 'Inter';
+        
+        let currentChart = null;
+
+        function init() {
+            if (!reportData || !reportData.targets) return;
+            document.getElementById('genTime').innerText = reportData.generated_at;
+            
+            const keys = Object.keys(reportData.targets);
+            if(keys.length === 0) return;
+            
+            renderTabs(keys);
+            selectTab(keys[0]);
+        }
+
+        function renderTabs(keys) {
+            const container = document.getElementById('tabsContainer');
+            let html = '';
+            keys.forEach(k => {
+                html += `
+                    <a id="tab-${k}" onclick="selectTab('${k}')" class="tab-btn cursor-pointer flex items-center gap-3 px-4 py-3 rounded-lg text-[#adaaaa] hover:text-white hover:bg-[#1a1a1a] font-['Inter'] font-medium text-sm transition-all duration-300">
+                        <span class="material-symbols-outlined">storefront</span>
+                        <span>${k}</span>
+                    </a>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function selectTab(targetName) {
+            // Update active state
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('text-[#ffffff]', 'border-r-2', 'border-[#6366F1]', 'bg-[#1a1a1a]', 'text-[#6366F1]');
+                el.classList.add('text-[#adaaaa]');
+            });
+            
+            const activeTab = document.getElementById('tab-' + targetName);
+            if (activeTab) {
+                activeTab.classList.remove('text-[#adaaaa]');
+                activeTab.classList.add('text-[#ffffff]', 'border-r-2', 'border-[#6366F1]', 'bg-[#1a1a1a]');
+                activeTab.querySelector('.material-symbols-outlined').classList.add('text-[#6366F1]');
+            }
+
+            document.getElementById('currentCategoryTitle').innerText = targetName + " 리포트";
+            
+            const data = reportData.targets[targetName];
+            if(!data) return;
+
+            document.getElementById('statTotal').innerText = data.total_products.toLocaleString();
+            document.getElementById('statDecreased').innerText = data.price_decreased_count.toLocaleString();
+            
+            renderTable(data.products);
+            renderChart(data.products);
+        }
+
+        function renderTable(products) {
+            const tbody = document.getElementById('tableBody');
+            let html = '';
+            
+            products.forEach(p => {
+                let badgeHtml = '';
+                if (p.status_cls === 'PRICE_DOWN') {
+                    badgeHtml = `<span class="inline-flex items-center px-2 py-1 rounded text-secondary bg-on-secondary-container/10 text-xs font-bold">
+                                    <span class="material-symbols-outlined text-[14px] mr-1">arrow_downward</span>
+                                    ${p.delta_str} (${p.delta_pct_str})
+                                </span>`;
+                } else if (p.status_cls === 'PRICE_UP') {
+                    badgeHtml = `<span class="inline-flex items-center px-2 py-1 rounded text-tertiary bg-on-tertiary-container/10 text-xs font-bold">
+                                    <span class="material-symbols-outlined text-[14px] mr-1">arrow_upward</span>
+                                    ${p.delta_str} (${p.delta_pct_str})
+                                </span>`;
+                } else {
+                    badgeHtml = `<span class="inline-flex items-center px-2 py-1 rounded text-on-surface-variant bg-surface-container-highest text-xs font-bold">
+                                    <span class="material-symbols-outlined text-[14px] mr-1">horizontal_rule</span>
+                                    0 (0%)
+                                </span>`;
+                }
+
+                html += `
+                <tr class="hover:bg-surface-container transition-colors group product-row">
+                    <td class="px-6 py-5 text-xs text-on-surface-variant">${p.collected_at}</td>
+                    <td class="px-6 py-5 text-sm font-medium text-on-surface max-w-[250px] truncate" title="${p.title}">${p.title}</td>
+                    <td class="px-6 py-5 font-headline font-bold text-on-surface">${p.curr_price_fmt}</td>
+                    <td class="px-6 py-5 text-sm text-on-surface-variant">${p.prev_price_fmt}</td>
+                    <td class="px-6 py-5">${badgeHtml}</td>
+                    <td class="px-6 py-5 text-xs text-on-surface-variant">${p.history.length}회</td>
+                    <td class="px-6 py-5 text-right">
+                        <a href="${p.url}" target="_blank" class="material-symbols-outlined text-primary hover:scale-110 transition-transform">open_in_new</a>
+                    </td>
+                </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+        
+        function filterTable() {
+            const input = document.getElementById('searchInput');
+            const filter = input.value.toUpperCase();
+            const rows = document.querySelectorAll('.product-row');
+            
+            rows.forEach(row => {
+                const titleTd = row.getElementsByTagName('td')[1];
+                if (titleTd) {
+                    const txtValue = titleTd.textContent || titleTd.innerText;
+                    if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                        row.style.display = "";
+                    } else {
+                        row.style.display = "none";
+                    }
+                }       
+            });
+        }
+
+        const colors = [
+            '#a3a6ff', '#69f6b8', '#ff6f7e', '#facc15', '#60a5fa', 
+            '#f472b6', '#4ade80', '#c084fc', '#38bdf8', '#fb923c'
+        ];
+
+        function renderChart(products) {
+            if (currentChart) {
+                currentChart.destroy();
+            }
+
+            // Get top 10 products with history length > 1
+            const topProducts = products.filter(p => p.history.length > 1).slice(0, 10);
+            
+            if (topProducts.length === 0) {
+                // If no history exists, destroy and return
+                return;
+            }
+
+            // Gather all unique dates
+            let dateSet = new Set();
+            topProducts.forEach(p => {
+                p.history.forEach(h => {
+                    const d = h.t.substring(0, 10);
+                    dateSet.add(d);
+                });
+            });
+            const labels = Array.from(dateSet).sort();
+            
+            const datasets = topProducts.map((p, idx) => {
+                const color = colors[idx % colors.length];
+                
+                // Align data with labels
+                const data = labels.map(dateLabel => {
+                    // find closest price on this date
+                    const matches = p.history.filter(h => h.t.startsWith(dateLabel));
+                    if (matches.length > 0) return matches[matches.length-1].p;
+                    return null; // Will break lines if null, chartJS handles spanGaps
+                });
+
+                return {
+                    label: p.title.length > 20 ? p.title.substring(0, 20) + '...' : p.title,
+                    data: data,
+                    borderColor: color,
+                    backgroundColor: color,
+                    borderWidth: 2,
+                    tension: 0.3,
+                    spanGaps: true,
+                    pointRadius: 3,
+                    pointHoverRadius: 6
+                };
+            });
+
+            const ctx = document.getElementById('priceChart').getContext('2d');
+            currentChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#adaaaa',
+                                boxWidth: 12,
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(26, 26, 26, 0.9)',
+                            titleColor: '#ffffff',
+                            bodyColor: '#adaaaa',
+                            borderColor: 'rgba(72, 72, 71, 0.5)',
+                            borderWidth: 1,
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(context.parsed.y);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(72, 72, 71, 0.1)',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: '#adaaaa'
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(72, 72, 71, 0.1)',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: '#adaaaa',
+                                callback: function(value, index, values) {
+                                    if(value >= 10000) return (value/10000) + '만';
+                                    return value;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize when DOM is parsed
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

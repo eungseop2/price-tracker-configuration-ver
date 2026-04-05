@@ -67,6 +67,7 @@ jobs:
           export PYTHONPATH=src
           # 3. Export Dashboard UI
           python -m tracker.main export-ui
+          python -m tracker.main export-mall-report
           
           # Prepare public directory for GitHub Pages (Security: only expose UI files)
           mkdir -p public
@@ -78,9 +79,10 @@ jobs:
           fi
           [ -f "dashboard_data.json" ] && cp dashboard_data.json public/ || echo "No dashboard_data.json found"
           [ -f "logo.png" ] && cp logo.png public/ || echo "No logo.png found"
+          [ -f "mall_report.html" ] && cp mall_report.html public/ || echo "No mall_report.html found"
 
       - name: Sync Result back to GCS
-        if: always()
+        if: always() && github.ref == 'refs/heads/main'
         env:
           GCS_BUCKET: ${{ secrets.GCS_BUCKET }}
           PYTHONPATH: src
@@ -115,7 +117,7 @@ jobs:
   deploy:
     needs: track
     runs-on: ubuntu-latest
-    if: always() # 수집 실패와 무관하게 항상 업로드 시도
+    if: always() && github.ref == 'refs/heads/main' # 테스트 브랜치에서는 Pages 배포 제외
     permissions:
       pages: write
       id-token: write

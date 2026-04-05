@@ -8,7 +8,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from .config import AppConfig, TargetConfig
+from .config import AppConfig, TargetConfig, MallTargetConfig
 from .util import all_keywords_present, any_keyword_present, clean_text, parse_int
 
 
@@ -154,3 +154,35 @@ def collect_lowest_offer_via_api(client: NaverShoppingSearchClient, app_config: 
         **best,
         "error_message": None,
     }
+
+def collect_mall_inventory(client: NaverShoppingSearchClient, app_config: AppConfig, target: MallTargetConfig) -> list[dict[str, Any]]:
+    if not target.query:
+        raise ValueError(f"mall_target '{target.name}' 에 query 가 없습니다.")
+
+    pages = max(1, target.request.pages)
+    items: list[dict[str, Any]] = []
+    
+    for page_index in range(pages):
+        start = page_index * app_config.display + 1
+        payload = client.search(
+            query=target.query,
+            display=app_config.display,
+            start=start,
+            sort=target.request.sort,
+            filter_=target.request.filter,
+            exclude=app_config.exclude,
+        )
+        page_items = payload.get("items", []) or []
+        for i, itm in enumerate(page_items, start=len(items) + 1):
+            itm["_search_rank"] = i
+        items.extend(page_items)
+
+    candidates = []
+    target_mall = clean_text(target.mall_name)
+    for item in items:
+        seller = clean_text(item.get("mallName"))
+        if target_mall in seller:
+            candidates.append(_normalized_item(item))
+
+    return candidates
+
