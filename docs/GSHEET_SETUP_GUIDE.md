@@ -2,6 +2,13 @@
 
 본 가이드는 `DB-test` 브랜치에서 SQLite 대신 구글 스프레드시트를 데이터베이스로 사용하기 위한 필수 설정 단계를 다룹니다.
 
+## 💡 기존 GCS 키를 재사용하는 경우 (추천)
+이미 프로젝트에서 GCS(Google Cloud Storage) 인증용 서비스 계정 키를 사용 중이시라면 아래 절차만으로 즉시 연동이 가능합니다.
+1.  [Google Cloud Console](https://console.cloud.google.com/)에서 기존 프로젝트를 선택합니다.
+2.  **API 및 서비스 > 라이브러리**에서 `Google Sheets API`와 `Google Drive API`를 **[사용]**으로 변경합니다.
+3.  기존 JSON 키 파일의 `client_email` 주소를 복사하여, 사용하실 스프레드시트의 **[공유]** 메뉴에서 **편집자**로 추가합니다.
+4.  환경 변수 `GOOGLE_SERVICE_ACCOUNT_KEY`에 기존 JSON 내용을 그대로 입력합니다.
+
 ## 1단계: Google Cloud 프로젝트 및 API 설정
 1.  [Google Cloud Console](https://console.cloud.google.com/) 접속 및 새 프로젝트 생성.
 2.  **API 및 서비스 > 라이브러리** 메뉴 이동.
