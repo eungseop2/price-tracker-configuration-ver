@@ -29,29 +29,16 @@ jobs:
           pip install -r requirements.txt
           playwright install --with-deps chromium
 
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
-
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-
       - name: Run Price Tracker
         env:
           NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
           NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
-          GCS_BUCKET: ${{ secrets.GCS_BUCKET }}
-          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
-          EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
-          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          GSHEET_ID: ${{ secrets.GSHEET_ID }}
+          GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
           PYTHONPATH: src
         run: |
-          # 1. Sync DB from GCS
-          python -m tracker.main sync-from-gcs || echo "First run or GCS unavailable, starting fresh"
-          
-          # 2. Collect Prices (Strict failure reporting)
-          python -m tracker.main once --summary-json summary.json
+          # 1. 이번 회차 데이터 수집 및 구글 시트 업데이트
+          python -m tracker.main once --verbose --summary-json summary.json
           
           if [ -f "summary.json" ]; then
             echo "### 📊 Collection Summary" >> $GITHUB_STEP_SUMMARY
@@ -63,41 +50,32 @@ jobs:
 
       - name: Export and Package UI
         if: always() # Run even if collection partially failed
+        env:
+          GSHEET_ID: ${{ secrets.GSHEET_ID }}
+          GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
+          PYTHONPATH: src
         run: |
-          export PYTHONPATH=src
-          # 3. Export Dashboard UI
+          # 2. 구글 시트 데이터를 기반으로 대시보드 JSON 추출
           python -m tracker.main export-ui
-          python -m tracker.main export-mall-report
           
           # Prepare public directory for GitHub Pages (Security: only expose UI files)
           mkdir -p public
           if [ -f "dashboard.html" ]; then
             cp dashboard.html public/index.html
             cp dashboard.html public/dashboard.html
-          else
-            echo "No dashboard.html found"
           fi
           [ -f "dashboard_data.json" ] && cp dashboard_data.json public/ || echo "No dashboard_data.json found"
           [ -f "logo.png" ] && cp logo.png public/ || echo "No logo.png found"
-          [ -f "mall_report.html" ] && cp mall_report.html public/ || echo "No mall_report.html found"
-
-      - name: Sync Result back to GCS
-        if: always() && github.ref == 'refs/heads/main'
-        env:
-          GCS_BUCKET: ${{ secrets.GCS_BUCKET }}
-          PYTHONPATH: src
-        run: |
-          python -m tracker.main sync-to-gcs || echo "GCS sync SKIP or FAILED"
 
       - name: Commit and Push Changes (Data Accumulation)
         if: always()
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git add dashboard_data.json
           if ! git diff --quiet || ! git diff --staged --quiet; then
-            git commit -m "📊 Update dashboard data [skip ci]"
-            git push || (sleep 10 && git push) || (sleep 30 && git push)
+            git commit -m "📊 Update: Dashboard data updated from Google Sheets [skip ci]"
+            git push origin ${GITHUB_REF##*/}
           fi
 
       - name: Upload Debug Artifacts on Failure
