@@ -305,9 +305,13 @@ def main() -> None:
                 if latest:
                     rankings[rq] = latest
             
+            # 셀러별 쇼핑몰 리포트 데이터 수집
+            mall_reports = store.get_mall_report_data()
+            
             data = {
                 "products": dashboard_raw["products"],
                 "rankings": rankings,
+                "mall_reports": mall_reports,
                 "updated_at": dashboard_raw["generated_at"]
             }
             Path("dashboard_data.json").write_text(dump_json(data), encoding="utf-8")

@@ -972,8 +972,90 @@
             background: var(--toss-grey);
             padding: 4px 8px;
             border-radius: 6px;
+        /* Mall Report Style */
+        .mall-report-container {
+            display: flex;
+            gap: 24px;
+            height: 100%;
         }
-
+        .mall-sidebar {
+            width: 240px;
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--card-shadow);
+        }
+        .mall-sidebar-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 20px;
+            padding-left: 4px;
+        }
+        .mall-tabs-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .mall-tab {
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .mall-tab:hover {
+            background: var(--bg-soft);
+            color: var(--text-main);
+        }
+        .mall-tab.active {
+            background: var(--toss-blue);
+            color: white;
+            box-shadow: 0 4px 12px rgba(49, 130, 247, 0.2);
+        }
+        .mall-main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        .mall-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        .mall-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.5px;
+        }
+        .mall-update-time {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        .mall-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+        .mall-main-content::-webkit-scrollbar {
+            width: 5px;
+        }
+        .mall-main-content::-webkit-scrollbar-thumb {
+            background: rgba(0,0,0,0.05);
+            border-radius: 10px;
+        }
     </style>
 </head>
 
@@ -1139,17 +1221,74 @@
             </section>
         </div>
 
-        <!-- 사이트 내장 프레임: 쇼핑몰 셀러 추적 리포트 -->
-        <div id="mallReportView" class="view-content" style="height: 850px; border-radius: 20px; overflow: hidden; background: #0e0e0e; box-shadow: var(--card-shadow); padding: 0; outline: 1px solid var(--glass-border);">
-            <iframe src="mall_report.html" style="width: 100%; height: 100%; border: none;"></iframe>
+        <!-- 쇼핑몰 셀러 추적 리포트 (통합형) -->
+        <div id="mallReportView" class="view-content">
+            <div class="mall-report-container">
+                <!-- Mall Sidebar -->
+                <div class="mall-sidebar">
+                    <div class="mall-sidebar-title">Sellers</div>
+                    <div id="mall-seller-tabs" class="mall-tabs-list"></div>
+                </div>
+                
+                <!-- Mall Content -->
+                <div class="mall-main-content">
+                    <div class="mall-header">
+                        <h2 id="currentMallTitle" class="mall-title">셀러를 선택하세요</h2>
+                        <div id="mallUpdateTime" class="mall-update-time"></div>
+                    </div>
+                    
+                    <div class="mall-stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">등록 상품 수</div>
+                            <div class="stat-value" id="mallStatTotal">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">가격 하락 상품</div>
+                            <div class="stat-value" id="mallStatDecreased" style="color: var(--price-down);">0</div>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-section" style="margin-top: 0;">
+                        <div class="chart-header">
+                            <div class="chart-title">최근 가격 추이</div>
+                        </div>
+                        <div class="chart-container" style="height: 350px;">
+                            <canvas id="mallPriceChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="history-section" style="margin-top: 0;">
+                        <div class="history-header">
+                            <h3 class="history-title">상품 상세 내역</h3>
+                        </div>
+                        <div class="table-container">
+                            <table class="history-table">
+                                <thead>
+                                    <tr>
+                                        <th>최근 확인일</th>
+                                        <th>상품명</th>
+                                        <th>현재가</th>
+                                        <th>이전가</th>
+                                        <th>변동액</th>
+                                        <th style="text-align: right;">링크</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="mallTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        let dashboardData = { products: [] };
+        let dashboardData = { products: [], mall_reports: { targets: {} } };
         let mainChart = null;
+        let mallPriceChart = null;
         let selectedProductIndex = 0;
         let selectedCategory = '전체';
+        let currentMall = null;
         let chartDays = 90;
         let currentPage = 1;
         const itemsPerPageFirst = 20;
@@ -1678,6 +1817,7 @@
                 document.getElementById('tabRanking').classList.add('active');
             } else if(viewId === 'mallReportView') {
                 document.getElementById('tabMall').classList.add('active');
+                renderMallReportTabs();
             }
             document.getElementById(viewId).classList.add('active');
         }
@@ -1740,13 +1880,12 @@
                 timeEl.innerText = '수집: ' + date.toLocaleString();
             }
 
-            let html = '';
-            rankings.forEach((item) => {
+            container.innerHTML = rankings.map((item) => {
                 const rank = item.rank;
                 const isTop1 = rank === 1 ? 'top1' : '';
                 const imgUrl = item.image_url || 'https://via.placeholder.com/80?text=No+Img';
                 
-                html += `
+                return `
                 <div class="ranking-card" onclick="window.open('${item.product_url || '#'}', '_blank')">
                     <div class="rank-num ${isTop1}">${rank}</div>
                     <img class="thumb" src="${imgUrl}" alt="thumbnail"/>
@@ -1757,13 +1896,145 @@
                     </div>
                 </div>
                 `;
+            }).join('');
+        }
+
+        // --- 쇼핑몰(Mall) 셀러 추적 리포트 로직 ---
+        function renderMallReportTabs() {
+            const tabsContainer = document.getElementById('mall-seller-tabs');
+            if (!tabsContainer || !dashboardData.mall_reports || !dashboardData.mall_reports.targets) return;
+
+            const mallNames = Object.keys(dashboardData.mall_reports.targets);
+            if (mallNames.length === 0) {
+                tabsContainer.innerHTML = '<div style="padding: 10px; color: var(--text-muted); font-size: 13px;">추적 중인 셀러가 없습니다.</div>';
+                return;
+            }
+
+            tabsContainer.innerHTML = mallNames.map(name => `
+                <div class="mall-tab ${currentMall === name ? 'active' : ''}" onclick="selectMall('${name}')">
+                    ${name}
+                </div>
+            `).join('');
+
+            if (!currentMall && mallNames.length > 0) {
+                selectMall(mallNames[0]);
+            }
+        }
+
+        function selectMall(name) {
+            currentMall = name;
+            renderMallReportTabs();
+            renderMallDashboard(name);
+        }
+
+        function renderMallDashboard(name) {
+            const data = dashboardData.mall_reports.targets[name];
+            if (!data) return;
+
+            document.getElementById('currentMallTitle').textContent = name;
+            document.getElementById('mallUpdateTime').textContent = `마지막 업데이트: ${dashboardData.mall_reports.generated_at}`;
+            document.getElementById('mallStatTotal').textContent = data.total_products;
+            document.getElementById('mallStatDecreased').textContent = data.price_decreased_count;
+
+            renderMallChart(data.products);
+            renderMallTable(data.products);
+        }
+
+        function renderMallChart(products) {
+            const ctx = document.getElementById('mallPriceChart').getContext('2d');
+            if (mallPriceChart) mallPriceChart.destroy();
+
+            const allHistory = [];
+            products.forEach(p => {
+                if (p.history) {
+                    p.history.forEach(h => {
+                        allHistory.push({ t: h.t, p: h.p });
+                    });
+                }
             });
 
-            container.innerHTML = html;
+            if (allHistory.length === 0) return;
+
+            const grouped = {};
+            allHistory.forEach(h => {
+                const date = h.t.substring(0, 16);
+                if (!grouped[date]) grouped[date] = [];
+                grouped[date].push(h.p);
+            });
+
+            const labels = Object.keys(grouped).sort();
+            const dataPoints = labels.map(l => {
+                const prices = grouped[l];
+                return Math.round(prices.reduce((a, b) => a + b, 0) / prices.length);
+            });
+
+            mallPriceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels.map(l => l.substring(5)),
+                    datasets: [{
+                        label: '평균 판매가',
+                        data: dataPoints,
+                        borderColor: '#3182f7',
+                        backgroundColor: 'rgba(49, 130, 247, 0.1)',
+                        borderWidth: 3,
+                        pointRadius: 2,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                            padding: 12,
+                            callbacks: {
+                                label: (context) => `평균: ₩${context.raw.toLocaleString()}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 11 } } },
+                        y: { 
+                            grid: { color: 'rgba(255,255,255,0.05)' }, 
+                            ticks: { 
+                                color: '#94a3b8', 
+                                font: { size: 11 },
+                                callback: (value) => value.toLocaleString()
+                            } 
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderMallTable(products) {
+            const tbody = document.getElementById('mallTableBody');
+            tbody.innerHTML = products.map(p => {
+                const deltaColor = p.status_cls === 'PRICE_DOWN' ? 'var(--price-down)' : (p.status_cls === 'PRICE_UP' ? 'var(--price-up)' : 'var(--text-muted)');
+                const deltaIcon = p.status_cls === 'PRICE_DOWN' ? '⬇️' : (p.status_cls === 'PRICE_UP' ? '⬆️' : '');
+                
+                return `
+                    <tr>
+                        <td style="font-size: 11px; color: var(--text-muted);">${p.collected_at}</td>
+                        <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${p.title}">
+                            <div style="font-weight: 600; color: var(--text-main); font-size: 13.5px;">${p.title}</div>
+                        </td>
+                        <td style="font-weight: 700; font-size: 14px;">${p.curr_price_fmt}</td>
+                        <td style="color: var(--text-muted); font-size: 12px;">${p.prev_price_fmt}</td>
+                        <td style="color: ${deltaColor}; font-weight: 600; font-size: 13px;">${deltaIcon} ${p.delta_str} (${p.delta_pct_str})</td>
+                        <td style="text-align: right;">
+                            <a href="${p.url}" target="_blank" class="chart-btn" style="padding: 6px 12px; text-decoration: none; font-size: 11px; display: inline-block; border-radius: 8px;">상품 보기</a>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
         }
 
         init();
     </script>
 </body>
-
 </html>

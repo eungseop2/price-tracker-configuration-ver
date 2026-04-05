@@ -4,7 +4,10 @@ import csv
 import sqlite3
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .config import TargetConfig
 
 from .util import dump_json, ensure_dir, format_price
 
@@ -424,10 +427,9 @@ class ObservationStore:
         )
         self.conn.commit()
 
-    def export_mall_report(self, out_path: str) -> str:
-        """Mall Tracker HTML 리포트 생성 (JSON + SPA 기반)"""
-        import json
-        # 기존 target_name 대신 실제 API 상의 mall_name 기준으로 그룹핑합니다 (사용자 요청 반영)
+    def get_mall_report_data(self) -> dict[str, Any]:
+        """Mall Tracker용 데이터를 취합하여 반환합니다."""
+        # 기존 target_name 대신 실제 API 상의 mall_name 기준으로 그룹핑합니다
         mall_names = [
             r[0] for r in self.conn.execute(
                 "SELECT DISTINCT mall_name FROM mall_observations ORDER BY mall_name"
@@ -450,7 +452,7 @@ class ObservationStore:
             # 상품 아이디 기준 그룹화
             product_group = {}
             for item in items_raw:
-                pid = item["product_id"] or item["title"]  # ID가 없으면 이름으로 대체
+                pid = item["product_id"] or item["title"]
                 if pid not in product_group:
                     product_group[pid] = {"title": item["title"], "url": item["product_url"], "mall_name": item["mall_name"], "history": []}
                 product_group[pid]["history"].append(dict(item))
@@ -479,10 +481,8 @@ class ObservationStore:
                 delta_pct = (delta / prev_price * 100) if prev_price else 0
                 delta_pct_str = f"{delta_pct:+.1f}%" if delta != 0 else "0%"
                 
-                # 차트 최적화를 위해 이력에서 필요한 값만 추출
                 hist_mapped = [{"t": h["collected_at"], "p": h["price"]} for h in hist]
                 
-                # 최근 변동일 경우 상단에 노출되도록 하기 위해 역정렬 시 고려하겠지만 프론트에서도 정렬 가능
                 products_list.append({
                     "title": pdata["title"] or "-",
                     "mall_name": pdata["mall_name"] or "-",
@@ -499,7 +499,6 @@ class ObservationStore:
                     "history": hist_mapped
                 })
                 
-            # 최신 가격 변동 있었던 항목이 위로 가도록 정렬
             products_list.sort(key=lambda x: (1 if x["status_cls"] == "PRICE_SAME" else 0, -len(x["history"])))
                 
             report_data["targets"][name] = {
@@ -507,6 +506,12 @@ class ObservationStore:
                 "price_decreased_count": price_decreased_count,
                 "products": products_list
             }
+        return report_data
+
+    def export_mall_report(self, out_path: str) -> str:
+        """Mall Tracker HTML 리포트 생성 (JSON + SPA 기반)"""
+        import json
+        report_data = self.get_mall_report_data()
 
         tpl_path = Path(__file__).parent / "mall_report_template.html"
         if tpl_path.exists():
