@@ -1289,7 +1289,6 @@
         <div class="view-tabs" id="viewTabs">
             <div class="view-tab active" onclick="switchView('priceView')" id="tabPrice">실시간 최저가 추적</div>
             <div class="view-tab" onclick="switchView('rankingView')" id="tabRanking">키워드 Top 10 랭킹</div>
-            <div class="view-tab" onclick="switchView('mallReportView')" id="tabMall" style="color: #3182f7;">🏢 쇼핑몰 추적 리포트</div>
         </div>
 
         <!-- 최고가 추적 뷰 -->
@@ -1464,11 +1463,10 @@
             const targetView = document.getElementById(viewName);
             if (targetView) targetView.classList.add('active');
 
-            // 상단 탭 활성화 (실시간 최저가 / 랭킹 / 쇼핑몰 리포트)
+            // 상단 탭 활성화 (실시간 최저가 / 랭킹)
             const tabIds = {
                 'priceView': 'tabPrice',
-                'rankingView': 'tabRanking',
-                'mallReportView': 'tabMall'
+                'rankingView': 'tabRanking'
             };
             const activeTab = document.getElementById(tabIds[viewName]);
             if (activeTab) activeTab.classList.add('active');
