@@ -1218,15 +1218,26 @@
             <div class="logo-text">가격 조사</div>
         </div>
 
+        <!-- 글로벌 내비게이션 (사이드바 내부로 이동) -->
+        <div class="global-nav">
+            <div class="nav-item active" id="nav-price" onclick="switchView('priceView')">
+                <span class="nav-icon">📈</span> 상품 모니터링
+            </div>
+            <div class="nav-item" id="nav-mall" onclick="switchView('mallReportView')">
+                <span class="nav-icon">🏢</span> 쇼핑몰 추적
+            </div>
+        </div>
+
         <div id="product-sidebar-content">
+            <div class="sidebar-title" style="padding: 8px 20px 4px; font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">모니터링 상품</div>
             <div class="sidebar-toolbar">
                 <label class="select-all-label">
                     <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)">
                     전체선택
                 </label>
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <span id="checkedCount" style="font-size:11px;color:var(--text-muted);">0개 선택</span>
-                    <select id="sortOption" onchange="renderProductList()" style="font-size:11px; border:1px solid var(--glass-border); border-radius:4px; padding:2px; color:var(--text-main); background: #ffffff; cursor: pointer; outline: none;">
+                    <span id="checkedCount" style="font-size:11px;color:var(--text-muted);">0개</span>
+                    <select id="sortOption" onchange="renderProductList()" style="font-size:11px; border:1px solid var(--glass-border); border-radius:4px; padding:2px; color:var(--text-main); background: #ffffff; cursor: pointer;">
                         <option value="default">기본순</option>
                         <option value="price_asc">가격 낮은순</option>
                         <option value="price_desc">가격 높은순</option>
@@ -1243,7 +1254,7 @@
 
         <div id="mall-sidebar-content" style="display: none;">
             <div class="sidebar-title" style="padding: 16px 20px 8px; font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">카테고리</div>
-            <div class="category-pills" id="mallCategoryTabs" style="padding: 0 16px; margin-bottom: 16px;"></div>
+            <div class="category-pills" id="mallCategoryTabs" style="padding: 0 16px; margin-bottom: 20px;"></div>
             <div class="sidebar-title" style="padding: 8px 20px; font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Sellers</div>
             <div id="mall-seller-tabs" class="mall-tabs-list" style="padding: 0 12px;"></div>
         </div>
@@ -1446,12 +1457,14 @@
         let currentFilteredHistory = [];
 
         function switchView(viewName) {
+            // 메인 탭 전환
             document.querySelectorAll('.view-content').forEach(v => v.classList.remove('active'));
             document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
 
             const targetView = document.getElementById(viewName);
             if (targetView) targetView.classList.add('active');
 
+            // 상단 탭 활성화 (실시간 최저가 / 랭킹 / 쇼핑몰 리포트)
             const tabIds = {
                 'priceView': 'tabPrice',
                 'rankingView': 'tabRanking',
@@ -1460,7 +1473,15 @@
             const activeTab = document.getElementById(tabIds[viewName]);
             if (activeTab) activeTab.classList.add('active');
 
-            // 사이드바 및 헤더 전환 로직
+            // 사이드바 글로벌 네비게이션 활성화
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            if (viewName === 'mallReportView') {
+                document.getElementById('nav-mall')?.classList.add('active');
+            } else {
+                document.getElementById('nav-price')?.classList.add('active');
+            }
+
+            // 사이드바 콘텐츠 전환
             const productSidebar = document.getElementById('product-sidebar-content');
             const mallSidebar = document.getElementById('mall-sidebar-content');
             const header = document.querySelector('header');
@@ -1468,12 +1489,13 @@
             if (viewName === 'mallReportView') {
                 if (productSidebar) productSidebar.style.display = 'none';
                 if (mallSidebar) mallSidebar.style.display = 'block';
-                if (header) header.style.display = 'none'; // 셀러 리포트에서는 전체 헤더 숨김
+                if (header) header.style.display = 'none'; 
                 renderMallCategoryTabs();
             } else {
                 if (productSidebar) productSidebar.style.display = 'block';
                 if (mallSidebar) mallSidebar.style.display = 'none';
                 if (header) header.style.display = 'flex';
+                if (viewName === 'priceView') refreshChartView();
             }
 
             if (window.innerWidth <= 768) toggleSidebar(false);
@@ -1482,63 +1504,38 @@
         function toggleSidebar(open) {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebarOverlay');
-            if (sidebar) {
-                sidebar.classList.toggle('open', open);
-            }
-            if (overlay) {
-                overlay.classList.toggle('show', open);
-            }
+            if (sidebar) sidebar.classList.toggle('open', open);
+            if (overlay) overlay.classList.toggle('show', open);
         }
 
         async function init() {
             console.log("Initializing dashboard...");
             try {
                 const url = 'dashboard_data.json?v=' + encodeURIComponent(new Date().getTime());
-                console.log("Fetching data from:", url);
                 const response = await fetch(url);
-                if (!response.ok) throw new Error(`Fetch failed with status: ${response.status}`);
+                if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
 
                 dashboardData = await response.json();
-                console.log("Data loaded successfully:", dashboardData);
+                console.log("Data loaded:", dashboardData);
 
                 if (!dashboardData.products || dashboardData.products.length === 0) {
-                    throw new Error("No products found in data");
+                    throw new Error("No products found");
                 }
 
                 renderCategoryTabs();
                 renderProductList();
 
-                // 선택된 인덱스가 범위를 벗어나지 않도록 보정
-                if (selectedProductIndex >= dashboardData.products.length) {
-                    selectedProductIndex = 0;
-                }
-
                 const firstVisible = dashboardData.products.findIndex(p => selectedCategory === '전체' || p.category === selectedCategory);
                 selectProduct(firstVisible >= 0 ? firstVisible : 0);
             } catch (e) {
-                console.error("Dashboard init failed:", e);
+                console.error("Init error:", e);
                 const list = document.getElementById('productList');
-                let helpMsg = "";
-                if (window.location.protocol === 'file:') {
-                    helpMsg = `<div style="margin-top:20px; padding:15px; background:#fef3c7; color:#92400e; border-radius:8px; line-height:1.6;">
-                        <strong>💡 로컬 파일 보안 정책 안내</strong><br>
-                        브라우저 보안상 파일을 바로 열면 데이터를 불러올 수 없습니다.<br>
-                        터미널에서 아래 명령어를 실행한 후 접속해주세요:<br>
-                        <code>python -m src.tracker.main serve</code><br>
-                        접속 주소: <a href="http://localhost:8000" target="_blank">http://localhost:8000</a>
-                    </div>`;
-                }
-                list.innerHTML = `<div style="padding: 20px; color: #ef4444; font-size: 13px;">
-                    ⚠️ 데이터를 불러오지 못했습니다.<br>
-                    <small>${e.message}</small><br>
-                    ${helpMsg}
-                    <button onclick="init()" style="margin-top:15px; padding:8px 16px; background:#4f46e5; color:white; border:none; border-radius:4px; cursor:pointer;">다시 시도</button>
-                </div>`;
+                list.innerHTML = `<div style="padding: 20px; color: #ef4444; font-size: 13px;">⚠️ ${e.message}</div>`;
             }
         }
 
         function formatPrice(num) {
-            if (num === null || num === undefined || num === 0) return '-';
+            if (!num) return '-';
             return new Intl.NumberFormat('ko-KR').format(num) + '원';
         }
 
@@ -1549,16 +1546,14 @@
 
         function updateCheckedCount() {
             const count = document.querySelectorAll('.product-checkbox:checked').length;
-            document.getElementById('checkedCount').textContent = count + '개 선택';
+            const el = document.getElementById('checkedCount');
+            if (el) el.textContent = count + '개';
         }
 
         function renderCategoryTabs() {
             const container = document.getElementById('categoryTabs');
-            const order = ['전체', '버즈', '워치', '핏', '기타'];
-            const existingCategories = new Set(dashboardData.products.map(p => p.category).filter(c => c));
-            const categories = order.filter(cat => cat === '전체' || existingCategories.has(cat));
-            existingCategories.forEach(cat => { if (!order.includes(cat)) categories.push(cat); });
-
+            if (!container) return;
+            const categories = ['전체', ...new Set(dashboardData.products.map(p => p.category).filter(c => c))];
             container.innerHTML = categories.map(cat => `
                 <div class="category-pill ${cat === selectedCategory ? 'active' : ''}" 
                      onclick="filterCategory('${cat}')">${cat}</div>
@@ -1569,43 +1564,29 @@
             selectedCategory = cat;
             renderCategoryTabs();
             renderProductList();
-            const filteredIndices = dashboardData.products
-                .map((p, i) => (selectedCategory === '전체' || p.category === selectedCategory) ? i : -1)
-                .filter(i => i !== -1);
-            if (filteredIndices.length > 0) selectProduct(filteredIndices[0]);
+            const firstIdx = dashboardData.products.findIndex(p => selectedCategory === '전체' || p.category === selectedCategory);
+            if (firstIdx >= 0) selectProduct(firstIdx);
         }
 
         function renderProductList() {
             const list = document.getElementById('productList');
+            if (!list) return;
             let filtered = dashboardData.products.map((p, i) => ({ ...p, originalIndex: i }))
                 .filter(p => selectedCategory === '전체' || p.category === selectedCategory);
 
             const sortOption = document.getElementById('sortOption')?.value || 'default';
-            if (sortOption === 'price_asc') {
-                filtered.sort((a, b) => (a.current_price || 999999999) - (b.current_price || 999999999));
-            } else if (sortOption === 'price_desc') {
-                filtered.sort((a, b) => (b.current_price || 0) - (a.current_price || 0));
-            } else if (sortOption === 'name_asc') {
-                filtered.sort((a, b) => a.name.localeCompare(b.name));
-            }
+            if (sortOption === 'price_asc') filtered.sort((a, b) => (a.current_price || 9e9) - (b.current_price || 9e9));
+            else if (sortOption === 'price_desc') filtered.sort((a, b) => (b.current_price || 0) - (a.current_price || 0));
+            else if (sortOption === 'name_asc') filtered.sort((a, b) => a.name.localeCompare(b.name));
 
-            const checkedIndices = Array.from(document.querySelectorAll('.product-checkbox:checked')).map(cb => parseInt(cb.dataset.index));
-
-            list.innerHTML = filtered.map((p) => {
+            list.innerHTML = filtered.map(p => {
                 const change = p.change_pct ? p.change_pct.toFixed(1) + '%' : '0.0%';
                 const badgeClass = p.status === 'PRICE_DOWN' ? 'badge-down' : (p.status === 'PRICE_UP' ? 'badge-up' : 'badge-none');
                 const trendIcon = p.status === 'PRICE_DOWN' ? '⬇️' : (p.status === 'PRICE_UP' ? '⬆️' : '➖');
-                const isChecked = checkedIndices.includes(p.originalIndex) ? 'checked' : '';
                 return `
                     <li class="product-item ${p.originalIndex === selectedProductIndex ? 'active' : ''}" 
-                        onclick="selectProduct(${p.originalIndex})"
-                        draggable="true" 
-                        ondragstart="handleDragStart(event, ${p.originalIndex})" 
-                        ondragover="handleDragOver(event)" 
-                        ondrop="handleDrop(event, ${p.originalIndex})"
-                        ondragleave="handleDragLeave(event)"
-                        ondragend="handleDragEnd(event)">
-                        <input type="checkbox" class="product-checkbox" data-index="${p.originalIndex}" ${isChecked} onclick="event.stopPropagation(); updateCheckedCount();">
+                        onclick="selectProduct(${p.originalIndex})">
+                        <input type="checkbox" class="product-checkbox" data-index="${p.originalIndex}" onclick="event.stopPropagation(); updateCheckedCount();">
                         <img class="product-thumb" src="${p.image_url || ''}" alt="">
                         <div class="product-info">
                             <span class="product-name">${p.name}</span>
@@ -1617,67 +1598,7 @@
                     </li>
                 `;
             }).join('');
-
             updateCheckedCount();
-        }
-
-        let draggedIndex = null;
-
-        function handleDragStart(e, index) {
-            draggedIndex = index;
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', index);
-            setTimeout(() => { e.target.style.opacity = '0.5'; }, 0);
-        }
-
-        function handleDragOver(e) {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-            const li = e.target.closest('li.product-item');
-            if (li) {
-                li.style.borderTop = '2px solid var(--toss-blue)';
-            }
-        }
-
-        function handleDragLeave(e) {
-            const li = e.target.closest('li.product-item');
-            if (li) {
-                li.style.borderTop = '1px solid transparent';
-            }
-        }
-
-        function handleDrop(e, targetIndex) {
-            e.preventDefault();
-            const li = e.target.closest('li.product-item');
-            if (li) li.style.borderTop = '1px solid transparent';
-
-            if (draggedIndex === null || draggedIndex === targetIndex) return;
-
-            const draggedItem = dashboardData.products[draggedIndex];
-            const targetItem = dashboardData.products[targetIndex];
-
-            const selectedItem = dashboardData.products[selectedProductIndex];
-
-            dashboardData.products.splice(draggedIndex, 1);
-            let newTargetIdx = dashboardData.products.indexOf(targetItem);
-            
-            if (newTargetIdx === -1) newTargetIdx = dashboardData.products.length;
-            dashboardData.products.splice(newTargetIdx, 0, draggedItem);
-
-            if (selectedItem) {
-                selectedProductIndex = dashboardData.products.indexOf(selectedItem);
-            }
-
-            const sortSelect = document.getElementById('sortOption');
-            if (sortSelect) sortSelect.value = 'default';
-
-            renderProductList();
-        }
-
-        function handleDragEnd(e) {
-            e.target.style.opacity = '1';
-            document.querySelectorAll('li.product-item').forEach(li => li.style.borderTop = '1px solid transparent');
-            draggedIndex = null;
         }
 
         function selectProduct(index) {
@@ -1686,48 +1607,30 @@
             if (!product) return;
 
             document.querySelectorAll('.product-item').forEach(el => {
-                el.classList.toggle('active', parseInt(el.querySelector('.product-checkbox').dataset.index) === index);
+                const cb = el.querySelector('.product-checkbox');
+                if (cb) el.classList.toggle('active', parseInt(cb.dataset.index) === index);
             });
 
             document.getElementById('selectedTitle').innerText = product.name;
             const imgEl = document.getElementById('selectedImage');
             const imgContainer = document.getElementById('selectedImageContainer');
-            if (p.image_url) { imgEl.src = p.image_url; imgContainer.style.display = 'flex'; }
-            else { imgContainer.style.display = 'none'; }
+            if (product.image_url) { imgEl.src = product.image_url; imgContainer.style.display = 'flex'; }
+            else imgContainer.style.display = 'none';
 
-            const rankHtml = p.search_rank ? ` <span style="margin: 0 8px; color: var(--glass-border);">|</span> <span style="color:var(--toss-blue); font-weight:700;">네이버랭킹 ${p.search_rank}위</span>` : '';
-            const keywordHtml = ` <span style="margin: 0 8px; color: var(--glass-border);">|</span> <span style="font-size:12px; color:var(--text-muted);">검색키워드: "${p.rank_query || p.name}"</span>`;
-            document.getElementById('sellerInfo').innerHTML = `<span class="seller-tag">${p.seller}</span>에서 실시간 최저가 수집 중${rankHtml}${keywordHtml}`;
+            const rankHtml = product.search_rank ? ` <span style="margin:0 8px; color:var(--glass-border);">|</span> <span style="color:var(--toss-blue); font-weight:700;">네이버랭킹 ${product.search_rank}위</span>` : '';
+            const keywordHtml = ` <span style="margin:0 8px; color:var(--glass-border);">|</span> <span style="font-size:12px; color:var(--text-muted);">키워드: "${product.rank_query || product.name}"</span>`;
+            document.getElementById('sellerInfo').innerHTML = `<span class="seller-tag">${product.seller}</span> 수집 중${rankHtml}${keywordHtml}`;
             
-            document.getElementById('currentPriceStat').innerHTML = `<span class="mono">${formatPrice(p.current_price)}</span>`;
-            document.getElementById('allTimeLow').innerHTML = `<span class="mono">${formatPrice(stats.min_price)}</span>`;
-            document.getElementById('allTimeHigh').innerHTML = `<span class="mono">${formatPrice(stats.max_price)}</span>`;
-            document.getElementById('avg7d').innerHTML = `<span class="mono">${formatPrice(stats.avg_7d)}</span>`;
-            document.getElementById('avg30d').innerHTML = `<span class="mono">${formatPrice(stats.avg_30d)}</span>`;
-
-            // 랭킹 헤더에 키워드 표시 (그룹화된 rank_query 사용)
-            const rankingListTitle = document.querySelector('.ranking-list-title');
-            const displayKeyword = p.rank_query || p.name;
-            if (rankingListTitle) {
-                rankingListTitle.innerHTML = `검색키워드: "${displayKeyword}" <small style="font-weight:400; font-size:12px; color:var(--text-muted); margin-left:8px;">(정확도 랭킹순 상위 10개)</small>`;
-            }
-
-            renderRankingView(displayKeyword);
-
-            const catalogBtn = document.getElementById('catalogBtn');
-            if (product.product_id) { catalogBtn.href = `https://search.shopping.naver.com/catalog/${product.product_id}`; catalogBtn.style.display = 'flex'; }
-            else { catalogBtn.style.display = 'none'; }
-
             document.getElementById('currentPriceStat').innerText = formatPrice(product.current_price);
             document.getElementById('allTimeLow').innerText = formatPrice(product.all_time_low);
             document.getElementById('allTimeHigh').innerText = formatPrice(product.all_time_high);
             document.getElementById('avg7d').innerText = formatPrice(product.avg_7d);
             document.getElementById('avg30d').innerText = formatPrice(product.avg_30d);
 
-            const setDiff = (id, current, avg) => {
+            const setDiff = (id, cur, avg) => {
                 const el = document.getElementById(id);
                 if (!avg) { el.innerText = '-'; return; }
-                const diff = current - avg;
+                const diff = cur - avg;
                 const pct = ((diff / avg) * 100).toFixed(1);
                 if (diff < 0) { el.innerText = `평균대비 ${Math.abs(pct)}% 낮음 ✨`; el.style.color = 'var(--price-down)'; }
                 else if (diff > 0) { el.innerText = `평균대비 ${pct}% 높음`; el.style.color = 'var(--price-up)'; }
@@ -1735,380 +1638,81 @@
             };
             setDiff('avg7dDiff', product.current_price, product.avg_7d);
             setDiff('avg30dDiff', product.current_price, product.avg_30d);
-            document.getElementById('currentDiff').innerText = product.status === 'PRICE_DOWN' ? '최근 하락세 감지 ✅' : (product.status === 'PRICE_UP' ? '가격 상승 중 주의 ⚠️' : '현재가 유지 중');
 
             const badgeContainer = document.getElementById('priceBadgeContainer');
             if (badgeContainer) {
                 if (product.current_price <= product.all_time_low && product.all_time_low > 0) {
-                    badgeContainer.innerHTML = `<div class="chart-badge" style="background: rgba(49, 130, 247, 0.1); color: #3182f7;">✨ 현재 역대 최저가 달성 중!</div>`;
+                    badgeContainer.innerHTML = `<div class="chart-badge" style="background:rgba(49,130,247,0.1); color:#3182f7;">✨ 역대 최저가 달성 중!</div>`;
                 } else {
-                    const pctFromLow = (((product.current_price - product.all_time_low) / product.all_time_low) * 100).toFixed(1);
-                    badgeContainer.innerHTML = `<div class="chart-badge">역대 최저가 대비 +${pctFromLow}% 높음</div>`;
+                    const pct = (((product.current_price - product.all_time_low) / product.all_time_low) * 100).toFixed(1);
+                    badgeContainer.innerHTML = `<div class="chart-badge">역대 최저가 대비 +${pct}%</div>`;
                 }
             }
 
+            renderRankingView(product.rank_query || product.name);
             currentPage = 1;
             refreshChartView();
-
-            // 모바일에서 상품 선택 시 사이드바 닫기
-            if (window.innerWidth <= 768) {
-                toggleSidebar(false);
-            }
-        }
-
-        function changeChartDays(days, el) {
-            chartDays = days;
-            document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
-            if (el) el.classList.add('active');
-
-            // 날짜 리셋
-            document.getElementById('startDate').value = '';
-            document.getElementById('endDate').value = '';
-
-            currentPage = 1; // 페이지 초기화
-            refreshChartView();
-        }
-
-        function customDateFilter() {
-            const start = document.getElementById('startDate').value;
-            const end = document.getElementById('endDate').value;
-
-            if (start || end) {
-                chartDays = -1; // 사용자 정의 모드
-                document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
-                currentPage = 1;
-                refreshChartView();
-            }
         }
 
         function refreshChartView() {
             const product = dashboardData.products[selectedProductIndex];
-            let history = product.history;
-
-            const startStr = document.getElementById('startDate').value;
-            const endStr = document.getElementById('endDate').value;
-
+            if (!product) return;
+            let hist = product.history || [];
             if (chartDays > 0) {
-                const cutoff = new Date();
-                cutoff.setDate(cutoff.getDate() - chartDays);
-                history = history.filter(h => new Date(h.t) >= cutoff);
-            } else if (chartDays === -1) {
-                if (startStr) {
-                    const start = new Date(startStr);
-                    start.setHours(0, 0, 0, 0);
-                    history = history.filter(h => new Date(h.t) >= start);
-                }
-                if (endStr) {
-                    const end = new Date(endStr);
-                    end.setHours(23, 59, 59, 999);
-                    history = history.filter(h => new Date(h.t) <= end);
-                }
+                const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - chartDays);
+                hist = hist.filter(h => new Date(h.t) >= cutoff);
             }
-
-            renderChart(history);
-            currentFilteredHistory = history.slice().reverse();
+            renderChart(hist);
+            currentFilteredHistory = hist.slice().reverse();
             renderTable();
-            renderRankingView(product.rank_query || product.name);
         }
 
         function renderChart(history) {
-            const ctx = document.getElementById('priceChart').getContext('2d');
+            const ctx = document.getElementById('priceChart')?.getContext('2d');
+            if (!ctx) return;
             if (mainChart) mainChart.destroy();
-            const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-            gradient.addColorStop(0, 'rgba(49, 130, 247, 0.15)');
-            gradient.addColorStop(1, 'rgba(49, 130, 247, 0)');
-
             mainChart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: history.map(h => { const d = new Date(h.t); return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:00`; }),
-                    datasets: [{
-                        data: history.map(h => h.p),
-                        borderColor: '#3182f7',
-                        borderWidth: 3,
-                        pointBackgroundColor: '#ffffff',
-                        pointBorderColor: '#3182f7',
-                        pointHoverRadius: 6,
-                        fill: true,
-                        backgroundColor: gradient,
-                        tension: 0.4
-                    }]
+                    labels: history.map(h => { const d = new Date(h.t); return `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}시`; }),
+                    datasets: [{ data: history.map(h => h.p), borderColor: '#3182f7', borderWidth: 3, pointRadius: 0, fill: true, backgroundColor: 'rgba(49,130,247,0.1)', tension: 0.4 }]
                 },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: { x: { display: false }, y: { grid: { color: 'rgba(0,0,0,0.03)' }, ticks: { callback: v => v.toLocaleString() } } }
-                }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { ticks: { callback: v => v.toLocaleString() } } } }
             });
         }
 
         function renderTable() {
-            const product = dashboardData.products[selectedProductIndex];
             const tbody = document.querySelector('#historyTable tbody');
-            const paginationEl = document.getElementById('pagination');
-
-            const totalItems = currentFilteredHistory.length;
-
-            // 페이지네이션 계산
-            // 첫 페이지는 20개, 그 다음부터는 10개씩
-            let startIndex = 0;
-            let itemsOnThisPage = itemsPerPageNormal;
-
-            if (currentPage === 1) {
-                startIndex = 0;
-                itemsOnThisPage = itemsPerPageFirst;
-            } else {
-                startIndex = itemsPerPageFirst + (currentPage - 2) * itemsPerPageNormal;
-                itemsOnThisPage = itemsPerPageNormal;
-            }
-
-            const pageData = currentFilteredHistory.slice(startIndex, startIndex + itemsOnThisPage);
-
-            tbody.innerHTML = pageData.map((h, i) => {
-                const globalIndex = startIndex + i;
-                const date = new Date(h.t);
-                let diffStr = '-', diffColor = 'var(--text-muted)';
-
-                // 가격 변동 계산 (다음 데이터와 비교 - reverse 기준)
-                if (globalIndex < totalItems - 1) {
-                    const nextItem = currentFilteredHistory[globalIndex + 1];
-                    const diff = h.p - nextItem.p;
-                    if (diff < 0) { diffStr = `⬇️ ${Math.abs(diff).toLocaleString()}`; diffColor = 'var(--price-down)'; }
-                    else if (diff > 0) { diffStr = `⬆️ ${diff.toLocaleString()}`; diffColor = 'var(--price-up)'; }
-                    else diffStr = '0';
-                }
-
-                return `<tr><td>${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}</td><td style="font-weight:700">${formatPrice(h.p)}</td><td style="color:${diffColor};font-weight:600">${diffStr}</td><td>${product.seller}</td><td>정상</td></tr>`;
-            }).join('');
-
-            // 페이지네이션 UI 생성
-            const totalPages = totalItems <= itemsPerPageFirst ? 1 : Math.ceil((totalItems - itemsPerPageFirst) / itemsPerPageNormal) + 1;
-
-            let navHtml = `<button class="page-btn" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>이전</button>`;
-
-            // 페이지 번호 표시 (최대 10개씩)
-            const maxPagesToShow = 10;
-            let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
-            let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
-            if (endPage - startPage + 1 < maxPagesToShow) {
-                startPage = Math.max(1, endPage - maxPagesToShow + 1);
-            }
-
-            for (let i = startPage; i <= endPage; i++) {
-                navHtml += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
-            }
-
-            navHtml += `<button class="page-btn" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>다음</button>`;
-            paginationEl.innerHTML = navHtml;
+            if (!tbody) return;
+            const start = (currentPage - 1) * itemsPerPageNormal;
+            const pageData = currentFilteredHistory.slice(start, start + itemsPerPageNormal);
+            tbody.innerHTML = pageData.map(h => `<tr><td>${new Date(h.t).toLocaleString()}</td><td style="font-weight:700">${formatPrice(h.p)}</td><td>${formatPrice(h.p)}</td><td>${dashboardData.products[selectedProductIndex].seller}</td><td>정상</td></tr>`).join('');
         }
 
-        function goToPage(page) {
-            currentPage = page;
-            renderTable();
-            // 테이블 상단으로 스크롤 이동 (선택적)
-            document.querySelector('.history-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-
-        function downloadExcel() {
-            const checked = document.querySelectorAll('.product-checkbox:checked');
-            if (checked.length === 0) { alert("다운로드할 상품을 선택하세요."); return; }
-            
-            // 1. 현재 최저가 시트 데이터 준비
-            const currentData = [["상품명", "현재 최저가", "판매처", "수집시간", "네이버 랭킹", "수집 키워드"]];
-            // 2. 가격 히스토리 시트 데이터 준비 (날짜와 시간 완전 분리)
-            const historyData = [["상품명", "수집날짜", "수집시간", "가격", "판매처"]];
-            // 3. 키워드 랭킹 시트 데이터 준비
-            const rankingData = [["검색 키워드", "순위", "상품명(네이버)", "가격", "판매처", "수집시간"]];
-
-            const addedKeywords = new Set();
-
-            Array.from(checked).forEach(cb => {
-                const p = dashboardData.products[cb.dataset.index];
-                
-                // 최신 수집 시간 추출
-                let lastTime = "-";
-                if (p.history && p.history.length > 0) {
-                    const d = new Date(p.history[p.history.length - 1].t);
-                    lastTime = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
-                }
-
-                // 현재 정보 추가
-                currentData.push([
-                    p.name, 
-                    p.current_price, 
-                    p.seller, 
-                    lastTime,
-                    p.search_rank || "-", 
-                    p.rank_query || p.name
-                ]);
-
-                // 히스토리 정보 추가 (날짜와 시간 분리)
-                p.history.forEach(h => {
-                    const d = new Date(h.t);
-                    const formattedDate = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
-                    const formattedTime = `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
-                    historyData.push([p.name, formattedDate, formattedTime, h.p, p.seller]);
-                });
-
-                // 랭킹 정보 추가 (중복 방지)
-                const kw = p.rank_query || p.name;
-                const keywordsToProcess = [kw];
-                if (kw.includes("갤럭시")) {
-                    const short = kw.replace("갤럭시", "").trim();
-                    if (short) keywordsToProcess.push(short);
-                }
-
-                keywordsToProcess.forEach(targetK => {
-                    if (!addedKeywords.has(targetK) && dashboardData.rankings && dashboardData.rankings[targetK]) {
-                        addedKeywords.add(targetK);
-                        dashboardData.rankings[targetK].forEach(r => {
-                            const d = new Date(r.collected_at);
-                            const formattedDate = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
-                            rankingData.push([
-                                targetK,
-                                r.rank,
-                                r.title,
-                                r.price,
-                                r.seller_name,
-                                formattedDate
-                            ]);
-                        });
-                    }
-                });
-            });
-
-            // Workbook 생성
-            const wb = XLSX.utils.book_new();
-            
-            // 시트 1: 현재 요약
-            const wsCurrent = XLSX.utils.aoa_to_sheet(currentData);
-            XLSX.utils.book_append_sheet(wb, wsCurrent, "현재_최저가_목록");
-            
-            // 시트 2: 가격 히스토리
-            const wsHistory = XLSX.utils.aoa_to_sheet(historyData);
-            XLSX.utils.book_append_sheet(wb, wsHistory, "가격_히스토리");
-
-            // 시트 3: 키워드 랭킹
-            const wsRanking = XLSX.utils.aoa_to_sheet(rankingData);
-            XLSX.utils.book_append_sheet(wb, wsRanking, "키워드_TOP10_랭킹");
-
-            // 파일 저장
-            XLSX.writeFile(wb, `가격분석_${new Date().toISOString().slice(0, 10)}.xlsx`);
-        }
-
-        /* ----- V2: 탭 전환 및 랭킹 뷰 로직 ----- */
-        function switchView(viewId) {
-            document.querySelectorAll('.view-tab').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.view-content').forEach(content => content.classList.remove('active'));
-            
-            if(viewId === 'priceView') {
-                document.getElementById('tabPrice').classList.add('active');
-            } else if(viewId === 'rankingView') {
-                document.getElementById('tabRanking').classList.add('active');
-            } else if(viewId === 'mallReportView') {
-                document.getElementById('tabMall').classList.add('active');
-                renderMallReportTabs();
-            }
-            document.getElementById(viewId).classList.add('active');
-        }
-
-        let currentRankingKeyword = "";
-
-        function renderRankingView(keyword) {
-            if (!keyword) return;
-            currentRankingKeyword = keyword;
+        function renderRankingView(kw) {
             const container = document.getElementById('ranking-list-container');
-            const tabsContainer = document.getElementById('ranking-keyword-tabs');
-            const timeEl = document.getElementById('rankingUpdateTime');
-            
-            // 키워드 목록 생성 (갤럭시 포함/제외)
-            let keywords = [keyword];
-            if (keyword.includes("갤럭시")) {
-                const short = keyword.replace("갤럭시", "").trim();
-                if (short && short !== keyword) keywords.push(short);
-            }
-
-            // 중복 제거
-            keywords = [...new Set(keywords)];
-
-            // "갤럭시"가 없는 짧은 키워드를 앞으로 정렬 (사용자 요청: 디폴트값)
-            keywords.sort((a, b) => {
-                const hasA = a.includes("갤럭시");
-                const hasB = b.includes("갤럭시");
-                if (!hasA && hasB) return -1;
-                if (hasA && !hasB) return 1;
-                return a.length - b.length;
-            });
-
-            // 탭 버튼 생성
-            tabsContainer.innerHTML = keywords.map(k => `
-                <button class="filter-pill ${k === keywords[0] ? 'active' : ''}" onclick="updateRankingData('${k}', '${keyword}')">${k}</button>
-            `).join('');
-
-            // 첫 번째 키워드(짧은 것)를 기본으로 데이터 로드
-            updateRankingData(keywords[0], keyword);
-        }
-
-        function updateRankingData(targetK, baseK) {
-            const container = document.getElementById('ranking-list-container');
-            const timeEl = document.getElementById('rankingUpdateTime');
-            
-            // 탭 활성화 상태 업데이트
-            document.querySelectorAll('#ranking-keyword-tabs .filter-pill').forEach(btn => {
-                btn.classList.toggle('active', btn.innerText === targetK);
-            });
-
-            if (!dashboardData.rankings || !dashboardData.rankings[targetK]) {
-                container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 40px;">[${targetK}]에 대한 데이터가 아직 수집되지 않았습니다.</div>`;
-                timeEl.innerText = "";
-                return;
-            }
-
-            const rankings = dashboardData.rankings[targetK].slice(0, 10);
-            if (rankings.length > 0) {
-                const date = new Date(rankings[0].collected_at);
-                timeEl.innerText = '수집: ' + date.toLocaleString();
-            }
-
-            container.innerHTML = rankings.map((item) => {
-                const rank = item.rank;
-                const isTop1 = rank === 1 ? 'top1' : '';
-                const imgUrl = item.image_url || 'https://via.placeholder.com/80?text=No+Img';
-                
-                return `
-                <div class="ranking-card" onclick="window.open('${item.product_url || '#'}', '_blank')">
-                    <div class="rank-num ${isTop1}">${rank}</div>
-                    <img class="thumb" src="${imgUrl}" alt="thumbnail"/>
+            const tabs = document.getElementById('ranking-keyword-tabs');
+            if (!container || !dashboardData.rankings || !dashboardData.rankings[kw]) return;
+            const rankings = dashboardData.rankings[kw].slice(0, 10);
+            container.innerHTML = rankings.map(item => `
+                <div class="ranking-card" onclick="window.open('${item.product_url}','_blank')">
+                    <div class="rank-num ${item.rank === 1 ? 'top1' : ''}">${item.rank}</div>
+                    <img class="thumb" src="${item.image_url}">
                     <div class="ranking-card-body">
-                        <div class="mall">${item.seller_name || '네이버쇼핑'}</div>
+                        <div class="mall">${item.seller_name}</div>
                         <div class="title">${item.title}</div>
                         <div class="price">${formatPrice(item.price)}</div>
                     </div>
                 </div>
-                `;
-            }).join('');
+            `).join('');
         }
 
-        // --- 쇼핑몰(Mall) 셀러 추적 리포트 로직 ---
         function renderMallCategoryTabs() {
             const container = document.getElementById('mallCategoryTabs');
-            if (!container || !dashboardData.mall_reports || !dashboardData.mall_reports.categories) return;
-
-            const categories = Object.keys(dashboardData.mall_reports.categories);
-            if (categories.length === 0) {
-                container.innerHTML = '<div style="color: var(--text-muted); font-size: 11px;">데이터 없음</div>';
-                return;
-            }
-
-            container.innerHTML = categories.map(cat => `
-                <div class="cat-pill ${currentMallCategory === cat ? 'active' : ''}" onclick="selectMallCategory('${cat}')">
-                    ${cat}
-                </div>
-            `).join('');
-
-            if (!currentMallCategory && categories.length > 0) {
-                selectMallCategory(categories[0]);
-            }
+            if (!container || !dashboardData.mall_reports?.categories) return;
+            const cats = Object.keys(dashboardData.mall_reports.categories);
+            container.innerHTML = cats.map(cat => `<div class="cat-pill ${currentMallCategory === cat ? 'active' : ''}" onclick="selectMallCategory('${cat}')">${cat}</div>`).join('');
+            if (!currentMallCategory && cats.length > 0) selectMallCategory(cats[0]);
         }
 
         function selectMallCategory(cat) {
@@ -2118,141 +1722,46 @@
         }
 
         function renderMallReportTabs() {
-            const tabsContainer = document.getElementById('mall-seller-tabs');
-            if (!tabsContainer || !dashboardData.mall_reports || !dashboardData.mall_reports.categories || !currentMallCategory) return;
-
-            const malls = dashboardData.mall_reports.categories[currentMallCategory];
-            const mallNames = Object.keys(malls);
-            
-            if (mallNames.length === 0) {
-                tabsContainer.innerHTML = '<div style="padding: 10px; color: var(--text-muted); font-size: 13px;">이 카테고리에 셀러가 없습니다.</div>';
-                return;
-            }
-
-            tabsContainer.innerHTML = mallNames.map(name => `
-                <div class="mall-tab ${currentMall === name ? 'active' : ''}" onclick="selectMall('${name}')">
-                    ${name}
-                </div>
-            `).join('');
-
-            // 선택된 카테고리에 현재 선택된 몰이 없으면 첫 번째 몰 선택
-            if (!mallNames.includes(currentMall)) {
-                selectMall(mallNames[0]);
-            }
+            const container = document.getElementById('mall-seller-tabs');
+            if (!container || !currentMallCategory) return;
+            const malls = Object.keys(dashboardData.mall_reports.categories[currentMallCategory]);
+            container.innerHTML = malls.map(m => `<div class="mall-tab ${currentMall === m ? 'active' : ''}" onclick="selectMall('${m}')">${m}</div>`).join('');
+            if (!currentMall && malls.length > 0) selectMall(malls[0]);
         }
 
-        function selectMall(name) {
-            currentMall = name;
+        function selectMall(m) {
+            currentMall = m;
             renderMallReportTabs();
-            renderMallDashboard(name);
+            renderMallDashboard(m);
         }
 
-        function renderMallDashboard(name) {
-            const malls = dashboardData.mall_reports.categories[currentMallCategory];
-            const data = malls ? malls[name] : null;
+        function renderMallDashboard(m) {
+            const data = dashboardData.mall_reports.categories[currentMallCategory][m];
             if (!data) return;
-
-            document.getElementById('currentMallTitle').textContent = name;
-            document.getElementById('mallUpdateTime').innerHTML = `<span class="mono">${dashboardData.mall_reports.generated_at}</span>`;
-            document.getElementById('mallStatTotal').innerHTML = `<span class="mono">${data.total_products}</span>`;
-            document.getElementById('mallStatDecreased').innerHTML = `<span class="mono">${data.price_decreased_count}</span>`;
-
+            document.getElementById('currentMallTitle').textContent = `[${currentMallCategory}] ${m}`;
+            document.getElementById('mallStatTotal').innerText = data.total_products;
+            document.getElementById('mallStatDecreased').innerText = data.price_decreased_count;
             renderMallChart(data.products);
             renderMallTable(data.products);
         }
 
-        function renderMallChart(products) {
-            const ctx = document.getElementById('mallPriceChart').getContext('2d');
+        function renderMallChart(prods) {
+            const ctx = document.getElementById('mallPriceChart')?.getContext('2d');
+            if (!ctx) return;
             if (mallPriceChart) mallPriceChart.destroy();
-
-            const allHistory = [];
-            products.forEach(p => {
-                if (p.history) {
-                    p.history.forEach(h => {
-                        allHistory.push({ t: h.t, p: h.p });
-                    });
-                }
-            });
-
-            if (allHistory.length === 0) return;
-
-            const grouped = {};
-            allHistory.forEach(h => {
-                const date = h.t.substring(0, 16);
-                if (!grouped[date]) grouped[date] = [];
-                grouped[date].push(h.p);
-            });
-
-            const labels = Object.keys(grouped).sort();
-            const dataPoints = labels.map(l => {
-                const prices = grouped[l];
-                return Math.round(prices.reduce((a, b) => a + b, 0) / prices.length);
-            });
-
+            const labels = [], data = [];
+            prods[0].history.forEach(h => { labels.push(h.t.substring(5, 10)); data.push(h.p); });
             mallPriceChart = new Chart(ctx, {
                 type: 'line',
-                data: {
-                    labels: labels.map(l => l.substring(5)),
-                    datasets: [{
-                        label: '평균 판매가',
-                        data: dataPoints,
-                        borderColor: '#3182f7',
-                        backgroundColor: 'rgba(49, 130, 247, 0.1)',
-                        borderWidth: 3,
-                        pointRadius: 2,
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                            padding: 12,
-                            callbacks: {
-                                label: (context) => `평균: ₩${context.raw.toLocaleString()}`
-                            }
-                        }
-                    },
-                    scales: {
-                        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 11 } } },
-                        y: { 
-                            grid: { color: 'rgba(255,255,255,0.05)' }, 
-                            ticks: { 
-                                color: '#94a3b8', 
-                                font: { size: 11 },
-                                callback: (value) => value.toLocaleString()
-                            } 
-                        }
-                    }
-                }
+                data: { labels, datasets: [{ data, borderColor: '#3182f7', fill: true, backgroundColor: 'rgba(49,130,247,0.1)', tension: 0.4 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
             });
         }
 
-        function renderMallTable(products) {
+        function renderMallTable(prods) {
             const tbody = document.getElementById('mallTableBody');
-            tbody.innerHTML = products.map(p => {
-                const deltaColor = p.status_cls === 'PRICE_DOWN' ? 'var(--price-down)' : (p.status_cls === 'PRICE_UP' ? 'var(--price-up)' : 'var(--text-muted)');
-                const deltaIcon = p.status_cls === 'PRICE_DOWN' ? '⬇️' : (p.status_cls === 'PRICE_UP' ? '⬆️' : '');
-                
-                return `
-                    <tr>
-                        <td class="mono" style="font-size: 11px; color: var(--text-muted);">${p.collected_at}</td>
-                        <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${p.title}">
-                            <div style="font-weight: 600; color: var(--text-main); font-size: 13.5px;">${p.title}</div>
-                        </td>
-                        <td class="mono" style="font-weight: 700; font-size: 14px;">${p.curr_price_fmt}</td>
-                        <td class="mono" style="color: var(--text-muted); font-size: 12px;">${p.prev_price_fmt}</td>
-                        <td class="mono" style="color: ${deltaColor}; font-weight: 600; font-size: 13px;">${deltaIcon} ${p.delta_str} (${p.delta_pct_str})</td>
-                        <td style="text-align: right;">
-                            <a href="${p.url}" target="_blank" class="chart-btn" style="padding: 6px 12px; text-decoration: none; font-size: 11px; display: inline-block; border-radius: 8px;">상세 보기</a>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
+            if (!tbody) return;
+            tbody.innerHTML = prods.map(p => `<tr><td class="mono">${p.collected_at}</td><td>${p.title}</td><td class="mono">${p.curr_price_fmt}</td><td class="mono">${p.prev_price_fmt}</td><td class="mono">${p.delta_str}</td><td style="text-align:right"><a href="${p.url}" target="_blank" class="chart-btn">링크</a></td></tr>`).join('');
         }
 
         init();
