@@ -179,7 +179,7 @@ async def run_once(app_config, artifacts_dir: str, db_path: str, summary_json: s
                 if candidates:
                     for c in candidates:
                         c["collected_at"] = mall_collected_at
-                    store.insert_mall_records(m_target.name, m_target.query, m_target.mall_name, candidates)
+                    store.insert_mall_records(m_target.name, m_target.query, m_target.mall_name, m_target.category, candidates)
                     logger.info("셀러 상품 수집 완료: %s (%d개 상품 저장)", m_target.name, len(candidates))
                 else:
                     logger.warning("셀러 상품 수집 결과 없음: %s", m_target.name)

@@ -64,6 +64,7 @@ CREATE TABLE IF NOT EXISTS mall_observations (
     target_name TEXT NOT NULL,
     query TEXT NOT NULL,
     mall_name TEXT NOT NULL,
+    category TEXT DEFAULT '기타',
     collected_at TEXT NOT NULL,
     title TEXT,
     price INTEGER,
@@ -100,6 +101,12 @@ def _migrate(conn: sqlite3.Connection) -> None:
     for col_name, col_type in _MIGRATION_COLUMNS:
         if col_name not in existing:
             conn.execute(f"ALTER TABLE observations ADD COLUMN {col_name} {col_type}")
+
+    # mall_observations 테이블 마이그레이션
+    mall_existing = {row[1] for row in conn.execute("PRAGMA table_info(mall_observations)").fetchall()}
+    if "category" not in mall_existing:
+        conn.execute("ALTER TABLE mall_observations ADD COLUMN category TEXT DEFAULT '기타'")
+    
     conn.commit()
 
 
@@ -392,22 +399,22 @@ class ObservationStore:
         out.write_text(html_content, encoding="utf-8")
         return str(out)
 
-    def insert_mall_records(self, target_name: str, query: str, mall_name: str, rows: list[dict[str, Any]]) -> None:
+    def insert_mall_records(self, target_name: str, query: str, mall_name: str, category: str, rows: list[dict[str, Any]]) -> None:
         if not rows:
             # 검색 결과가 없는 경우 누적 관리를 위해 더미 데이터 삽입
             now_str = datetime.now(timezone.utc).isoformat()
             self.conn.execute(
                 """
                 INSERT INTO mall_observations 
-                (target_name, query, mall_name, collected_at, title, price, product_id, product_type, product_url, image_url, search_rank)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (target_name, query, mall_name, category, collected_at, title, price, product_id, product_type, product_url, image_url, search_rank)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (target_name, query, mall_name, now_str, "검색 결과 내 상품 없음", 0, "NOT_FOUND", 0, "", "", -1)
+                (target_name, query, mall_name, category, now_str, "검색 결과 내 상품 없음", 0, "NOT_FOUND", 0, "", "", -1)
             )
             self.conn.commit()
             return
         columns = [
-            "target_name", "query", "mall_name", "collected_at",
+            "target_name", "query", "mall_name", "category", "collected_at",
             "title", "price", "product_id", "product_type",
             "product_url", "image_url", "search_rank"
         ]
@@ -415,7 +422,7 @@ class ObservationStore:
         values = []
         for row in rows:
             values.append([
-                target_name, query, mall_name, row.get("collected_at"),
+                target_name, query, mall_name, category, row.get("collected_at"),
                 row.get("title"), row.get("price"), row.get("product_id"),
                 row.get("product_type"), row.get("product_url"),
                 row.get("image_url"), row.get("search_rank")
@@ -428,84 +435,95 @@ class ObservationStore:
         self.conn.commit()
 
     def get_mall_report_data(self) -> dict[str, Any]:
-        """Mall Tracker용 데이터를 취합하여 반환합니다."""
-        # 기존 target_name 대신 실제 API 상의 mall_name 기준으로 그룹핑합니다
-        mall_names = [
-            r[0] for r in self.conn.execute(
-                "SELECT DISTINCT mall_name FROM mall_observations ORDER BY mall_name"
-            ).fetchall()
-        ]
-
+        """Mall Tracker용 데이터를 취합하여 카테고리별로 반환합니다."""
+        # 전체 셀러 데이터 수집
+        rows = self.conn.execute(
+            "SELECT * FROM mall_observations ORDER BY collected_at ASC"
+        ).fetchall()
+        
         now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
         
         report_data = {
             "generated_at": now_str,
-            "targets": {}
+            "categories": {} # { category_name: { mall_name: { ... } } }
         }
         
-        for name in mall_names:
-            items_raw = self.conn.execute(
-                "SELECT * FROM mall_observations WHERE mall_name = ? ORDER BY collected_at ASC",
-                (name,)
-            ).fetchall()
+        for row in rows:
+            cat_name = row["category"] or "기타"
+            mall_name = row["mall_name"]
             
-            # 상품 아이디 기준 그룹화
-            product_group = {}
-            for item in items_raw:
-                pid = item["product_id"] or item["title"]
-                if pid not in product_group:
-                    product_group[pid] = {"title": item["title"], "url": item["product_url"], "mall_name": item["mall_name"], "history": []}
-                product_group[pid]["history"].append(dict(item))
-                
-            products_list = []
-            price_decreased_count = 0
+            if cat_name not in report_data["categories"]:
+                report_data["categories"][cat_name] = {}
             
-            for pid, pdata in product_group.items():
-                hist = pdata["history"]
-                last_item = hist[-1]
-                prev_price = hist[-2]["price"] if len(hist) > 1 else last_item["price"]
-                curr_price = last_item["price"]
+            if mall_name not in report_data["categories"][cat_name]:
+                report_data["categories"][cat_name][mall_name] = {
+                    "total_products": 0,
+                    "price_decreased_count": 0,
+                    "products_raw": {} # pid 기반 일시 그룹화
+                }
+            
+            mall_obj = report_data["categories"][cat_name][mall_name]
+            pid = row["product_id"] or row["title"]
+            
+            if pid not in mall_obj["products_raw"]:
+                mall_obj["products_raw"][pid] = {
+                    "title": row["title"],
+                    "url": row["product_url"],
+                    "history": []
+                }
+            
+            mall_obj["products_raw"][pid]["history"].append(dict(row))
+
+        # 데이터 후처리 (평균가, 변동 등 계산)
+        for cat_name, malls in report_data["categories"].items():
+            for mall_name, mall_obj in malls.items():
+                products_list = []
+                price_decreased_count = 0
                 
-                status_cls = "PRICE_SAME"
-                if curr_price < prev_price:
-                    status_cls = "PRICE_DOWN"
-                    price_decreased_count += 1
-                elif curr_price > prev_price:
-                    status_cls = "PRICE_UP"
+                for pid, pdata in mall_obj["products_raw"].items():
+                    hist = pdata["history"]
+                    last_item = hist[-1]
+                    prev_price = hist[-2]["price"] if len(hist) > 1 else last_item["price"]
+                    curr_price = last_item["price"]
+                    
+                    status_cls = "PRICE_SAME"
+                    if curr_price < prev_price:
+                        status_cls = "PRICE_DOWN"
+                        price_decreased_count += 1
+                    elif curr_price > prev_price:
+                        status_cls = "PRICE_UP"
+                    
+                    delta = curr_price - prev_price
+                    delta_str = f"{delta:+,}" if delta != 0 else "-"
+                    curr_price_fmt = f"₩{curr_price:,}" if curr_price else "-"
+                    prev_price_fmt = f"₩{prev_price:,}" if prev_price else "-"
+                    delta_pct = (delta / prev_price * 100) if prev_price else 0
+                    delta_pct_str = f"{delta_pct:+.1f}%" if delta != 0 else "0%"
+                    
+                    products_list.append({
+                        "title": pdata["title"] or "-",
+                        "mall_name": mall_name,
+                        "url": pdata["url"] or "#",
+                        "collected_at": (last_item["collected_at"] or "")[:10],
+                        "curr_price": curr_price,
+                        "prev_price": prev_price,
+                        "curr_price_fmt": curr_price_fmt,
+                        "prev_price_fmt": prev_price_fmt,
+                        "delta": delta,
+                        "delta_str": delta_str,
+                        "delta_pct_str": delta_pct_str,
+                        "status_cls": status_cls,
+                        "history": [{"t": h["collected_at"], "p": h["price"]} for h in hist]
+                    })
                 
-                delta = curr_price - prev_price
-                delta_str = f"{delta:+,}" if delta != 0 else "-"
+                products_list.sort(key=lambda x: (1 if x["status_cls"] == "PRICE_SAME" else 0, -len(x["history"])))
                 
-                curr_price_fmt = f"₩{curr_price:,}" if curr_price else "-"
-                prev_price_fmt = f"₩{prev_price:,}" if prev_price else "-"
-                delta_pct = (delta / prev_price * 100) if prev_price else 0
-                delta_pct_str = f"{delta_pct:+.1f}%" if delta != 0 else "0%"
+                malls[mall_name] = {
+                    "total_products": len(mall_obj["products_raw"]),
+                    "price_decreased_count": price_decreased_count,
+                    "products": products_list
+                }
                 
-                hist_mapped = [{"t": h["collected_at"], "p": h["price"]} for h in hist]
-                
-                products_list.append({
-                    "title": pdata["title"] or "-",
-                    "mall_name": pdata["mall_name"] or "-",
-                    "url": pdata["url"] or "#",
-                    "collected_at": (last_item["collected_at"] or "")[:10],
-                    "curr_price": curr_price,
-                    "prev_price": prev_price,
-                    "curr_price_fmt": curr_price_fmt,
-                    "prev_price_fmt": prev_price_fmt,
-                    "delta": delta,
-                    "delta_str": delta_str,
-                    "delta_pct_str": delta_pct_str,
-                    "status_cls": status_cls,
-                    "history": hist_mapped
-                })
-                
-            products_list.sort(key=lambda x: (1 if x["status_cls"] == "PRICE_SAME" else 0, -len(x["history"])))
-                
-            report_data["targets"][name] = {
-                "total_products": len(product_group),
-                "price_decreased_count": price_decreased_count,
-                "products": products_list
-            }
         return report_data
 
     def export_mall_report(self, out_path: str) -> str:
