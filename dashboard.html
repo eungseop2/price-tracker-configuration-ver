@@ -1517,34 +1517,34 @@
             }
 
             const wb = XLSX.utils.book_new();
+            const combinedData = [
+                ["모델명", "날짜", "시간", "가격", "판매처"]
+            ];
             
             checkedCbs.forEach(cb => {
                 const idx = parseInt(cb.dataset.index);
                 const p = dashboardData.products[idx];
-                if (!p) return;
+                if (!p || !p.history) return;
 
-                // 시트 데이터 구성
-                const wsData = [
-                    ["상품명", p.name],
-                    ["현재가", p.current_price],
-                    ["판매처", p.seller],
-                    ["역대 최저가", p.all_time_low],
-                    ["역대 최고가", p.all_time_high],
-                    ["", ""],
-                    ["수집 일시", "가격"]
-                ];
-
-                if (p.history) {
-                    p.history.slice().reverse().forEach(h => {
-                        wsData.push([new Date(h.t).toLocaleString(), h.p]);
-                    });
-                }
-
-                const ws = XLSX.utils.aoa_to_sheet(wsData);
-                XLSX.utils.book_append_sheet(wb, ws, p.name.substring(0, 30));
+                p.history.slice().reverse().forEach(h => {
+                    const dt = new Date(h.t);
+                    const dateStr = dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
+                    const timeStr = String(dt.getHours()).padStart(2, '0') + ':' + String(dt.getMinutes()).padStart(2, '0');
+                    
+                    combinedData.push([
+                        p.name,
+                        dateStr,
+                        timeStr,
+                        h.p,
+                        p.seller || "네이버"
+                    ]);
+                });
             });
 
-            XLSX.writeFile(wb, `price_tracker_report_${new Date().toISOString().split('T')[0]}.xlsx`);
+            const ws = XLSX.utils.aoa_to_sheet(combinedData);
+            XLSX.utils.book_append_sheet(wb, ws, "가격_추적_데이터");
+
+            XLSX.writeFile(wb, `price_tracker_combined_${new Date().toISOString().split('T')[0]}.xlsx`);
         }
 
         async function init() {
