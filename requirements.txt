@@ -5,3 +5,5 @@ uvicorn
 fastapi
 google-cloud-storage
 playwright
+gspread
+google-auth

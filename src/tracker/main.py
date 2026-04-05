@@ -16,8 +16,7 @@ from .browser_scraper import (
     collect_current_offer_via_browser
 )
 from .config import TargetConfig, load_config
-from .db import ObservationStore, RankingStore
-from .gcs_sync import download_db, upload_db
+from .gsheet_store import GoogleSheetStore
 from .naver_api import (
     NaverShoppingSearchClient,
     collect_lowest_offer_via_api,
@@ -77,14 +76,19 @@ async def _collect_one(client: NaverShoppingSearchClient, target: TargetConfig, 
         raise ValueError(f"지원하지 않는 수집 모드: {target.mode}")
 
 
-async def run_once(app_config, artifacts_dir: str, db_path: str, summary_json: str | None = None) -> None:
+async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json: str | None = None) -> None:
     ok = 0
     fail = 0
     fallback_used_count = 0
     alerts_triggered_count = 0
     changed_items = []
     
-    store = ObservationStore(db_path)
+    service_account_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_KEY")
+    if not service_account_json:
+        logger.error("GOOGLE_SERVICE_ACCOUNT_KEY 환경변수가 설정되지 않았습니다.")
+        return
+
+    store = GoogleSheetStore(gsheet_id, service_account_json)
     client = NaverShoppingSearchClient(timeout_seconds=app_config.timeout_seconds)
 
     for target in app_config.targets:
@@ -213,7 +217,6 @@ async def run_once(app_config, artifacts_dir: str, db_path: str, summary_json: s
 
     logger.info("고유 랭킹 키워드 수집 시작 (%d개)", len(expanded_queries))
     
-    r_store = RankingStore(db_path)
     rank_collected_at = utc_now_iso()
     
     for r_query in expanded_queries:
@@ -241,14 +244,13 @@ async def run_once(app_config, artifacts_dir: str, db_path: str, summary_json: s
                 })
             
             if rows_to_insert:
-                r_store.insert_ranking_batch(rows_to_insert)
+                store.insert_ranking_batch(rows_to_insert)
                 logger.info(f"랭킹 수집 완료: {r_query} ({len(rows_to_insert)}개)")
             else:
                 logger.warning(f"랭킹 수집 결과 없음: {r_query}")
         except Exception as e:
             logger.error(f"랭킹 수집 실패 ({r_query}): {e}")
     
-    r_store.close()
     store.close()
 
     # 이메일 알림 (KST 기준 야간 시간대 21:00~08:00 제외)
@@ -298,20 +300,30 @@ def main() -> None:
         return
 
     if args.command == "once":
-        asyncio.run(run_once(app_config, "artifacts", args.db, summary_json=args.summary_json))
+        if not app_config.gsheet_id:
+            logger.error("GSHEET_ID가 설정되지 않았습니다 (YAML 또는 환경변수).")
+            return
+        asyncio.run(run_once(app_config, "artifacts", app_config.gsheet_id, summary_json=args.summary_json))
 
     elif args.command == "monitor":
+        if not app_config.gsheet_id:
+            logger.error("GSHEET_ID가 설정되지 않았습니다.")
+            return
         logger.info("%d초 간격으로 모니터링을 시작합니다...", args.interval)
         while True:
             try:
-                asyncio.run(run_once(app_config, "artifacts", args.db, summary_json=args.summary_json))
+                asyncio.run(run_once(app_config, "artifacts", app_config.gsheet_id, summary_json=args.summary_json))
             except Exception as e:
                 logger.exception("모니터링 루프 중 오류 발생")
             time.sleep(args.interval)
 
     elif args.command == "export-ui":
-        store = ObservationStore(args.db)
-        r_store = RankingStore(args.db)
+        service_account_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_KEY")
+        if not app_config.gsheet_id or not service_account_json:
+            logger.error("GSHEET_ID 또는 GOOGLE_SERVICE_ACCOUNT_KEY 환경변수가 설정되지 않았습니다.")
+            return
+            
+        store = GoogleSheetStore(app_config.gsheet_id, service_account_json)
         try:
             dashboard_raw = store.get_dashboard_data(app_config.targets)
             
@@ -319,10 +331,8 @@ def main() -> None:
             rankings = {}
             unique_rank_queries = {t.rank_query for t in app_config.targets if t.rank_query}
             
-            expanded_queries = set(unique_rank_queries)
-
-            for rq in expanded_queries:
-                latest = r_store.get_latest_rankings(rq)
+            for rq in unique_rank_queries:
+                latest = store.get_latest_rankings(rq)
                 if latest:
                     rankings[rq] = latest
             
@@ -336,24 +346,12 @@ def main() -> None:
                 "updated_at": dashboard_raw["generated_at"]
             }
             Path("dashboard_data.json").write_text(dump_json(data), encoding="utf-8")
-            logger.info("UI 데이터 내보내기 완료: dashboard_data.json")
+            logger.info("UI 데이터 내보내기 완료: dashboard_data.json (Google Sheets 기반)")
         finally:
             store.close()
-            r_store.close()
 
-    elif args.command == "sync-from-gcs":
-        bucket = os.getenv("GCS_BUCKET")
-        if not bucket:
-            logger.error("GCS_BUCKET 환경변수가 설정되지 않았습니다.")
-            return
-        download_db(bucket, args.db)
-
-    elif args.command == "sync-to-gcs":
-        bucket = os.getenv("GCS_BUCKET")
-        if not bucket:
-            logger.error("GCS_BUCKET 환경변수가 설정되지 않았습니다.")
-            return
-        upload_db(bucket, args.db)
+    elif args.command == "sync-from-gcs" or args.command == "sync-to-gcs":
+        logger.warning("GCS 연동 기능은 이 브랜치에서 더 이상 사용되지 않습니다 (Google Sheets Only).")
 
     elif args.command == "serve":
         # 간단한 HTTP 서버 실행 (대시보드 확인용)
@@ -365,24 +363,11 @@ def main() -> None:
             logger.info("http://localhost:%d 에서 대시보드 서비스를 시작합니다.", PORT)
             httpd.serve_forever()
 
-    elif args.command == "daily-report":
-        send_daily_report(args.db, app_config.email.email_from, app_config.email.email_password, app_config.email.email_to, app_config.targets)
-
     elif args.command == "export-report":
-        from .report import generate_daily_report_html
-        html = generate_daily_report_html(args.db, app_config.targets)
-        out_path = args.output or "daily_report.html"
-        Path(out_path).write_text(html, encoding="utf-8")
-        logger.info(f"보고서 저장 완료: {out_path}")
+        logger.warning("export-report 기능은 현재 SQLite 의존성 제거 중입니다 (GSheet 대응 예정).")
 
     elif args.command == "export-mall-report":
-        store = ObservationStore(args.db)
-        try:
-            out_path = args.output or "mall_report.html"
-            store.export_mall_report(out_path)
-            logger.info("쇼핑몰(Seller) 추적 보고서 저장 완료: %s", out_path)
-        finally:
-            store.close()
+        logger.warning("export-mall-report 기능은 현재 SQLite 의존성 제거 중입니다 (GSheet 대응 예정).")
 
 
 if __name__ == "__main__":

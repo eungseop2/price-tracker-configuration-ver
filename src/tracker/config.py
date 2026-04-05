@@ -69,6 +69,7 @@ class AppConfig:
     timeout_seconds: int = 20
     alert_threshold_percent: float = 5.0
     email: EmailConfig = field(default_factory=EmailConfig)
+    gsheet_id: str | None = None
     targets: list[TargetConfig] = field(default_factory=list)
     mall_targets: list[MallTargetConfig] = field(default_factory=list)
 
@@ -209,6 +210,7 @@ def load_config(path: str | Path) -> AppConfig:
             email_password=email_password,
             email_to=email_to
         ),
+        gsheet_id=os.getenv("GSHEET_ID") or common.get("gsheet_id"),
         targets=[],
         mall_targets=[],
     )
