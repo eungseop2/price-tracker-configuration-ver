@@ -34,7 +34,7 @@ jobs:
           NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
           NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
           GSHEET_ID: ${{ secrets.GSHEET_ID }}
-          GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
+          GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SA_KEY }}
           PYTHONPATH: src
         run: |
           # 1. 이번 회차 데이터 수집 및 구글 시트 업데이트
@@ -52,7 +52,7 @@ jobs:
         if: always() # Run even if collection partially failed
         env:
           GSHEET_ID: ${{ secrets.GSHEET_ID }}
-          GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
+          GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SA_KEY }}
           PYTHONPATH: src
         run: |
           # 2. 구글 시트 데이터를 기반으로 대시보드 JSON 추출

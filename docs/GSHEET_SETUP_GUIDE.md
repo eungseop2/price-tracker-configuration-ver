@@ -38,8 +38,8 @@
 # 3단계에서 복사한 시트 ID
 GSHEET_ID=your_spreadsheet_id_here
 
-# 2단계에서 다운로드한 JSON 파일의 전체 내용
-GOOGLE_SERVICE_ACCOUNT_KEY='{"type": "service_account", "project_id": ...}'
+# 2단계에서 다운로드한 JSON 파일의 전체 내용 (GitHub Secrets에는 GCP_SA_KEY 이름으로 등록 권장)
+GCP_SA_KEY='{"type": "service_account", "project_id": ...}'
 ```
 
 ---
