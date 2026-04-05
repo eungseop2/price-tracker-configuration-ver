@@ -22,11 +22,12 @@ from .naver_api import (
     NaverShoppingSearchClient,
     collect_lowest_offer_via_api,
     collect_mall_inventory,
+    collect_mall_items,
     _normalized_item,
 )
 from .notifier import send_price_alert
 from .report import send_daily_report
-from .util import calc_change_metrics, dump_json, utc_now_iso, is_night_time_kst
+from .util import calc_change_metrics, clean_text, dump_json, utc_now_iso, is_night_time_kst
 
 logger = logging.getLogger("naver_price_tracker")
 
@@ -166,25 +167,45 @@ async def run_once(app_config, artifacts_dir: str, db_path: str, summary_json: s
                 "alert_triggered": 0
             })
 
-    # ---------- [셀러 몰 트래커 수집 루틴] ----------
+    # ---------- [셀러 몰 트래커 수집 루틴 - 최적화 버전] ----------
     if app_config.mall_targets:
-        logger.info("셀러(Mall) 수집 시작 (%d개)", len(app_config.mall_targets))
+        logger.info("셀러(Mall) 수집 시작 (%d개 타겟)", len(app_config.mall_targets))
         mall_collected_at = utc_now_iso()
         
+        # 1. 쿼리별로 타겟 그룹화
+        query_groups: dict[str, list] = {}
         for m_target in app_config.mall_targets:
+            q = m_target.query
+            if q not in query_groups:
+                query_groups[q] = []
+            query_groups[q].append(m_target)
+        
+        # 2. 쿼리 그룹별로 API 호출 및 다중 필터링
+        for query, targets in query_groups.items():
             try:
-                logger.info("셀러 상품 수집 중: %s (mall: %s, query: %s)", m_target.name, m_target.mall_name, m_target.query)
-                candidates = collect_mall_inventory(client, app_config, m_target)
+                # 해당 그룹의 최대 페이지 수 확인
+                max_pages = max(t.request.pages for t in targets)
+                logger.info("쿼리 그룹 수집 중: '%s' (타겟 셀러: %d개, 최대 %d페이지)", 
+                            query, len(targets), max_pages)
                 
-                if candidates:
-                    for c in candidates:
-                        c["collected_at"] = mall_collected_at
-                    store.insert_mall_records(m_target.name, m_target.query, m_target.mall_name, m_target.category, candidates)
-                    logger.info("셀러 상품 수집 완료: %s (%d개 상품 저장)", m_target.name, len(candidates))
-                else:
-                    logger.warning("셀러 상품 수집 결과 없음: %s", m_target.name)
+                # API 호출 (1건의 쿼리로 모든 타겟 데이터 검색)
+                all_items = collect_mall_items(client, app_config, query, max_pages)
+                
+                # 각 타겟별로 필터링 및 저장
+                for m_target in targets:
+                    target_mall = clean_text(m_target.mall_name)
+                    candidates = [item for item in all_items if target_mall in clean_text(item.get("seller_name", ""))]
+                    
+                    if candidates:
+                        for c in candidates:
+                            c["collected_at"] = mall_collected_at
+                        store.insert_mall_records(m_target.name, m_target.query, m_target.mall_name, m_target.category, candidates)
+                        logger.info("  └ [%s] 필터링 완료: %d개 상품 저장", m_target.name, len(candidates))
+                    else:
+                        logger.warning("  └ [%s] 필터링 결과 없음", m_target.name)
+                        
             except Exception as e:
-                logger.error("셀러 상품 수집 실패 (%s): %s", m_target.name, e)
+                logger.error("쿼리 그룹 수집 실패 (%s): %s", query, e)
 
     # ---------- [랭킹 수집 최적화 루틴] ----------
     unique_rank_queries = {t.rank_query for t in app_config.targets if t.rank_query}

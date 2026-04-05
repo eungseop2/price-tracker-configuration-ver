@@ -186,3 +186,32 @@ def collect_mall_inventory(client: NaverShoppingSearchClient, app_config: AppCon
 
     return candidates
 
+
+def collect_mall_items(client: NaverShoppingSearchClient, app_config: AppConfig, query: str, pages: int) -> list[dict[str, Any]]:
+    """지정된 쿼리로 네이버 쇼핑 API를 호출하여 전체 상품 리스트를 반환합니다."""
+    if not query:
+        raise ValueError("query 가 없습니다.")
+
+    pages = max(1, pages)
+    items: list[dict[str, Any]] = []
+    
+    for page_index in range(pages):
+        start = page_index * app_config.display + 1
+        try:
+            payload = client.search(
+                query=query,
+                display=app_config.display,
+                start=start,
+                sort="sim", # 몰 수집은 기본적으로 유사도순(랭킹순)으로 수집
+                exclude=app_config.exclude,
+            )
+            page_items = payload.get("items", []) or []
+            for i, itm in enumerate(page_items, start=len(items) + 1):
+                itm["_search_rank"] = i
+            items.extend(page_items)
+        except Exception:
+            # 한 페이지 실패해도 나머지는 계속 시도
+            continue
+
+    return [_normalized_item(item) for item in items]
+
