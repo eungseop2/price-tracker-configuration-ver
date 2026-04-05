@@ -1247,8 +1247,11 @@
             </div>
             <div class="category-tabs" id="categoryTabs"></div>
             <ul class="product-list" id="productList"></ul>
-            <div class="sidebar-footer">
+            <div class="sidebar-footer" style="display: flex; flex-direction: column; gap: 8px;">
                 <button class="btn-excel" onclick="downloadExcel()">📥 선택 상품 엑셀 다운로드</button>
+                <a id="gsheetLink" href="#" target="_blank" class="btn-excel" style="text-align: center; text-decoration: none; background: #e6f3ff; color: #3182f7; display: none;">
+                    📊 구글 스프레드시트 열기
+                </a>
             </div>
         </div>
 
@@ -1506,8 +1509,51 @@
             if (overlay) overlay.classList.toggle('show', open);
         }
 
+        function downloadExcel() {
+            const checkedCbs = document.querySelectorAll('.product-checkbox:checked');
+            if (checkedCbs.length === 0) {
+                alert("다운로드할 상품을 최소 하나 이상 선택해주세요.");
+                return;
+            }
+
+            const wb = XLSX.utils.book_new();
+            
+            checkedCbs.forEach(cb => {
+                const idx = parseInt(cb.dataset.index);
+                const p = dashboardData.products[idx];
+                if (!p) return;
+
+                // 시트 데이터 구성
+                const wsData = [
+                    ["상품명", p.name],
+                    ["현재가", p.current_price],
+                    ["판매처", p.seller],
+                    ["역대 최저가", p.all_time_low],
+                    ["역대 최고가", p.all_time_high],
+                    ["", ""],
+                    ["수집 일시", "가격"]
+                ];
+
+                if (p.history) {
+                    p.history.slice().reverse().forEach(h => {
+                        wsData.push([new Date(h.t).toLocaleString(), h.p]);
+                    });
+                }
+
+                const ws = XLSX.utils.aoa_to_sheet(wsData);
+                XLSX.utils.book_append_sheet(wb, ws, p.name.substring(0, 30));
+            });
+
+            XLSX.writeFile(wb, `price_tracker_report_${new Date().toISOString().split('T')[0]}.xlsx`);
+        }
+
         async function init() {
             console.log("Initializing dashboard...");
+            // 구글 시트 링크 설정
+            const gsheetId = "PUT_YOUR_GSHEET_ID_HERE"; // 실제 실행 시에는 주입되거나 환경설정 필요
+            // 여기서는 저장소 시크릿에서 가져올 수 없으므로, 사용자가 targets.yaml에 적은 ID를 활용하거나 혹은 빈 링크로 둠
+            // 대신 dashboardData에 gsheet_id가 포함되어 있다면 그것을 사용하도록 수정 가능
+            
             try {
                 const url = 'dashboard_data.json?v=' + encodeURIComponent(new Date().getTime());
                 const response = await fetch(url);
@@ -1515,6 +1561,14 @@
 
                 dashboardData = await response.json();
                 console.log("Data loaded:", dashboardData);
+
+                if (dashboardData.gsheet_id) {
+                    const linkEl = document.getElementById('gsheetLink');
+                    if (linkEl) {
+                        linkEl.href = `https://docs.google.com/spreadsheets/d/${dashboardData.gsheet_id}`;
+                        linkEl.style.display = 'block';
+                    }
+                }
 
                 if (!dashboardData.products || dashboardData.products.length === 0) {
                     throw new Error("No products found");

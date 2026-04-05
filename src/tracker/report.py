@@ -1,4 +1,4 @@
-import sqlite3
+import json
 from datetime import datetime, timedelta, timezone
 import logging
 from email.mime.multipart import MIMEMultipart
@@ -10,30 +10,23 @@ from .util import format_price
 
 logger = logging.getLogger("tracker.report")
 
-def generate_daily_report_html(db_path: str, targets: list[TargetConfig]) -> str:
-    """최근 10일간의 가격 동향 HTML 보고서를 생성합니다."""
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
-    
+def generate_daily_report_html(store: "GoogleSheetStore", targets: list[TargetConfig]) -> str:
+    """최근 10일간의 가격 동향 HTML 보고서를 생성합니다. (GSheet 버전)"""
     # 10일치 날짜 계산 (KST 기준)
     now_utc = datetime.now(timezone.utc)
     now_kst = now_utc + timedelta(hours=9)
     # 오늘 포함 과거 10일
     dates_kst = [(now_kst - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(9, -1, -1)]
     
-    cutoff_utc = now_utc - timedelta(days=12)
+    cutoff_utc = (now_utc - timedelta(days=12)).isoformat()
     
-    rows = conn.execute(
-        """
-        SELECT target_name, collected_at, price 
-        FROM observations 
-        WHERE success = 1 AND price IS NOT NULL AND collected_at >= ?
-        """,
-        (cutoff_utc.isoformat(),)
-    ).fetchall()
+    # GSheet에서 데이터 가져오기
+    ws = store._get_worksheet("observations")
+    rows = ws.get_all_records()
+    filtered_rows = [r for r in rows if r.get("success") == 1 and r.get("price") and r["collected_at"] >= cutoff_utc]
     
     daily_min = {}
-    for r in rows:
+    for r in filtered_rows:
         t_name = r["target_name"]
         t_utc = datetime.fromisoformat(r["collected_at"].replace('Z', '+00:00'))
         t_kst = t_utc + timedelta(hours=9)
@@ -41,12 +34,12 @@ def generate_daily_report_html(db_path: str, targets: list[TargetConfig]) -> str
         
         if d_str not in daily_min:
             daily_min[d_str] = {}
+        
+        price_val = int(r["price"])
         if t_name not in daily_min[d_str]:
-            daily_min[d_str][t_name] = r["price"]
+            daily_min[d_str][t_name] = price_val
         else:
-            daily_min[d_str][t_name] = min(daily_min[d_str][t_name], r["price"])
-            
-    conn.close()
+            daily_min[d_str][t_name] = min(daily_min[d_str][t_name], price_val)
     
     # HTML 빌드
     target_names = [t.name for t in targets]
@@ -90,7 +83,7 @@ def generate_daily_report_html(db_path: str, targets: list[TargetConfig]) -> str
         </table>
     </div>
     <div style="margin-top:32px;text-align:center">
-        <a href="https://youngseop77.github.io/price-tracker-configuration-ver/" 
+        <a href="https://eungseop2.github.io/price-tracker-configuration-ver/" 
            style="background-color:#2563eb;color:white;padding:12px 24px;text-decoration:none;border-radius:6px;font-weight:bold;display:inline-block">
            📊 대시보드 바로가기
         </a>
@@ -99,13 +92,44 @@ def generate_daily_report_html(db_path: str, targets: list[TargetConfig]) -> str
     """
     return html_body
 
+def generate_mall_report_html(store: "GoogleSheetStore") -> str:
+    """쇼핑몰 셀러별 가격 현황 HTML 리포트를 생성합니다."""
+    mall_data = store.get_mall_report_data()
+    now_kst = datetime.now(timezone.utc) + timedelta(hours=9)
+    
+    sections = []
+    for cat, malls in mall_data.items():
+        for mall_name, m_info in malls.items():
+            rows = []
+            for p in m_info["products"]:
+                rows.append(f'<tr><td>{p["collected_at"]}</td><td>{p["title"]}</td><td>{p["curr_price_fmt"]}</td><td>{p["prev_price_fmt"]}</td><td>{p["delta_str"]}</td></tr>')
+            
+            sections.append(f"""
+            <div style="margin-bottom:40px; background:white; padding:20px; border-radius:12px; border:1px solid #eee;">
+                <h3 style="margin-top:0; color:#3182f7;">[{cat}] {mall_name}</h3>
+                <p style="font-size:13px; color:#666;">전체 상품: {m_info['total_products']}개 | 가격 하락: {m_info['price_decreased_count']}개</p>
+                <table style="width:100%; border-collapse:collapse; font-size:12px;">
+                    <thead><tr style="background:#f9fafb;"><th>일시</th><th>상품명</th><th>현재가</th><th>이전가</th><th>변동액</th></tr></thead>
+                    <tbody>{" ".join(rows)}</tbody>
+                </table>
+            </div>
+            """)
 
-def send_daily_report(db_path: str, email_from: str, email_password: str, email_to: str | list[str], targets: list[TargetConfig]) -> bool:
+    return f"""
+    <html><body style="font-family:sans-serif; background:#f4f7f9; padding:40px; max-width:1000px; margin:auto;">
+        <h2>🏢 쇼핑몰 셀러별 추적 리포트</h2>
+        <p style="color:#666;">수집 시각: {now_kst.strftime('%Y-%m-%d %H:%M:%S')} KST</p>
+        {" ".join(sections)}
+    </body></html>
+    """
+
+
+def send_daily_report(store: "GoogleSheetStore", email_from: str, email_password: str, email_to: str | list[str], targets: list[TargetConfig]) -> bool:
     if not all([email_from, email_password, email_to]):
-        logger.info("이메일 설정이 없어 데일리 리포트 알림을 건너뜁니다.")
+        logger.info("이메일 설정이 없어 데일리 리포트 알림을 건너뜜")
         return False
         
-    html_body = generate_daily_report_html(db_path, targets)
+    html_body = generate_daily_report_html(store, targets)
     
     # 10일치 날짜 계산 (제목용)
     now_kst = datetime.now(timezone.utc) + timedelta(hours=9)

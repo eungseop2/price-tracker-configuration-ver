@@ -337,12 +337,14 @@ def main() -> None:
                     rankings[rq] = latest
             
             # 셀러별 쇼핑몰 리포트 데이터 수집
-            mall_reports = store.get_mall_report_data()
+            mall_raw = store.get_mall_report_data()
+            mall_reports = {"categories": mall_raw}
             
             data = {
                 "products": dashboard_raw["products"],
                 "rankings": rankings,
                 "mall_reports": mall_reports,
+                "gsheet_id": app_config.gsheet_id,
                 "updated_at": dashboard_raw["generated_at"]
             }
             Path("dashboard_data.json").write_text(dump_json(data), encoding="utf-8")
@@ -363,11 +365,55 @@ def main() -> None:
             logger.info("http://localhost:%d 에서 대시보드 서비스를 시작합니다.", PORT)
             httpd.serve_forever()
 
+    elif args.command == "daily-report":
+        service_account_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_KEY")
+        if not app_config.gsheet_id or not service_account_json:
+            logger.error("GSHEET_ID 또는 GOOGLE_SERVICE_ACCOUNT_KEY 환경변수가 설정되지 않았습니다.")
+            return
+            
+        store = GoogleSheetStore(app_config.gsheet_id, service_account_json)
+        try:
+            send_daily_report(
+                store,
+                app_config.email.email_from,
+                app_config.email.email_password,
+                app_config.email.email_to,
+                app_config.targets
+            )
+        finally:
+            store.close()
+
     elif args.command == "export-report":
-        logger.warning("export-report 기능은 현재 SQLite 의존성 제거 중입니다 (GSheet 대응 예정).")
+        service_account_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_KEY")
+        if not app_config.gsheet_id or not service_account_json:
+            logger.error("필요한 설정이 누락되었습니다.")
+            return
+            
+        from .report import generate_daily_report_html
+        store = GoogleSheetStore(app_config.gsheet_id, service_account_json)
+        try:
+            html = generate_daily_report_html(store, app_config.targets)
+            output_path = args.output or "report.html"
+            Path(output_path).write_text(html, encoding="utf-8")
+            logger.info(f"데일리 리포트 생성 완료: {output_path}")
+        finally:
+            store.close()
 
     elif args.command == "export-mall-report":
-        logger.warning("export-mall-report 기능은 현재 SQLite 의존성 제거 중입니다 (GSheet 대응 예정).")
+        service_account_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_KEY")
+        if not app_config.gsheet_id or not service_account_json:
+            logger.error("필요한 설정이 누락되었습니다.")
+            return
+            
+        from .report import generate_mall_report_html
+        store = GoogleSheetStore(app_config.gsheet_id, service_account_json)
+        try:
+            html = generate_mall_report_html(store)
+            output_path = args.output or "mall_report.html"
+            Path(output_path).write_text(html, encoding="utf-8")
+            logger.info(f"쇼핑몰 추적 리포트 생성 완료: {output_path}")
+        finally:
+            store.close()
 
 
 if __name__ == "__main__":

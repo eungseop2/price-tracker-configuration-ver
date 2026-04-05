@@ -129,27 +129,56 @@ class GoogleSheetStore:
         return [m for m in matches if m["collected_at"] == latest_time]
 
     def get_mall_report_data(self) -> dict[str, Any]:
-        """쇼핑몰 리포트용 계층 데이터 구성"""
+        """쇼핑몰 리포트용 계층 데이터 구성 (대시보드 호환용)"""
         ws = self._get_worksheet("mall_observations")
         records = ws.get_all_records()
         
+        # 최신 시간대 확인
+        if not records:
+            return {}
+            
+        latest_time = max(r["collected_at"] for r in records)
+        latest_records = [r for r in records if r["collected_at"] == latest_time]
+        
+        # 카테고리/몰별 그룹화
         report = {}
-        for r in records:
+        for r in latest_records:
             cat = r.get("category") or "기타"
             mall = r.get("mall_name")
-            target = r.get("target_name")
             
             if cat not in report: report[cat] = {}
-            if mall not in report[cat]: report[cat][mall] = []
+            if mall not in report[cat]: 
+                report[cat][mall] = {
+                    "total_products": 0,
+                    "price_decreased_count": 0,
+                    "products": []
+                }
             
-            report[cat][mall].append({
-                "target_name": target,
-                "collected_at": r["collected_at"],
-                "price": r["price"],
+            # 이전 기록 찾기 (변동액 계산용)
+            prev_records = [rec for rec in records if rec.get("product_id") == r.get("product_id") and rec["collected_at"] < latest_time]
+            prev_price = None
+            delta = 0
+            if prev_records:
+                prev_latest = sorted(prev_records, key=lambda x: x["collected_at"], reverse=True)[0]
+                prev_price = prev_latest.get("price")
+                if prev_price and r.get("price"):
+                    delta = int(r["price"]) - int(prev_price)
+
+            report[cat][mall]["total_products"] += 1
+            if delta < 0:
+                report[cat][mall]["price_decreased_count"] += 1
+
+            report[cat][mall]["products"].append({
                 "title": r["title"],
-                "product_url": r["product_url"],
-                "image_url": r.get("image_url")
+                "collected_at": r["collected_at"][:16], # YYYY-MM-DD HH:mm
+                "curr_price_fmt": f"{int(r['price']):,}원" if r.get("price") else "-",
+                "prev_price_fmt": f"{int(prev_price):,}원" if prev_price else "-",
+                "delta_str": f"{delta:+,}원" if delta != 0 else "0원",
+                "price": r["price"],
+                "url": r["product_url"],
+                "history": [] # 차트용 히스토리 (필요 시 보강)
             })
+            
         return report
 
     def get_dashboard_data(self, targets: Any) -> dict[str, Any]:

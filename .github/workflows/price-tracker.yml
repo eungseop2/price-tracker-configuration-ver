@@ -56,7 +56,10 @@ jobs:
           PYTHONPATH: src
         run: |
           # 2. 구글 시트 데이터를 기반으로 대시보드 JSON 추출
-          python -m tracker.main export-ui
+          python -m tracker.main export-ui --config targets.yaml
+          
+          # 3. 셀러별 쇼핑몰 리포트 생성 (독립 리포트용)
+          python -m tracker.main export-mall-report --config targets.yaml --output mall_report.html
           
           # Prepare public directory for GitHub Pages (Security: only expose UI files)
           mkdir -p public
@@ -64,6 +67,7 @@ jobs:
             cp dashboard.html public/index.html
             cp dashboard.html public/dashboard.html
           fi
+          [ -f "mall_report.html" ] && cp mall_report.html public/mall_report.html
           [ -f "dashboard_data.json" ] && cp dashboard_data.json public/ || echo "No dashboard_data.json found"
           [ -f "logo.png" ] && cp logo.png public/ || echo "No logo.png found"
 
