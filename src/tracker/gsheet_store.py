@@ -56,8 +56,7 @@ class GoogleSheetStore:
         try:
             ws = self._sh.worksheet(name)
         except gspread.exceptions.WorksheetNotFound:
-            cols = HEADERS.get(name, ["data"])
-            ws = self._sh.add_worksheet(title=name, rows="1000", cols=str(len(cols)))
+            ws = self._sh.add_worksheet(title=name, rows=1000, cols=len(cols))
             ws.append_row(cols)
             logger.info(f"새 시트 생성됨: {name}")
             
@@ -101,11 +100,17 @@ class GoogleSheetStore:
             return
             
         ws = self._get_worksheet("ranking_history")
-        cols = HEADERS["ranking_history"]
-        rows = [[data.get(col) for col in cols] for data in rows_to_insert]
-        
+        rows = []
+        for data in rows_to_insert:
+            row = []
+            for col in cols:
+                val = data.get(col)
+                row.append(val if val is not None else "")
+            rows.append(row)
+            
         try:
             ws.append_rows(rows)
+            logger.info(f"데이터 배치 저장 완료 (ranking_history): {len(rows)}건")
         except Exception as e:
             logger.error(f"데이터 저장 실패 (ranking_history): {e}")
 
