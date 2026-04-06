@@ -86,9 +86,9 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
     # 데이터 배치 수집용 리스트
     collected_payloads = []
     
-    service_account_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_KEY")
+    service_account_json = os.getenv("GCP_SA_KEY") or os.getenv("GOOGLE_SERVICE_ACCOUNT_KEY")
     if not service_account_json:
-        logger.error("GOOGLE_SERVICE_ACCOUNT_KEY 환경변수가 설정되지 않았습니다.")
+        logger.error("구글 서비스 계정 키 환경변수(GCP_SA_KEY 또는 GOOGLE_SERVICE_ACCOUNT_KEY)가 설정되지 않았습니다.")
         return
 
     store = GoogleSheetStore(gsheet_id, service_account_json)
@@ -327,9 +327,9 @@ def main() -> None:
             time.sleep(args.interval)
 
     elif args.command == "export-ui":
-        service_account_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_KEY")
+        service_account_json = os.getenv("GCP_SA_KEY") or os.getenv("GOOGLE_SERVICE_ACCOUNT_KEY")
         if not app_config.gsheet_id or not service_account_json:
-            logger.error("GSHEET_ID 또는 GOOGLE_SERVICE_ACCOUNT_KEY 환경변수가 설정되지 않았습니다.")
+            logger.error("GSHEET_ID 또는 구글 서비스 계정 키 환경변수(GCP_SA_KEY/GOOGLE_SERVICE_ACCOUNT_KEY)가 설정되지 않았습니다.")
             return
             
         store = GoogleSheetStore(app_config.gsheet_id, service_account_json)
@@ -375,9 +375,9 @@ def main() -> None:
             httpd.serve_forever()
 
     elif args.command == "daily-report":
-        service_account_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_KEY")
+        service_account_json = os.getenv("GCP_SA_KEY") or os.getenv("GOOGLE_SERVICE_ACCOUNT_KEY")
         if not app_config.gsheet_id or not service_account_json:
-            logger.error("GSHEET_ID 또는 GOOGLE_SERVICE_ACCOUNT_KEY 환경변수가 설정되지 않았습니다.")
+            logger.error("GSHEET_ID 또는 구글 서비스 계정 키 환경변수(GCP_SA_KEY/GOOGLE_SERVICE_ACCOUNT_KEY)가 설정되지 않았습니다.")
             return
             
         store = GoogleSheetStore(app_config.gsheet_id, service_account_json)
@@ -393,9 +393,9 @@ def main() -> None:
             store.close()
 
     elif args.command == "export-report":
-        service_account_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_KEY")
+        service_account_json = os.getenv("GCP_SA_KEY") or os.getenv("GOOGLE_SERVICE_ACCOUNT_KEY")
         if not app_config.gsheet_id or not service_account_json:
-            logger.error("필요한 설정이 누락되었습니다.")
+            logger.error("필요한 설정(GSHEET_ID 또는 구글 서비스 계정 키)이 누락되었습니다.")
             return
             
         from .report import generate_daily_report_html
