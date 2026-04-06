@@ -4,6 +4,7 @@ import argparse
 import asyncio
 import logging
 import os
+import sys
 import time
 from pathlib import Path
 
@@ -15,7 +16,7 @@ from .browser_scraper import (
     collect_lowest_offer_via_browser,
     collect_current_offer_via_browser
 )
-from .config import TargetConfig, load_config
+from .config import StoreType, TargetConfig, load_config
 from .gsheet_store import GoogleSheetStore
 from .naver_api import (
     NaverShoppingSearchClient,

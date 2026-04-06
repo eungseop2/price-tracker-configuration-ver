@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from enum import Enum
 
 
 class StoreType(Enum):
