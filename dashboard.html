@@ -1,47 +1,62 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>?⑥뼱?щ툝 媛寃?議곗궗 - 理쒖?媛 ?몃옒而?/title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>가격 조사 - 최저가 트래커</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Geist:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <style>
         :root {
             --bg-color: #f2f4f6;
             --sidebar-bg: #ffffff;
-            --card-bg: #ffffff;
             --accent-primary: #3182f7;
-            --accent-secondary: #00d0ff;
-            --text-main: #191f28;
-            --text-muted: #4e5968;
-            --price-down: #3182f7;
-            /* ??쓬: ?뚮??됱쑝濡?蹂寃?*/
-            --price-up: #ef4444;
-            /* ?믪쓬: 鍮④컙?됱쑝濡?蹂寃?*/
-            --glass-border: rgba(0, 0, 0, 0.05);
             --toss-blue: #3182f7;
             --toss-grey: #f2f4f6;
-            --card-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
-            --bg-soft: #f8f9fa;
+            --bg-main: #f9fafb;
+            --bg-soft: #ffffff;
+            --card-bg: #ffffff;
+            --text-main: #191f28; /* Zinc-950 style Off-black */
+            --text-subtitle: #4e5968; /* Zinc-700 */
+            --text-muted: #8b95a1; /* Zinc-400 */
+            --price-down: #ef4444;
+            --price-up: #3182f7;
+            --navbar-bg: rgba(255, 255, 255, 0.82);
+            --glass-border: rgba(0, 0, 0, 0.04);
+            --card-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.04), 0 4px 8px -4px rgba(0, 0, 0, 0.02);
+            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            --font-main: 'Geist', -apple-system, system-ui, sans-serif;
+            --font-head: 'Outfit', sans-serif;
+            --font-mono: 'Space Mono', monospace;
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Inter', sans-serif;
+            font-family: var(--font-main);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        h1, h2, h3, h4, .logo-text, .view-tab {
+            font-family: var(--font-head);
+            letter-spacing: -0.02em;
+        }
+
+        .mono {
+            font-family: var(--font-mono) !important;
+            letter-spacing: -0.5px;
         }
 
         body {
-            background: var(--bg-color);
             color: var(--text-main);
+            background: var(--bg-color);
             display: flex;
             height: 100vh;
             overflow: hidden;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Pretendard", sans-serif;
+            font-family: var(--font-main);
         }
 
         /* Sidebar */
@@ -127,8 +142,78 @@
         }
 
         .sidebar-footer {
-            padding: 12px 16px;
+            padding: 16px;
             border-top: 1px solid var(--glass-border);
+        }
+
+        /* Mall Category Tabs (Sidebar) */
+        #mallCategoryTabs {
+            padding: 0 16px 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .cat-pill {
+            padding: 6px 14px;
+            border-radius: 99px;
+            background: #f2f4f6;
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            border: 1px solid transparent;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .cat-pill.active {
+            background: var(--text-main);
+            color: #ffffff;
+            border-color: var(--text-main);
+        }
+
+        .cat-pill:hover:not(.active) {
+            background: #e5e8eb;
+        }
+
+        /* Mall Seller Tabs (Sidebar) */
+        #mall-seller-tabs {
+            padding: 0 12px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .mall-tab {
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            color: var(--text-subtitle);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .mall-tab:hover {
+            background: rgba(0, 0, 0, 0.02);
+            color: var(--text-main);
+        }
+
+        .mall-tab.active {
+            background: #ffffff;
+            color: var(--accent-primary);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .mall-tab.active::after {
+            content: '→';
+            font-size: 12px;
+            opacity: 0.6;
         }
 
         /* Category Tabs */
@@ -619,7 +704,7 @@
                 overflow-y: auto;
             }
 
-            /* ?ъ씠?쒕컮 ?꾩껜 sticky ?댁젣 */
+            /* 사이드바 전체 sticky 해제 */
             .sidebar {
                 width: 100%;
                 height: auto;
@@ -635,7 +720,7 @@
                 display: none !important;
             }
 
-            /* 濡쒓퀬??以꾩씠怨? ?좏깮 ?대컮???④린吏 留먭퀬 compact?섍쾶 ?좎? */
+            /* 로고는 줄이고, 선택 툴바는 숨기지 말고 compact하게 유지 */
             .logo-container {
                 margin-bottom: 8px;
                 padding: 0 16px;
@@ -648,13 +733,13 @@
                 padding: 0 16px 10px;
             }
 
-            /* 移댄뀒怨좊━ ??룄 媛濡??ㅽ겕濡??좎? */
+            /* 카테고리 탭도 가로 스크롤 유지 */
             .category-tabs {
                 padding: 0 16px 12px;
                 margin-bottom: 8px;
             }
 
-            /* ?ㅻ뜑??媛숈? 湲곕뒫???덉쑝??紐⑤컮?쇱뿉???ъ씠?쒕컮 ?섎떒 ?ㅼ슫濡쒕뱶 踰꾪듉 ?④? */
+            /* 헤더에 같은 기능이 있으니 모바일에선 사이드바 하단 다운로드 버튼 숨김 */
             .sidebar-footer {
                 display: none;
             }
@@ -696,7 +781,7 @@
 
             .mobile-menu-btn {
                 display: none;
-                /* ?곷떒 由ъ뒪??諛⑹떇?쇰줈 諛붽엥?쇰?濡?硫붾돱 踰꾪듉 遺덊븘??*/
+                /* 상단 리스트 방식으로 바꿨으므로 메뉴 버튼 불필요 */
             }
 
             .header-main-row {
@@ -854,7 +939,7 @@
             }
         }
 
-        /* ----- ?좉퇋 ???ㅻ퉬寃뚯씠??----- */
+        /* ----- 신규 탭 네비게이션 ----- */
         .view-tabs {
             display: flex;
             gap: 16px;
@@ -906,7 +991,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* ----- ??궧 ?뚯씠釉?UI (Stitch MCP 李멸퀬) ----- */
+        /* ----- 랭킹 테이블 UI (Stitch MCP 참고) ----- */
         .ranking-card {
             display: flex;
             align-items: center;
@@ -974,6 +1059,150 @@
             border-radius: 6px;
         }
 
+        /* Mall Report Style */
+        .mall-report-container {
+            display: flex;
+            gap: 32px;
+            height: auto;
+            min-height: 600px;
+            align-items: flex-start;
+        }
+        .mall-sidebar {
+            width: 240px;
+            flex-shrink: 0;
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 24px;
+            border: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--card-shadow);
+            position: sticky;
+            top: 24px;
+        }
+        .mall-sidebar-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 20px;
+            padding-left: 4px;
+        }
+        .mall-tabs-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .mall-tab {
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .mall-tab:hover {
+            background: var(--bg-soft);
+            color: var(--text-main);
+        }
+        .mall-tab.active {
+            background: var(--toss-blue);
+            color: white;
+            box-shadow: 0 4px 12px rgba(49, 130, 247, 0.2);
+        }
+        .mall-main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        .mall-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        .mall-title {
+            font-size: 26px;
+            font-weight: 800;
+            color: var(--text-main);
+            letter-spacing: -1px;
+        }
+        .mall-update-time {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-family: 'Space Mono', monospace;
+        }
+        .mall-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+        }
+        .mall-main-content::-webkit-scrollbar {
+            width: 5px;
+        }
+        .mall-main-content::-webkit-scrollbar-thumb {
+            background: rgba(0,0,0,0.05);
+            border-radius: 10px;
+        }
+
+        /* 글로벌 네비게이션 스타일 */
+        .global-nav {
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            border-bottom: 1px solid var(--glass-border);
+            margin-bottom: 8px;
+        }
+        .nav-item {
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-subtitle);
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .nav-item:hover {
+            background: var(--bg-main);
+            color: var(--text-main);
+        }
+        .nav-item.active {
+            background: var(--toss-blue);
+            color: white;
+        }
+        .nav-item .nav-icon {
+            font-size: 18px;
+        }
+
+        /* 카테고리 필 스타일 */
+        .category-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .cat-pill {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            background: var(--bg-main);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .cat-pill.active {
+            background: var(--text-main);
+            color: white;
+        }
     </style>
 </head>
 
@@ -984,33 +1213,53 @@
             <div class="logo-icon" id="appLogoContainer">
                 <img src="logo.png" alt="Logo"
                     style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;"
-                    onerror="this.style.display='none'; this.parentElement.innerText='?뱤'">
+                    onerror="this.style.display='none'; this.parentElement.innerText='📊'">
             </div>
-            <div class="logo-text">?⑥뼱?щ툝 媛寃?議곗궗</div>
+            <div class="logo-text">가격 조사</div>
         </div>
-        <div class="sidebar-toolbar">
-            <label class="select-all-label">
-                <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)">
-                ?꾩껜?좏깮
-            </label>
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <span id="checkedCount" style="font-size:11px;color:var(--text-muted);">0媛??좏깮</span>
-                <select id="sortOption" onchange="renderProductList()" style="font-size:11px; border:1px solid var(--glass-border); border-radius:4px; padding:2px; color:var(--text-main); background: #ffffff; cursor: pointer; outline: none;">
-                    <option value="default">湲곕낯??/option>
-                    <option value="price_asc">媛寃??????/option>
-                    <option value="price_desc">媛寃??믪???/option>
-                    <option value="name_asc">媛?섎떎??/option>
-                </select>
+
+        <!-- 글로벌 내비게이션 (사이드바 내부로 이동) -->
+        <div class="global-nav">
+            <div class="nav-item active" id="nav-price" onclick="switchView('priceView')">
+                <span class="nav-icon">📈</span> 상품 모니터링
+            </div>
+            <div class="nav-item" id="nav-mall" onclick="switchView('mallReportView')">
+                <span class="nav-icon">🏢</span> 쇼핑몰 추적
             </div>
         </div>
-        <div class="category-tabs" id="categoryTabs">
-            <!-- Category Pills -->
+
+        <div id="product-sidebar-content">
+            <div class="sidebar-title" style="padding: 8px 20px 4px; font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">모니터링 상품</div>
+            <div class="sidebar-toolbar">
+                <label class="select-all-label">
+                    <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)">
+                    전체선택
+                </label>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span id="checkedCount" style="font-size:11px;color:var(--text-muted);">0개</span>
+                    <select id="sortOption" onchange="renderProductList()" style="font-size:11px; border:1px solid var(--glass-border); border-radius:4px; padding:2px; color:var(--text-main); background: #ffffff; cursor: pointer;">
+                        <option value="default">기본순</option>
+                        <option value="price_asc">가격 낮은순</option>
+                        <option value="price_desc">가격 높은순</option>
+                        <option value="name_asc">가나다순</option>
+                    </select>
+                </div>
+            </div>
+            <div class="category-tabs" id="categoryTabs"></div>
+            <ul class="product-list" id="productList"></ul>
+            <div class="sidebar-footer" style="display: flex; flex-direction: column; gap: 8px;">
+                <button class="btn-excel" onclick="downloadExcel()">📥 선택 상품 엑셀 다운로드</button>
+                <a id="gsheetLink" href="#" target="_blank" class="btn-excel" style="text-align: center; text-decoration: none; background: #e6f3ff; color: #3182f7; display: none;">
+                    📊 구글 스프레드시트 열기
+                </a>
+            </div>
         </div>
-        <ul class="product-list" id="productList">
-            <!-- Loading -->
-        </ul>
-        <div class="sidebar-footer">
-            <button class="btn-excel" onclick="downloadExcel()">?뱿 ?좏깮 ?곹뭹 ?묒? ?ㅼ슫濡쒕뱶</button>
+
+        <div id="mall-sidebar-content" style="display: none;">
+            <div class="sidebar-title" style="padding: 16px 20px 8px; font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">카테고리</div>
+            <div class="category-pills" id="mallCategoryTabs" style="padding: 0 16px; margin-bottom: 20px;"></div>
+            <div class="sidebar-title" style="padding: 8px 20px; font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Sellers</div>
+            <div id="mall-seller-tabs" class="mall-tabs-list" style="padding: 0 12px;"></div>
         </div>
     </div>
 
@@ -1025,53 +1274,53 @@
                     <h1 id="selectedTitle">Welcome</h1>
                     <div class="header-subtitle">
                         <div class="seller-info" id="sellerInfo">
-                            ?곹뭹???좏깮?섏뿬 遺꾩꽍???쒖옉?섏꽭??
+                            상품을 선택하여 분석을 시작하세요
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="header-actions">
-                <span id="rankBadge" class="header-btn" style="background:#f2f4f6; color:#191f28; border:1px solid #e5e8eb; display:none;">| ?ㅼ씠踰꾨옲??-??/span>
+                <span id="rankBadge" class="header-btn" style="background:#f2f4f6; color:#191f28; border:1px solid #e5e8eb; display:none;">| 네이버랭킹 -위</span>
                 <a href="#" target="_blank" class="header-btn catalog-btn" id="catalogBtn" style="display:none;">
-                    ?ㅼ씠踰??쇳븨 蹂닿린
+                    네이버 쇼핑 보기
                 </a>
             </div>
         </header>
 
-        <!-- 酉??ㅼ쐞移???-->
-        <div class="view-tabs">
-            <div class="view-tab active" onclick="switchView('priceView')" id="tabPrice">?ㅼ떆媛?理쒖?媛 異붿쟻</div>
-            <div class="view-tab" onclick="switchView('rankingView')" id="tabRanking">?ㅼ썙??Top 10 ??궧</div>
+        <!-- 뷰 스위치 탭 -->
+        <div class="view-tabs" id="viewTabs">
+            <div class="view-tab active" onclick="switchView('priceView')" id="tabPrice">실시간 최저가 추적</div>
+            <div class="view-tab" onclick="switchView('rankingView')" id="tabRanking">키워드 Top 10 랭킹</div>
         </div>
 
-        <!-- 理쒓퀬媛 異붿쟻 酉?-->
+        <!-- 최고가 추적 뷰 -->
         <div id="priceView" class="view-content active">
             <div class="stats-grid" id="stats-container">
                 <div class="stat-card">
-                    <div class="stat-label">?꾩옱 理쒖?媛</div>
+                    <div class="stat-label">현재 최저가</div>
                     <div class="stat-value" id="currentPriceStat">-</div>
                     <div class="stat-diff" id="currentDiff">-</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">??? 理쒖?媛</div>
+                    <div class="stat-label">역대 최저가</div>
                     <div class="stat-value" id="allTimeLow" style="color: #ef4444;">-</div>
                     <div class="stat-diff" id="lowDiff" style="background: rgba(239, 68, 68, 0.05); color: #ef4444;">BEST
                     </div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">??? 理쒓퀬媛</div>
+                    <div class="stat-label">역대 최고가</div>
                     <div class="stat-value" id="allTimeHigh" style="color: var(--toss-blue);">-</div>
                     <div class="stat-diff" id="highDiff"
                         style="background: rgba(49, 130, 247, 0.05); color: var(--toss-blue);">PEAK</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">7???됯퇏</div>
+                    <div class="stat-label">7일 평균</div>
                     <div class="stat-value" id="avg7d">-</div>
                     <div class="stat-diff" id="avg7dDiff">-</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">30???됯퇏</div>
+                    <div class="stat-label">30일 평균</div>
                     <div class="stat-value" id="avg30d">-</div>
                     <div class="stat-diff" id="avg30dDiff">-</div>
                 </div>
@@ -1079,12 +1328,12 @@
 
             <div class="chart-section">
                 <div class="chart-header">
-                    <div class="chart-title">媛寃?蹂??異붿씠</div>
+                    <div class="chart-title">가격 변동 추이</div>
                     <div class="chart-filters">
-                        <div class="filter-pill" onclick="changeChartDays(7, this)">7??/div>
-                        <div class="filter-pill" onclick="changeChartDays(30, this)">30??/div>
-                        <div class="filter-pill active" onclick="changeChartDays(90, this)">90??/div>
-                        <div class="filter-pill" onclick="changeChartDays(0, this)">?꾩껜</div>
+                        <div class="filter-pill" onclick="changeChartDays(7, this)">7일</div>
+                        <div class="filter-pill" onclick="changeChartDays(30, this)">30일</div>
+                        <div class="filter-pill active" onclick="changeChartDays(90, this)">90일</div>
+                        <div class="filter-pill" onclick="changeChartDays(0, this)">전체</div>
                         <div class="date-filter-container">
                             <input type="date" id="startDate" class="date-input" onchange="customDateFilter()">
                             <span style="font-size: 12px; color: var(--text-muted);">~</span>
@@ -1099,16 +1348,16 @@
             </div>
 
             <div class="history-section">
-                <div class="history-title">?쒖옣媛 ?덉뒪?좊━</div>
+                <div class="history-title">시장가 히스토리</div>
                 <div class="table-container">
                     <table id="historyTable">
                         <thead>
                             <tr>
-                                <th>?섏쭛 ?쇱떆</th>
-                                <th>?먮ℓ 媛寃?/th>
-                                <th>蹂??/th>
-                                <th>?먮ℓ泥?/th>
-                                <th>?곹깭</th>
+                                <th>수집 일시</th>
+                                <th>판매 가격</th>
+                                <th>변동</th>
+                                <th>판매처</th>
+                                <th>상태</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -1118,99 +1367,228 @@
             </div>
         </div>
 
-        <!-- ??궧 酉?-->
+        <!-- 랭킹 뷰 -->
         <div id="rankingView" class="view-content">
             <section class="history-section" style="min-height: 500px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                    <h2 class="history-title" style="margin-bottom: 0;">?ㅼ썙??Top 10 ?몄텧 寃곌낵</h2>
+                    <h2 class="history-title" style="margin-bottom: 0;">키워드 Top 10 노출 결과</h2>
                     <span style="font-size: 13px; color: var(--text-muted);" id="rankingUpdateTime"></span>
                 </div>
 
-                <!-- ?ㅼ썙???꾪솚 ??異붽? -->
+                <!-- 키워드 전환 탭 추가 -->
                 <div id="ranking-keyword-tabs" style="display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap;">
                 </div>
 
                 <div id="ranking-list-container">
                     <div style="text-align: center; color: var(--text-muted); padding: 40px;">
-                        ?곗씠?곕? 遺덈윭?ㅻ뒗 以묒씠嫄곕굹 ???寃잛쓽 ??궧 湲곕줉???놁뒿?덈떎.
+                        데이터를 불러오는 중이거나 이 타겟의 랭킹 기록이 없습니다.
                     </div>
                 </div>
             </section>
         </div>
+
+        <!-- 쇼핑몰 셀러 추적 리포트 (통합형) -->
+        <div id="mallReportView" class="view-content">
+            <div class="mall-report-container" style="gap: 0;">
+                <!-- Mall Sidebar 제거 (글로벌 사이드바와 통합됨) -->
+                
+                <!-- Mall Content -->
+                <div class="mall-main-content">
+                    <div class="mall-header">
+                        <h2 id="currentMallTitle" class="mall-title">셀러를 선택하세요</h2>
+                        <div id="mallUpdateTime" class="mall-update-time"></div>
+                    </div>
+                    
+                    <div class="mall-stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">등록 상품 수</div>
+                            <div class="stat-value" id="mallStatTotal">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">가격 하락 상품</div>
+                            <div class="stat-value" id="mallStatDecreased" style="color: var(--price-down);">0</div>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-section" style="margin-top: 0; box-shadow: var(--card-shadow); border-radius: 20px; background: white; padding: 24px;">
+                        <div class="chart-header">
+                            <div class="chart-title">최근 가격 추이 (평균)</div>
+                        </div>
+                        <div class="chart-container" style="height: 350px;">
+                            <canvas id="mallPriceChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="history-section" style="margin-top: 0;">
+                        <div class="history-header">
+                            <h3 class="history-title">상품 상세 내역</h3>
+                        </div>
+                        <div class="table-container">
+                            <table class="history-table">
+                                <thead>
+                                    <tr>
+                                        <th>최근 확인일</th>
+                                        <th>상품명</th>
+                                        <th>현재가</th>
+                                        <th>이전가</th>
+                                        <th>변동액</th>
+                                        <th style="text-align: right;">링크</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="mallTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
-        let dashboardData = { products: [] };
+        let dashboardData = { products: [], mall_reports: { targets: {} } };
         let mainChart = null;
+        let mallPriceChart = null;
         let selectedProductIndex = 0;
-        let selectedCategory = '?꾩껜';
+        let selectedCategory = '전체';
+        let currentMall = null;
+        let currentMallCategory = null;
         let chartDays = 90;
         let currentPage = 1;
         const itemsPerPageFirst = 20;
         const itemsPerPageNormal = 10;
         let currentFilteredHistory = [];
 
+        function switchView(viewName) {
+            // 메인 탭 전환
+            document.querySelectorAll('.view-content').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
+
+            const targetView = document.getElementById(viewName);
+            if (targetView) targetView.classList.add('active');
+
+            // 상단 탭 활성화 (실시간 최저가 / 랭킹)
+            const tabIds = {
+                'priceView': 'tabPrice',
+                'rankingView': 'tabRanking'
+            };
+            const activeTab = document.getElementById(tabIds[viewName]);
+            if (activeTab) activeTab.classList.add('active');
+
+            // 사이드바 글로벌 네비게이션 활성화
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            if (viewName === 'mallReportView') {
+                document.getElementById('nav-mall')?.classList.add('active');
+            } else {
+                document.getElementById('nav-price')?.classList.add('active');
+            }
+
+            // 사이드바 콘텐츠 전환
+            const productSidebar = document.getElementById('product-sidebar-content');
+            const mallSidebar = document.getElementById('mall-sidebar-content');
+            const header = document.querySelector('header');
+
+            if (viewName === 'mallReportView') {
+                if (productSidebar) productSidebar.style.display = 'none';
+                if (mallSidebar) mallSidebar.style.display = 'block';
+                if (header) header.style.display = 'none'; 
+                renderMallCategoryTabs();
+            } else {
+                if (productSidebar) productSidebar.style.display = 'block';
+                if (mallSidebar) mallSidebar.style.display = 'none';
+                if (header) header.style.display = 'flex';
+                if (viewName === 'priceView') refreshChartView();
+            }
+
+            if (window.innerWidth <= 768) toggleSidebar(false);
+        }
+
         function toggleSidebar(open) {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebarOverlay');
-            if (sidebar) {
-                sidebar.classList.toggle('open', open);
+            if (sidebar) sidebar.classList.toggle('open', open);
+            if (overlay) overlay.classList.toggle('show', open);
+        }
+
+        function downloadExcel() {
+            const checkedCbs = document.querySelectorAll('.product-checkbox:checked');
+            if (checkedCbs.length === 0) {
+                alert("다운로드할 상품을 최소 하나 이상 선택해주세요.");
+                return;
             }
-            if (overlay) {
-                overlay.classList.toggle('show', open);
-            }
+
+            const wb = XLSX.utils.book_new();
+            const combinedData = [
+                ["모델명", "날짜", "시간", "가격", "판매처"]
+            ];
+            
+            checkedCbs.forEach(cb => {
+                const idx = parseInt(cb.dataset.index);
+                const p = dashboardData.products[idx];
+                if (!p || !p.history) return;
+
+                p.history.slice().reverse().forEach(h => {
+                    const dt = new Date(h.t);
+                    const dateStr = dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
+                    const timeStr = String(dt.getHours()).padStart(2, '0') + ':' + String(dt.getMinutes()).padStart(2, '0');
+                    
+                    combinedData.push([
+                        p.name,
+                        dateStr,
+                        timeStr,
+                        h.p,
+                        p.seller || "네이버"
+                    ]);
+                });
+            });
+
+            const ws = XLSX.utils.aoa_to_sheet(combinedData);
+            XLSX.utils.book_append_sheet(wb, ws, "가격_추적_데이터");
+
+            XLSX.writeFile(wb, `price_tracker_combined_${new Date().toISOString().split('T')[0]}.xlsx`);
         }
 
         async function init() {
             console.log("Initializing dashboard...");
+            // 구글 시트 링크 설정
+            const gsheetId = "PUT_YOUR_GSHEET_ID_HERE"; // 실제 실행 시에는 주입되거나 환경설정 필요
+            // 여기서는 저장소 시크릿에서 가져올 수 없으므로, 사용자가 targets.yaml에 적은 ID를 활용하거나 혹은 빈 링크로 둠
+            // 대신 dashboardData에 gsheet_id가 포함되어 있다면 그것을 사용하도록 수정 가능
+            
             try {
                 const url = 'dashboard_data.json?v=' + encodeURIComponent(new Date().getTime());
-                console.log("Fetching data from:", url);
                 const response = await fetch(url);
-                if (!response.ok) throw new Error(`Fetch failed with status: ${response.status}`);
+                if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
 
                 dashboardData = await response.json();
-                console.log("Data loaded successfully:", dashboardData);
+                console.log("Data loaded:", dashboardData);
+
+                if (dashboardData.gsheet_id) {
+                    const linkEl = document.getElementById('gsheetLink');
+                    if (linkEl) {
+                        linkEl.href = `https://docs.google.com/spreadsheets/d/${dashboardData.gsheet_id}`;
+                        linkEl.style.display = 'block';
+                    }
+                }
 
                 if (!dashboardData.products || dashboardData.products.length === 0) {
-                    throw new Error("No products found in data");
+                    throw new Error("No products found");
                 }
 
                 renderCategoryTabs();
                 renderProductList();
 
-                // ?좏깮???몃뜳?ㅺ? 踰붿쐞瑜?踰쀬뼱?섏? ?딅룄濡?蹂댁젙
-                if (selectedProductIndex >= dashboardData.products.length) {
-                    selectedProductIndex = 0;
-                }
-
-                const firstVisible = dashboardData.products.findIndex(p => selectedCategory === '?꾩껜' || p.category === selectedCategory);
+                const firstVisible = dashboardData.products.findIndex(p => selectedCategory === '전체' || p.category === selectedCategory);
                 selectProduct(firstVisible >= 0 ? firstVisible : 0);
             } catch (e) {
-                console.error("Dashboard init failed:", e);
+                console.error("Init error:", e);
                 const list = document.getElementById('productList');
-                let helpMsg = "";
-                if (window.location.protocol === 'file:') {
-                    helpMsg = `<div style="margin-top:20px; padding:15px; background:#fef3c7; color:#92400e; border-radius:8px; line-height:1.6;">
-                        <strong>?뮕 濡쒖뺄 ?뚯씪 蹂댁븞 ?뺤콉 ?덈궡</strong><br>
-                        釉뚮씪?곗? 蹂댁븞???뚯씪??諛붾줈 ?대㈃ ?곗씠?곕? 遺덈윭?????놁뒿?덈떎.<br>
-                        ?곕??먯뿉???꾨옒 紐낅졊?대? ?ㅽ뻾?????묒냽?댁＜?몄슂:<br>
-                        <code>python -m src.tracker.main serve</code><br>
-                        ?묒냽 二쇱냼: <a href="http://localhost:8000" target="_blank">http://localhost:8000</a>
-                    </div>`;
-                }
-                list.innerHTML = `<div style="padding: 20px; color: #ef4444; font-size: 13px;">
-                    ?좑툘 ?곗씠?곕? 遺덈윭?ㅼ? 紐삵뻽?듬땲??<br>
-                    <small>${e.message}</small><br>
-                    ${helpMsg}
-                    <button onclick="init()" style="margin-top:15px; padding:8px 16px; background:#4f46e5; color:white; border:none; border-radius:4px; cursor:pointer;">?ㅼ떆 ?쒕룄</button>
-                </div>`;
+                list.innerHTML = `<div style="padding: 20px; color: #ef4444; font-size: 13px;">⚠️ ${e.message}</div>`;
             }
         }
 
         function formatPrice(num) {
-            if (num === null || num === undefined || num === 0) return '-';
-            return new Intl.NumberFormat('ko-KR').format(num) + '??;
+            if (!num) return '-';
+            return new Intl.NumberFormat('ko-KR').format(num) + '원';
         }
 
         function toggleSelectAll(el) {
@@ -1220,16 +1598,14 @@
 
         function updateCheckedCount() {
             const count = document.querySelectorAll('.product-checkbox:checked').length;
-            document.getElementById('checkedCount').textContent = count + '媛??좏깮';
+            const el = document.getElementById('checkedCount');
+            if (el) el.textContent = count + '개';
         }
 
         function renderCategoryTabs() {
             const container = document.getElementById('categoryTabs');
-            const order = ['?꾩껜', '踰꾩쫰', '?뚯튂', '??, '湲고?'];
-            const existingCategories = new Set(dashboardData.products.map(p => p.category).filter(c => c));
-            const categories = order.filter(cat => cat === '?꾩껜' || existingCategories.has(cat));
-            existingCategories.forEach(cat => { if (!order.includes(cat)) categories.push(cat); });
-
+            if (!container) return;
+            const categories = ['전체', ...new Set(dashboardData.products.map(p => p.category).filter(c => c))];
             container.innerHTML = categories.map(cat => `
                 <div class="category-pill ${cat === selectedCategory ? 'active' : ''}" 
                      onclick="filterCategory('${cat}')">${cat}</div>
@@ -1240,43 +1616,29 @@
             selectedCategory = cat;
             renderCategoryTabs();
             renderProductList();
-            const filteredIndices = dashboardData.products
-                .map((p, i) => (selectedCategory === '?꾩껜' || p.category === selectedCategory) ? i : -1)
-                .filter(i => i !== -1);
-            if (filteredIndices.length > 0) selectProduct(filteredIndices[0]);
+            const firstIdx = dashboardData.products.findIndex(p => selectedCategory === '전체' || p.category === selectedCategory);
+            if (firstIdx >= 0) selectProduct(firstIdx);
         }
 
         function renderProductList() {
             const list = document.getElementById('productList');
+            if (!list) return;
             let filtered = dashboardData.products.map((p, i) => ({ ...p, originalIndex: i }))
-                .filter(p => selectedCategory === '?꾩껜' || p.category === selectedCategory);
+                .filter(p => selectedCategory === '전체' || p.category === selectedCategory);
 
             const sortOption = document.getElementById('sortOption')?.value || 'default';
-            if (sortOption === 'price_asc') {
-                filtered.sort((a, b) => (a.current_price || 999999999) - (b.current_price || 999999999));
-            } else if (sortOption === 'price_desc') {
-                filtered.sort((a, b) => (b.current_price || 0) - (a.current_price || 0));
-            } else if (sortOption === 'name_asc') {
-                filtered.sort((a, b) => a.name.localeCompare(b.name));
-            }
+            if (sortOption === 'price_asc') filtered.sort((a, b) => (a.current_price || 9e9) - (b.current_price || 9e9));
+            else if (sortOption === 'price_desc') filtered.sort((a, b) => (b.current_price || 0) - (a.current_price || 0));
+            else if (sortOption === 'name_asc') filtered.sort((a, b) => a.name.localeCompare(b.name));
 
-            const checkedIndices = Array.from(document.querySelectorAll('.product-checkbox:checked')).map(cb => parseInt(cb.dataset.index));
-
-            list.innerHTML = filtered.map((p) => {
+            list.innerHTML = filtered.map(p => {
                 const change = p.change_pct ? p.change_pct.toFixed(1) + '%' : '0.0%';
                 const badgeClass = p.status === 'PRICE_DOWN' ? 'badge-down' : (p.status === 'PRICE_UP' ? 'badge-up' : 'badge-none');
-                const trendIcon = p.status === 'PRICE_DOWN' ? '燧뉛툘' : (p.status === 'PRICE_UP' ? '燧놅툘' : '??);
-                const isChecked = checkedIndices.includes(p.originalIndex) ? 'checked' : '';
+                const trendIcon = p.status === 'PRICE_DOWN' ? '⬇️' : (p.status === 'PRICE_UP' ? '⬆️' : '➖');
                 return `
                     <li class="product-item ${p.originalIndex === selectedProductIndex ? 'active' : ''}" 
-                        onclick="selectProduct(${p.originalIndex})"
-                        draggable="true" 
-                        ondragstart="handleDragStart(event, ${p.originalIndex})" 
-                        ondragover="handleDragOver(event)" 
-                        ondrop="handleDrop(event, ${p.originalIndex})"
-                        ondragleave="handleDragLeave(event)"
-                        ondragend="handleDragEnd(event)">
-                        <input type="checkbox" class="product-checkbox" data-index="${p.originalIndex}" ${isChecked} onclick="event.stopPropagation(); updateCheckedCount();">
+                        onclick="selectProduct(${p.originalIndex})">
+                        <input type="checkbox" class="product-checkbox" data-index="${p.originalIndex}" onclick="event.stopPropagation(); updateCheckedCount();">
                         <img class="product-thumb" src="${p.image_url || ''}" alt="">
                         <div class="product-info">
                             <span class="product-name">${p.name}</span>
@@ -1288,67 +1650,7 @@
                     </li>
                 `;
             }).join('');
-
             updateCheckedCount();
-        }
-
-        let draggedIndex = null;
-
-        function handleDragStart(e, index) {
-            draggedIndex = index;
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', index);
-            setTimeout(() => { e.target.style.opacity = '0.5'; }, 0);
-        }
-
-        function handleDragOver(e) {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-            const li = e.target.closest('li.product-item');
-            if (li) {
-                li.style.borderTop = '2px solid var(--toss-blue)';
-            }
-        }
-
-        function handleDragLeave(e) {
-            const li = e.target.closest('li.product-item');
-            if (li) {
-                li.style.borderTop = '1px solid transparent';
-            }
-        }
-
-        function handleDrop(e, targetIndex) {
-            e.preventDefault();
-            const li = e.target.closest('li.product-item');
-            if (li) li.style.borderTop = '1px solid transparent';
-
-            if (draggedIndex === null || draggedIndex === targetIndex) return;
-
-            const draggedItem = dashboardData.products[draggedIndex];
-            const targetItem = dashboardData.products[targetIndex];
-
-            const selectedItem = dashboardData.products[selectedProductIndex];
-
-            dashboardData.products.splice(draggedIndex, 1);
-            let newTargetIdx = dashboardData.products.indexOf(targetItem);
-            
-            if (newTargetIdx === -1) newTargetIdx = dashboardData.products.length;
-            dashboardData.products.splice(newTargetIdx, 0, draggedItem);
-
-            if (selectedItem) {
-                selectedProductIndex = dashboardData.products.indexOf(selectedItem);
-            }
-
-            const sortSelect = document.getElementById('sortOption');
-            if (sortSelect) sortSelect.value = 'default';
-
-            renderProductList();
-        }
-
-        function handleDragEnd(e) {
-            e.target.style.opacity = '1';
-            document.querySelectorAll('li.product-item').forEach(li => li.style.borderTop = '1px solid transparent');
-            draggedIndex = null;
         }
 
         function selectProduct(index) {
@@ -1357,405 +1659,164 @@
             if (!product) return;
 
             document.querySelectorAll('.product-item').forEach(el => {
-                el.classList.toggle('active', parseInt(el.querySelector('.product-checkbox').dataset.index) === index);
+                const cb = el.querySelector('.product-checkbox');
+                if (cb) el.classList.toggle('active', parseInt(cb.dataset.index) === index);
             });
 
             document.getElementById('selectedTitle').innerText = product.name;
             const imgEl = document.getElementById('selectedImage');
             const imgContainer = document.getElementById('selectedImageContainer');
             if (product.image_url) { imgEl.src = product.image_url; imgContainer.style.display = 'flex'; }
-            else { imgContainer.style.display = 'none'; }
+            else imgContainer.style.display = 'none';
 
-            const rankHtml = product.search_rank ? ` <span style="margin: 0 8px; color: var(--glass-border);">|</span> <span style="color:var(--toss-blue); font-weight:700;">?ㅼ씠踰꾨옲??${product.search_rank}??/span>` : '';
-            const keywordHtml = ` <span style="margin: 0 8px; color: var(--glass-border);">|</span> <span style="font-size:12px; color:var(--text-muted);">寃?됲궎?뚮뱶: "${product.rank_query || product.name}"</span>`;
-            document.getElementById('sellerInfo').innerHTML = `<span class="seller-tag">${product.seller}</span>?먯꽌 ?ㅼ떆媛?理쒖?媛 ?섏쭛 以?{rankHtml}${keywordHtml}`;
+            const rankHtml = product.search_rank ? ` <span style="margin:0 8px; color:var(--glass-border);">|</span> <span style="color:var(--toss-blue); font-weight:700;">네이버랭킹 ${product.search_rank}위</span>` : '';
+            const keywordHtml = ` <span style="margin:0 8px; color:var(--glass-border);">|</span> <span style="font-size:12px; color:var(--text-muted);">키워드: "${product.rank_query || product.name}"</span>`;
+            document.getElementById('sellerInfo').innerHTML = `<span class="seller-tag">${product.seller}</span> 수집 중${rankHtml}${keywordHtml}`;
             
-            // ??궧 ?ㅻ뜑???ㅼ썙???쒖떆 (洹몃９?붾맂 rank_query ?ъ슜)
-            const rankingListTitle = document.querySelector('.ranking-list-title');
-            const displayKeyword = product.rank_query || product.name;
-            if (rankingListTitle) {
-                rankingListTitle.innerHTML = `寃?됲궎?뚮뱶: "${displayKeyword}" <small style="font-weight:400; font-size:12px; color:var(--text-muted); margin-left:8px;">(?뺥솗????궧???곸쐞 10媛?</small>`;
-            }
-
-            renderRankingView(displayKeyword);
-
-            const catalogBtn = document.getElementById('catalogBtn');
-            if (product.product_id) { catalogBtn.href = `https://search.shopping.naver.com/catalog/${product.product_id}`; catalogBtn.style.display = 'flex'; }
-            else { catalogBtn.style.display = 'none'; }
-
             document.getElementById('currentPriceStat').innerText = formatPrice(product.current_price);
             document.getElementById('allTimeLow').innerText = formatPrice(product.all_time_low);
             document.getElementById('allTimeHigh').innerText = formatPrice(product.all_time_high);
             document.getElementById('avg7d').innerText = formatPrice(product.avg_7d);
             document.getElementById('avg30d').innerText = formatPrice(product.avg_30d);
 
-            const setDiff = (id, current, avg) => {
+            const setDiff = (id, cur, avg) => {
                 const el = document.getElementById(id);
                 if (!avg) { el.innerText = '-'; return; }
-                const diff = current - avg;
+                const diff = cur - avg;
                 const pct = ((diff / avg) * 100).toFixed(1);
-                if (diff < 0) { el.innerText = `?됯퇏?鍮?${Math.abs(pct)}% ??쓬 ??; el.style.color = 'var(--price-down)'; }
-                else if (diff > 0) { el.innerText = `?됯퇏?鍮?${pct}% ?믪쓬`; el.style.color = 'var(--price-up)'; }
-                else { el.innerText = '?됯퇏媛? ?숈씪'; el.style.color = 'var(--text-muted)'; }
+                if (diff < 0) { el.innerText = `평균대비 ${Math.abs(pct)}% 낮음 ✨`; el.style.color = 'var(--price-down)'; }
+                else if (diff > 0) { el.innerText = `평균대비 ${pct}% 높음`; el.style.color = 'var(--price-up)'; }
+                else { el.innerText = '평균가와 동일'; el.style.color = 'var(--text-muted)'; }
             };
             setDiff('avg7dDiff', product.current_price, product.avg_7d);
             setDiff('avg30dDiff', product.current_price, product.avg_30d);
-            document.getElementById('currentDiff').innerText = product.status === 'PRICE_DOWN' ? '理쒓렐 ?섎씫??媛먯? ?? : (product.status === 'PRICE_UP' ? '媛寃??곸듅 以?二쇱쓽 ?좑툘' : '?꾩옱媛 ?좎? 以?);
 
             const badgeContainer = document.getElementById('priceBadgeContainer');
             if (badgeContainer) {
                 if (product.current_price <= product.all_time_low && product.all_time_low > 0) {
-                    badgeContainer.innerHTML = `<div class="chart-badge" style="background: rgba(49, 130, 247, 0.1); color: #3182f7;">???꾩옱 ??? 理쒖?媛 ?ъ꽦 以?</div>`;
+                    badgeContainer.innerHTML = `<div class="chart-badge" style="background:rgba(49,130,247,0.1); color:#3182f7;">✨ 역대 최저가 달성 중!</div>`;
                 } else {
-                    const pctFromLow = (((product.current_price - product.all_time_low) / product.all_time_low) * 100).toFixed(1);
-                    badgeContainer.innerHTML = `<div class="chart-badge">??? 理쒖?媛 ?鍮?+${pctFromLow}% ?믪쓬</div>`;
+                    const pct = (((product.current_price - product.all_time_low) / product.all_time_low) * 100).toFixed(1);
+                    badgeContainer.innerHTML = `<div class="chart-badge">역대 최저가 대비 +${pct}%</div>`;
                 }
             }
 
+            renderRankingView(product.rank_query || product.name);
             currentPage = 1;
             refreshChartView();
-
-            // 紐⑤컮?쇱뿉???곹뭹 ?좏깮 ???ъ씠?쒕컮 ?リ린
-            if (window.innerWidth <= 768) {
-                toggleSidebar(false);
-            }
-        }
-
-        function changeChartDays(days, el) {
-            chartDays = days;
-            document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
-            if (el) el.classList.add('active');
-
-            // ?좎쭨 由ъ뀑
-            document.getElementById('startDate').value = '';
-            document.getElementById('endDate').value = '';
-
-            currentPage = 1; // ?섏씠吏 珥덇린??
-            refreshChartView();
-        }
-
-        function customDateFilter() {
-            const start = document.getElementById('startDate').value;
-            const end = document.getElementById('endDate').value;
-
-            if (start || end) {
-                chartDays = -1; // ?ъ슜???뺤쓽 紐⑤뱶
-                document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
-                currentPage = 1;
-                refreshChartView();
-            }
         }
 
         function refreshChartView() {
             const product = dashboardData.products[selectedProductIndex];
-            let history = product.history;
-
-            const startStr = document.getElementById('startDate').value;
-            const endStr = document.getElementById('endDate').value;
-
+            if (!product) return;
+            let hist = product.history || [];
             if (chartDays > 0) {
-                const cutoff = new Date();
-                cutoff.setDate(cutoff.getDate() - chartDays);
-                history = history.filter(h => new Date(h.t) >= cutoff);
-            } else if (chartDays === -1) {
-                if (startStr) {
-                    const start = new Date(startStr);
-                    start.setHours(0, 0, 0, 0);
-                    history = history.filter(h => new Date(h.t) >= start);
-                }
-                if (endStr) {
-                    const end = new Date(endStr);
-                    end.setHours(23, 59, 59, 999);
-                    history = history.filter(h => new Date(h.t) <= end);
-                }
+                const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - chartDays);
+                hist = hist.filter(h => new Date(h.t) >= cutoff);
             }
-
-            renderChart(history);
-            currentFilteredHistory = history.slice().reverse();
+            renderChart(hist);
+            currentFilteredHistory = hist.slice().reverse();
             renderTable();
-            renderRankingView(product.rank_query || product.name);
         }
 
         function renderChart(history) {
-            const ctx = document.getElementById('priceChart').getContext('2d');
+            const ctx = document.getElementById('priceChart')?.getContext('2d');
+            if (!ctx) return;
             if (mainChart) mainChart.destroy();
-            const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-            gradient.addColorStop(0, 'rgba(49, 130, 247, 0.15)');
-            gradient.addColorStop(1, 'rgba(49, 130, 247, 0)');
-
             mainChart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: history.map(h => { const d = new Date(h.t); return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:00`; }),
-                    datasets: [{
-                        data: history.map(h => h.p),
-                        borderColor: '#3182f7',
-                        borderWidth: 3,
-                        pointBackgroundColor: '#ffffff',
-                        pointBorderColor: '#3182f7',
-                        pointHoverRadius: 6,
-                        fill: true,
-                        backgroundColor: gradient,
-                        tension: 0.4
-                    }]
+                    labels: history.map(h => { const d = new Date(h.t); return `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}시`; }),
+                    datasets: [{ data: history.map(h => h.p), borderColor: '#3182f7', borderWidth: 3, pointRadius: 0, fill: true, backgroundColor: 'rgba(49,130,247,0.1)', tension: 0.4 }]
                 },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: { x: { display: false }, y: { grid: { color: 'rgba(0,0,0,0.03)' }, ticks: { callback: v => v.toLocaleString() } } }
-                }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { ticks: { callback: v => v.toLocaleString() } } } }
             });
         }
 
         function renderTable() {
-            const product = dashboardData.products[selectedProductIndex];
             const tbody = document.querySelector('#historyTable tbody');
-            const paginationEl = document.getElementById('pagination');
-
-            const totalItems = currentFilteredHistory.length;
-
-            // ?섏씠吏?ㅼ씠??怨꾩궛
-            // 泥??섏씠吏??20媛? 洹??ㅼ쓬遺?곕뒗 10媛쒖뵫
-            let startIndex = 0;
-            let itemsOnThisPage = itemsPerPageNormal;
-
-            if (currentPage === 1) {
-                startIndex = 0;
-                itemsOnThisPage = itemsPerPageFirst;
-            } else {
-                startIndex = itemsPerPageFirst + (currentPage - 2) * itemsPerPageNormal;
-                itemsOnThisPage = itemsPerPageNormal;
-            }
-
-            const pageData = currentFilteredHistory.slice(startIndex, startIndex + itemsOnThisPage);
-
-            tbody.innerHTML = pageData.map((h, i) => {
-                const globalIndex = startIndex + i;
-                const date = new Date(h.t);
-                let diffStr = '-', diffColor = 'var(--text-muted)';
-
-                // 媛寃?蹂??怨꾩궛 (?ㅼ쓬 ?곗씠?곗? 鍮꾧탳 - reverse 湲곗?)
-                if (globalIndex < totalItems - 1) {
-                    const nextItem = currentFilteredHistory[globalIndex + 1];
-                    const diff = h.p - nextItem.p;
-                    if (diff < 0) { diffStr = `燧뉛툘 ${Math.abs(diff).toLocaleString()}`; diffColor = 'var(--price-down)'; }
-                    else if (diff > 0) { diffStr = `燧놅툘 ${diff.toLocaleString()}`; diffColor = 'var(--price-up)'; }
-                    else diffStr = '0';
-                }
-
-                return `<tr><td>${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}</td><td style="font-weight:700">${formatPrice(h.p)}</td><td style="color:${diffColor};font-weight:600">${diffStr}</td><td>${product.seller}</td><td>?뺤긽</td></tr>`;
-            }).join('');
-
-            // ?섏씠吏?ㅼ씠??UI ?앹꽦
-            const totalPages = totalItems <= itemsPerPageFirst ? 1 : Math.ceil((totalItems - itemsPerPageFirst) / itemsPerPageNormal) + 1;
-
-            let navHtml = `<button class="page-btn" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>?댁쟾</button>`;
-
-            // ?섏씠吏 踰덊샇 ?쒖떆 (理쒕? 10媛쒖뵫)
-            const maxPagesToShow = 10;
-            let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
-            let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
-            if (endPage - startPage + 1 < maxPagesToShow) {
-                startPage = Math.max(1, endPage - maxPagesToShow + 1);
-            }
-
-            for (let i = startPage; i <= endPage; i++) {
-                navHtml += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
-            }
-
-            navHtml += `<button class="page-btn" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>?ㅼ쓬</button>`;
-            paginationEl.innerHTML = navHtml;
+            if (!tbody) return;
+            const start = (currentPage - 1) * itemsPerPageNormal;
+            const pageData = currentFilteredHistory.slice(start, start + itemsPerPageNormal);
+            tbody.innerHTML = pageData.map(h => `<tr><td>${new Date(h.t).toLocaleString()}</td><td style="font-weight:700">${formatPrice(h.p)}</td><td>${formatPrice(h.p)}</td><td>${dashboardData.products[selectedProductIndex].seller}</td><td>정상</td></tr>`).join('');
         }
 
-        function goToPage(page) {
-            currentPage = page;
-            renderTable();
-            // ?뚯씠釉??곷떒?쇰줈 ?ㅽ겕濡??대룞 (?좏깮??
-            document.querySelector('.history-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-
-        function downloadExcel() {
-            const checked = document.querySelectorAll('.product-checkbox:checked');
-            if (checked.length === 0) { alert("?ㅼ슫濡쒕뱶???곹뭹???좏깮?섏꽭??"); return; }
-            
-            // 1. ?꾩옱 理쒖?媛 ?쒗듃 ?곗씠??以鍮?
-            const currentData = [["?곹뭹紐?, "?꾩옱 理쒖?媛", "?먮ℓ泥?, "?섏쭛?쒓컙", "?ㅼ씠踰???궧", "?섏쭛 ?ㅼ썙??]];
-            // 2. 媛寃??덉뒪?좊━ ?쒗듃 ?곗씠??以鍮?(?좎쭨? ?쒓컙 ?꾩쟾 遺꾨━)
-            const historyData = [["?곹뭹紐?, "?섏쭛?좎쭨", "?섏쭛?쒓컙", "媛寃?, "?먮ℓ泥?]];
-            // 3. ?ㅼ썙????궧 ?쒗듃 ?곗씠??以鍮?
-            const rankingData = [["寃???ㅼ썙??, "?쒖쐞", "?곹뭹紐??ㅼ씠踰?", "媛寃?, "?먮ℓ泥?, "?섏쭛?쒓컙"]];
-
-            const addedKeywords = new Set();
-
-            Array.from(checked).forEach(cb => {
-                const p = dashboardData.products[cb.dataset.index];
-                
-                // 理쒖떊 ?섏쭛 ?쒓컙 異붿텧
-                let lastTime = "-";
-                if (p.history && p.history.length > 0) {
-                    const d = new Date(p.history[p.history.length - 1].t);
-                    lastTime = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
-                }
-
-                // ?꾩옱 ?뺣낫 異붽?
-                currentData.push([
-                    p.name, 
-                    p.current_price, 
-                    p.seller, 
-                    lastTime,
-                    p.search_rank || "-", 
-                    p.rank_query || p.name
-                ]);
-
-                // ?덉뒪?좊━ ?뺣낫 異붽? (?좎쭨? ?쒓컙 遺꾨━)
-                p.history.forEach(h => {
-                    const d = new Date(h.t);
-                    const formattedDate = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
-                    const formattedTime = `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
-                    historyData.push([p.name, formattedDate, formattedTime, h.p, p.seller]);
-                });
-
-                // ??궧 ?뺣낫 異붽? (以묐났 諛⑹?)
-                const kw = p.rank_query || p.name;
-                const keywordsToProcess = [kw];
-                if (kw.includes("媛ㅻ윮??)) {
-                    const short = kw.replace("媛ㅻ윮??, "").trim();
-                    if (short) keywordsToProcess.push(short);
-                }
-
-                keywordsToProcess.forEach(targetK => {
-                    if (!addedKeywords.has(targetK) && dashboardData.rankings && dashboardData.rankings[targetK]) {
-                        addedKeywords.add(targetK);
-                        dashboardData.rankings[targetK].forEach(r => {
-                            const d = new Date(r.collected_at);
-                            const formattedDate = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
-                            rankingData.push([
-                                targetK,
-                                r.rank,
-                                r.title,
-                                r.price,
-                                r.seller_name,
-                                formattedDate
-                            ]);
-                        });
-                    }
-                });
-            });
-
-            // Workbook ?앹꽦
-            const wb = XLSX.utils.book_new();
-            
-            // ?쒗듃 1: ?꾩옱 ?붿빟
-            const wsCurrent = XLSX.utils.aoa_to_sheet(currentData);
-            XLSX.utils.book_append_sheet(wb, wsCurrent, "?꾩옱_理쒖?媛_紐⑸줉");
-            
-            // ?쒗듃 2: 媛寃??덉뒪?좊━
-            const wsHistory = XLSX.utils.aoa_to_sheet(historyData);
-            XLSX.utils.book_append_sheet(wb, wsHistory, "媛寃??덉뒪?좊━");
-
-            // ?쒗듃 3: ?ㅼ썙????궧
-            const wsRanking = XLSX.utils.aoa_to_sheet(rankingData);
-            XLSX.utils.book_append_sheet(wb, wsRanking, "?ㅼ썙??TOP10_??궧");
-
-            // ?뚯씪 ???
-            XLSX.writeFile(wb, `?⑥뼱?щ툝_媛寃⑸텇??${new Date().toISOString().slice(0, 10)}.xlsx`);
-        }
-
-        /* ----- V2: ???꾪솚 諛???궧 酉?濡쒖쭅 ----- */
-        function switchView(viewId) {
-            document.querySelectorAll('.view-tab').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.view-content').forEach(content => content.classList.remove('active'));
-            
-            if(viewId === 'priceView') {
-                document.getElementById('tabPrice').classList.add('active');
-            } else {
-                document.getElementById('tabRanking').classList.add('active');
-            }
-            document.getElementById(viewId).classList.add('active');
-        }
-
-        let currentRankingKeyword = "";
-
-        function renderRankingView(keyword) {
-            if (!keyword) return;
-            currentRankingKeyword = keyword;
+        function renderRankingView(kw) {
             const container = document.getElementById('ranking-list-container');
-            const tabsContainer = document.getElementById('ranking-keyword-tabs');
-            const timeEl = document.getElementById('rankingUpdateTime');
-            
-            // ?ㅼ썙??紐⑸줉 ?앹꽦 (媛ㅻ윮???ы븿/?쒖쇅)
-            let keywords = [keyword];
-            if (keyword.includes("媛ㅻ윮??)) {
-                const short = keyword.replace("媛ㅻ윮??, "").trim();
-                if (short && short !== keyword) keywords.push(short);
-            }
-
-            // 以묐났 ?쒓굅
-            keywords = [...new Set(keywords)];
-
-            // "媛ㅻ윮??媛 ?녿뒗 吏㏃? ?ㅼ썙?쒕? ?욎쑝濡??뺣젹 (?ъ슜???붿껌: ?뷀뤃?멸컪)
-            keywords.sort((a, b) => {
-                const hasA = a.includes("媛ㅻ윮??);
-                const hasB = b.includes("媛ㅻ윮??);
-                if (!hasA && hasB) return -1;
-                if (hasA && !hasB) return 1;
-                return a.length - b.length;
-            });
-
-            // ??踰꾪듉 ?앹꽦
-            tabsContainer.innerHTML = keywords.map(k => `
-                <button class="filter-pill ${k === keywords[0] ? 'active' : ''}" onclick="updateRankingData('${k}', '${keyword}')">${k}</button>
-            `).join('');
-
-            // 泥?踰덉㎏ ?ㅼ썙??吏㏃? 寃?瑜?湲곕낯?쇰줈 ?곗씠??濡쒕뱶
-            updateRankingData(keywords[0], keyword);
-        }
-
-        function updateRankingData(targetK, baseK) {
-            const container = document.getElementById('ranking-list-container');
-            const timeEl = document.getElementById('rankingUpdateTime');
-            
-            // ???쒖꽦???곹깭 ?낅뜲?댄듃
-            document.querySelectorAll('#ranking-keyword-tabs .filter-pill').forEach(btn => {
-                btn.classList.toggle('active', btn.innerText === targetK);
-            });
-
-            if (!dashboardData.rankings || !dashboardData.rankings[targetK]) {
-                container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 40px;">[${targetK}]??????곗씠?곌? ?꾩쭅 ?섏쭛?섏? ?딆븯?듬땲??</div>`;
-                timeEl.innerText = "";
-                return;
-            }
-
-            const rankings = dashboardData.rankings[targetK].slice(0, 10);
-            if (rankings.length > 0) {
-                const date = new Date(rankings[0].collected_at);
-                timeEl.innerText = '?섏쭛: ' + date.toLocaleString();
-            }
-
-            let html = '';
-            rankings.forEach((item) => {
-                const rank = item.rank;
-                const isTop1 = rank === 1 ? 'top1' : '';
-                const imgUrl = item.image_url || 'https://via.placeholder.com/80?text=No+Img';
-                
-                html += `
-                <div class="ranking-card" onclick="window.open('${item.product_url || '#'}', '_blank')">
-                    <div class="rank-num ${isTop1}">${rank}</div>
-                    <img class="thumb" src="${imgUrl}" alt="thumbnail"/>
+            const tabs = document.getElementById('ranking-keyword-tabs');
+            if (!container || !dashboardData.rankings || !dashboardData.rankings[kw]) return;
+            const rankings = dashboardData.rankings[kw].slice(0, 10);
+            container.innerHTML = rankings.map(item => `
+                <div class="ranking-card" onclick="window.open('${item.product_url}','_blank')">
+                    <div class="rank-num ${item.rank === 1 ? 'top1' : ''}">${item.rank}</div>
+                    <img class="thumb" src="${item.image_url}">
                     <div class="ranking-card-body">
-                        <div class="mall">${item.seller_name || '?ㅼ씠踰꾩눥??}</div>
+                        <div class="mall">${item.seller_name}</div>
                         <div class="title">${item.title}</div>
                         <div class="price">${formatPrice(item.price)}</div>
                     </div>
                 </div>
-                `;
-            });
+            `).join('');
+        }
 
-            container.innerHTML = html;
+        function renderMallCategoryTabs() {
+            const container = document.getElementById('mallCategoryTabs');
+            if (!container || !dashboardData.mall_reports?.categories) return;
+            const cats = Object.keys(dashboardData.mall_reports.categories);
+            container.innerHTML = cats.map(cat => `<div class="cat-pill ${currentMallCategory === cat ? 'active' : ''}" onclick="selectMallCategory('${cat}')">${cat}</div>`).join('');
+            if (!currentMallCategory && cats.length > 0) selectMallCategory(cats[0]);
+        }
+
+        function selectMallCategory(cat) {
+            currentMallCategory = cat;
+            renderMallCategoryTabs();
+            renderMallReportTabs();
+        }
+
+        function renderMallReportTabs() {
+            const container = document.getElementById('mall-seller-tabs');
+            if (!container || !currentMallCategory) return;
+            const malls = Object.keys(dashboardData.mall_reports.categories[currentMallCategory]);
+            container.innerHTML = malls.map(m => `<div class="mall-tab ${currentMall === m ? 'active' : ''}" onclick="selectMall('${m}')">${m}</div>`).join('');
+            if (!currentMall && malls.length > 0) selectMall(malls[0]);
+        }
+
+        function selectMall(m) {
+            currentMall = m;
+            renderMallReportTabs();
+            renderMallDashboard(m);
+        }
+
+        function renderMallDashboard(m) {
+            const data = dashboardData.mall_reports.categories[currentMallCategory][m];
+            if (!data) return;
+            document.getElementById('currentMallTitle').textContent = `[${currentMallCategory}] ${m}`;
+            document.getElementById('mallStatTotal').innerText = data.total_products;
+            document.getElementById('mallStatDecreased').innerText = data.price_decreased_count;
+            renderMallChart(data.products);
+            renderMallTable(data.products);
+        }
+
+        function renderMallChart(prods) {
+            const ctx = document.getElementById('mallPriceChart')?.getContext('2d');
+            if (!ctx) return;
+            if (mallPriceChart) mallPriceChart.destroy();
+            const labels = [], data = [];
+            prods[0].history.forEach(h => { labels.push(h.t.substring(5, 10)); data.push(h.p); });
+            mallPriceChart = new Chart(ctx, {
+                type: 'line',
+                data: { labels, datasets: [{ data, borderColor: '#3182f7', fill: true, backgroundColor: 'rgba(49,130,247,0.1)', tension: 0.4 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+        }
+
+        function renderMallTable(prods) {
+            const tbody = document.getElementById('mallTableBody');
+            if (!tbody) return;
+            tbody.innerHTML = prods.map(p => `<tr><td class="mono">${p.collected_at}</td><td>${p.title}</td><td class="mono">${p.curr_price_fmt}</td><td class="mono">${p.prev_price_fmt}</td><td class="mono">${p.delta_str}</td><td style="text-align:right"><a href="${p.url}" target="_blank" class="chart-btn">링크</a></td></tr>`).join('');
         }
 
         init();
     </script>
 </body>
-
 </html>

@@ -3,5 +3,6 @@ pyyaml
 python-dotenv
 uvicorn
 fastapi
-google-cloud-storage
+gspread
+google-auth
 playwright
