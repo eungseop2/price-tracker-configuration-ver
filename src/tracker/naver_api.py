@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 from dataclasses import asdict
 from typing import Any, Iterable
@@ -10,6 +11,9 @@ from urllib3.util.retry import Retry
 
 from .config import AppConfig, TargetConfig, MallTargetConfig
 from .util import all_keywords_present, any_keyword_present, clean_text, parse_int
+
+
+logger = logging.getLogger(__name__)
 
 
 SHOP_API_URL = "https://openapi.naver.com/v1/search/shop.json"
@@ -102,16 +106,26 @@ def collect_lowest_offer_via_api(client: NaverShoppingSearchClient, app_config: 
     if not target.query:
         raise ValueError(f"target '{target.name}' 에 query 가 없습니다.")
 
+    # 만약 product_id가 지정되어 있다면, 정확한 카탈로그를 찾기 위해 정렬을 'sim'으로 강제하고 검색 범위를 넓힘
+    search_sort = target.request.sort
+    display_limit = app_config.display
     pages = max(1, target.request.pages)
+    
+    if target.match.product_id:
+        search_sort = "sim"
+        display_limit = 100 # 최대치로 확장
+        pages = max(2, pages) # ID 검색 시에는 최소 2페이지(200건)까지 뒤지도록 보강
+        logger.info(f"  └─ [{target.name}] ID 기반 매칭 모드: 정렬=sim, 검색범위={display_limit*pages}건 확대")
+
     items: list[dict[str, Any]] = []
 
     for page_index in range(pages):
-        start = page_index * app_config.display + 1
+        start = page_index * display_limit + 1
         payload = client.search(
             query=target.query,
-            display=app_config.display,
+            display=display_limit,
             start=start,
-            sort=target.request.sort,
+            sort=search_sort,
             filter_=target.request.filter,
             exclude=app_config.exclude,
         )

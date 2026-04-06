@@ -1571,7 +1571,14 @@
                 }
 
                 if (!dashboardData.products || dashboardData.products.length === 0) {
-                    throw new Error("No products found");
+                    console.warn("No products found in dashboard_data.json, but continuing for Mall Tracker.");
+                    renderCategoryTabs();
+                    renderProductList();
+                    // 쇼핑몰 리포트 탭이 있다면 그리로 자동 전환하거나 초기화
+                    if (dashboardData.mall_reports) {
+                        renderMallCategoryTabs();
+                    }
+                    return; 
                 }
 
                 renderCategoryTabs();

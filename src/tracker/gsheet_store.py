@@ -201,6 +201,8 @@ class GoogleSheetStore:
         
         # 카테고리/몰별 그룹화 및 필터링
         report = {}
+        from .util import format_price
+        
         for r in latest_records:
             mall = r.get("mall_name")
             if not mall: continue
@@ -220,14 +222,38 @@ class GoogleSheetStore:
             if mall not in report[cat]: 
                 report[cat][mall] = {
                     "total_products": 0,
+                    "price_decreased_count": 0,
                     "products": []
                 }
             
+            # 이전 가격 찾기 (같은 몰의 같은 상품명 중 직전 수집 시점)
+            title = r.get("title", "")
+            curr_price = r.get("price") or 0
+            prev_price = 0
+            
+            # 같은 몰의 같은 타이틀을 가진 이전 기록들 필터링
+            history = [h for h in records if h.get("mall_name") == mall and h.get("title") == title and h["collected_at"] < r["collected_at"]]
+            if history:
+                latest_h = sorted(history, key=lambda x: x["collected_at"], reverse=True)[0]
+                prev_price = latest_h.get("price") or 0
+            
+            delta = curr_price - prev_price if prev_price > 0 else 0
+            delta_str = "0"
+            if delta < 0:
+                delta_str = f"-{format_price(abs(delta))}"
+                report[cat][mall]["price_decreased_count"] += 1
+            elif delta > 0:
+                delta_str = f"+{format_price(delta)}"
+            
             report[cat][mall]["total_products"] += 1
             report[cat][mall]["products"].append({
-                "title": r.get("title", ""),
+                "title": title,
                 "collected_at": r.get("collected_at", "")[:16],
-                "price": r.get("price"),
+                "price": curr_price,
+                "curr_price_fmt": format_price(curr_price),
+                "prev_price_fmt": format_price(prev_price) if prev_price > 0 else "-",
+                "delta": delta,
+                "delta_str": delta_str,
                 "url": r.get("product_url", "")
             })
             
