@@ -39,15 +39,21 @@ class GoogleSheetStore:
             return
         
         try:
-            # 환경변수에서 온 JSON 문자열의 줄바꿈 및 이스케이프 문자 정제
+            # 환경변수에서 온 JSON 문자열 정제
             raw_key = self.service_account_json.strip()
             # 만약 따옴표로 감싸져 있다면 제거
             if raw_key.startswith('"') and raw_key.endswith('"'):
                 raw_key = raw_key[1:-1]
-            # 이스케이프된 줄바꿈 처리
-            raw_key = raw_key.replace('\\n', '\n')
             
-            info = json.loads(raw_key)
+            # JSON 파싱 시도
+            try:
+                info = json.loads(raw_key)
+            except json.JSONDecodeError:
+                # 만약 실패하면, 이스케이프된 줄바꿈이 깨졌을 가능성 대비 (필요한 경우에만 수행)
+                # 주의: json.loads 호출 전에는 문자열 리터럴을 망가뜨리면 안 됨
+                # 여기서는 흔히 발생하는 '실제 줄바꿈' 문제를 처리하기 위해 strict=False 옵션 고려 가능
+                info = json.loads(raw_key, strict=False)
+
             scopes = [
                 "https://www.googleapis.com/auth/spreadsheets",
                 "https://www.googleapis.com/auth/drive"
