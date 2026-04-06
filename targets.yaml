@@ -97,3 +97,33 @@ targets:
     price_selector: "[class^='style_price_num']"
     seller_selector: "[class^='style_mall_name']"
     offer_row_selector: "li[class^='style_seller_item']"
+# 대상 쇼핑몰(Mall) 별 개별 추적 설정
+# 여기에 등록된 쇼핑몰은 지정된 쿼리 결과 내에서 해당 몰의 상품만 골라 mall_observations 시트에 저장됩니다.
+mall_targets:
+  - name: "위드모바일 - S26 울트라"
+    query: "갤럭시 S26 울트라"
+    mall_name: "삼성공식파트너 위드모바일"
+    category: "S26"
+    request:
+      pages: 10 # 랭킹 100위까지 탐색 (50개*2페이지)
+
+  - name: "쇼마젠시 - S26 울트라"
+    query: "갤럭시 S26 울트라"
+    mall_name: "삼성전자공식파트너 쇼마젠시"
+    category: "S26"
+    request:
+      pages: 10
+
+  - name: "코잇 - S26 울트라"
+    query: "갤럭시 S26 울트라"
+    mall_name: "삼성모바일파트너 코잇"
+    category: "S26"
+    request:
+      pages: 10
+
+  - name: "케이원정보 - S26 울트라"
+    query: "갤럭시 S26 울트라"
+    mall_name: "삼성인증파트너 케이원정보"
+    category: "S26"
+    request:
+      pages: 10

@@ -1,4 +1,4 @@
-import json
+﻿import json
 import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any, Iterable
@@ -8,7 +8,7 @@ from google.oauth2.service_account import Credentials
 
 logger = logging.getLogger("tracker.gsheet_store")
 
-# 시트별 헤더 정의 (SQLite 스키마와 동일하게 유지)
+# ?쒗듃蹂??ㅻ뜑 ?뺤쓽 (SQLite ?ㅽ궎留덉? ?숈씪?섍쾶 ?좎?)
 HEADERS = {
     "observations": [
         "target_name", "source_mode", "collected_at", "success", "status", 
@@ -39,15 +39,7 @@ class GoogleSheetStore:
             return
         
         try:
-            # 환경변수에서 온 JSON 문자열의 줄바꿈 및 이스케이프 문자 정제
-            raw_key = self.service_account_json.strip()
-            # 만약 따옴표로 감싸져 있다면 제거
-            if raw_key.startswith('"') and raw_key.endswith('"'):
-                raw_key = raw_key[1:-1]
-            # 이스케이프된 줄바꿈 처리
-            raw_key = raw_key.replace('\\n', '\n')
-            
-            info = json.loads(raw_key)
+            info = json.loads(self.service_account_json)
             scopes = [
                 "https://www.googleapis.com/auth/spreadsheets",
                 "https://www.googleapis.com/auth/drive"
@@ -55,12 +47,9 @@ class GoogleSheetStore:
             credentials = Credentials.from_service_account_info(info, scopes=scopes)
             self._gc = gspread.authorize(credentials)
             self._sh = self._gc.open_by_key(self.spreadsheet_id)
-            logger.info(f"구글 스프레드시트 연결 성공: {self._sh.title}")
-        except json.JSONDecodeError as e:
-            logger.error(f"구글 서비스 계정 키 JSON 파싱 실패: {e}. 키의 형식을 확인하세요.")
-            raise
+            logger.info(f"援ш? ?ㅽ봽?덈뱶?쒗듃 ?곌껐 ?깃났: {self._sh.title}")
         except Exception as e:
-            logger.error(f"구글 스프레드시트 연결 중 최종 실패: {e}")
+            logger.error(f"援ш? ?ㅽ봽?덈뱶?쒗듃 ?곌껐 ?ㅽ뙣: {e}")
             raise
 
     def _get_worksheet(self, name: str):
@@ -72,19 +61,19 @@ class GoogleSheetStore:
             ws = self._sh.worksheet(name)
         except gspread.exceptions.WorksheetNotFound:
             cols = HEADERS.get(name, ["data"])
-            ws = self._sh.add_worksheet(title=name, rows=1000, cols=len(cols))
+            ws = self._sh.add_worksheet(title=name, rows="1000", cols=str(len(cols)))
             ws.append_row(cols)
-            logger.info(f"새 시트 생성됨: {name}")
+            logger.info(f"???쒗듃 ?앹꽦?? {name}")
             
         self._worksheets[name] = ws
         return ws
 
     def insert(self, payload: dict[str, Any]):
-        """단일 상품 수집 기록 저장 (내부적으로 insert_batch 활용)"""
+        """?⑥씪 ?곹뭹 ?섏쭛 湲곕줉 ???(?대??곸쑝濡?insert_batch ?쒖슜)"""
         self.insert_batch([payload])
 
     def insert_batch(self, payloads: list[dict[str, Any]]):
-        """여러 상품 수집 기록을 한 번에 저장 (성능 및 신뢰성 최적화)"""
+        """?щ윭 ?곹뭹 ?섏쭛 湲곕줉????踰덉뿉 ???(?깅뒫 諛??좊ː??理쒖쟻??"""
         if not payloads:
             return
 
@@ -96,7 +85,7 @@ class GoogleSheetStore:
             row = []
             for col in cols:
                 val = p.get(col)
-                # GSheet 기록 시 None은 빈 문자열로 변환하여 에러 방지
+                # GSheet 湲곕줉 ??None? 鍮?臾몄옄?대줈 蹂?섑븯???먮윭 諛⑹?
                 if val is None:
                     row.append("")
                 else:
@@ -105,12 +94,12 @@ class GoogleSheetStore:
             
         try:
             ws.append_rows(rows)
-            logger.info(f"데이터 배치 저장 완료 (observations): {len(rows)}건")
+            logger.info(f"?곗씠??諛곗튂 ????꾨즺 (observations): {len(rows)}嫄?)
         except Exception as e:
-            logger.error(f"데이터 배치 저장 실패 (observations): {e}")
+            logger.error(f"?곗씠??諛곗튂 ????ㅽ뙣 (observations): {e}")
 
     def insert_mall_records(self, target_name: str, query: str, mall_name: str, category: str, items: list[dict[str, Any]]):
-        """특정 쇼핑몰 수집 기록 저장"""
+        """???紐??섏쭛 湲곕줉 ???""
         if not items:
             return
         
@@ -125,62 +114,48 @@ class GoogleSheetStore:
                 "category": category,
                 **itm
             }
-            # None 값 처리
-            row = []
-            for col in cols:
-                val = row_data.get(col)
-                row.append("" if val is None else val)
-            rows.append(row)
+            rows.append([row_data.get(col) for col in cols])
         
         try:
             ws.append_rows(rows)
-            logger.info(f"쇼핑몰 데이터 저장 성공: {target_name} ({len(rows)}건)")
         except Exception as e:
-            logger.error(f"쇼핑몰 데이터 저장 실패 (mall_observations): {e}")
+            logger.error(f"?곗씠??????ㅽ뙣 (mall_observations): {e}")
 
     def insert_ranking_batch(self, rows_to_insert: list[dict[str, Any]]):
-        """랭킹 히스토리 저장"""
+        """??궧 ?덉뒪?좊━ ???""
         if not rows_to_insert:
             return
             
         ws = self._get_worksheet("ranking_history")
         cols = HEADERS["ranking_history"]
-        
-        rows = []
-        for data in rows_to_insert:
-            row = []
-            for col in cols:
-                val = data.get(col)
-                row.append("" if val is None else val)
-            rows.append(row)
+        rows = [[data.get(col) for col in cols] for data in rows_to_insert]
         
         try:
             ws.append_rows(rows)
-            logger.info(f"랭킹 히스토리 저장 완료: {len(rows)}건")
         except Exception as e:
-            logger.error(f"랭킹 히스토리 저장 실패 (ranking_history): {e}")
+            logger.error(f"?곗씠??????ㅽ뙣 (ranking_history): {e}")
 
     def get_latest_rankings(self, query: str) -> list[dict[str, Any]]:
-        """특정 쿼리의 가장 최근 랭킹 데이터를 가져옵니다."""
+        """?뱀젙 荑쇰━??媛??理쒓렐 ??궧 ?곗씠?곕? 媛?몄샃?덈떎."""
         ws = self._get_worksheet("ranking_history")
-        all_records = ws.get_all_records()
+        all_records = ws.get_all_records() # ?깅뒫 二쇱쓽: ?곗씠?곌? 留롮쑝硫??꾪꽣留?濡쒖쭅 媛쒖꽑 ?꾩슂
         
-        matches = [r for r in all_records if r.get("query") == query]
+        # ?뱀젙 荑쇰━??理쒖떊 ?쒓컙? ?곗씠???꾪꽣留?        matches = [r for r in all_records if r.get("query") == query]
         if not matches:
             return []
             
         latest_time = max(m["collected_at"] for m in matches)
         return [m for m in matches if m["collected_at"] == latest_time]
 
-    def get_mall_report_data(self, monitored_sellers: list[str] | None = None) -> dict[str, Any]:
-        """쇼핑몰 리포트용 계층 데이터 구성 (대시보드 노출)"""
+    def get_mall_report_data(self) -> dict[str, Any]:
+        """?쇳븨紐?由ы룷?몄슜 怨꾩링 ?곗씠??援ъ꽦 (??쒕낫???명솚??"""
         ws = self._get_worksheet("mall_observations")
         records = ws.get_all_records()
         
+        # ???`target_name`)蹂꾨줈 洹몃９?뷀븯??媛곴컖??理쒖떊 ?섏쭛 ?쒖젏 ?곗씠?곕? 痍⑦빀?⑸땲??
         if not records:
             return {}
             
-        # Target별 최신 수집 시점 찾기
         by_target = {}
         for r in records:
             tn = r.get("target_name")
@@ -193,71 +168,96 @@ class GoogleSheetStore:
             max_t = max(g["collected_at"] for g in group)
             latest_records.extend([g for g in group if g["collected_at"] == max_t])
         
-        # 카테고리/몰별 그룹화 및 필터링
-        report = {}
+        # 移댄뀒怨좊━/紐곕퀎 洹몃９??        report = {}
         for r in latest_records:
+            cat = r.get("category") or "湲고?"
             mall = r.get("mall_name")
-            if not mall: continue
             
-            # 필터링 로직 (monitored_sellers가 지정된 경우)
-            if monitored_sellers:
-                is_monitored = False
-                for m in monitored_sellers:
-                    if m in mall:
-                        is_monitored = True
-                        break
-                if not is_monitored:
-                    continue
-
-            cat = r.get("category") or "기타"
             if cat not in report: report[cat] = {}
             if mall not in report[cat]: 
                 report[cat][mall] = {
                     "total_products": 0,
+                    "price_decreased_count": 0,
                     "products": []
                 }
             
+            # ?댁쟾 湲곕줉 李얘린 (蹂?숈븸 怨꾩궛??
+            prev_records = [rec for rec in records if rec.get("product_id") == r.get("product_id") and rec["collected_at"] < latest_time]
+            prev_price = None
+            delta = 0
+            if prev_records:
+                prev_latest = sorted(prev_records, key=lambda x: x["collected_at"], reverse=True)[0]
+                prev_price = prev_latest.get("price")
+                if prev_price and r.get("price"):
+                    delta = int(r["price"]) - int(prev_price)
+
             report[cat][mall]["total_products"] += 1
+            if delta < 0:
+                report[cat][mall]["price_decreased_count"] += 1
+
             report[cat][mall]["products"].append({
-                "title": r.get("title", ""),
-                "collected_at": r.get("collected_at", "")[:16],
-                "price": r.get("price"),
-                "url": r.get("product_url", "")
+                "title": r["title"],
+                "collected_at": r["collected_at"][:16], # YYYY-MM-DD HH:mm
+                "curr_price_fmt": f"{int(r['price']):,}?? if r.get("price") else "-",
+                "prev_price_fmt": f"{int(prev_price):,}?? if prev_price else "-",
+                "delta_str": f"{delta:+,}?? if delta != 0 else "0??,
+                "price": r["price"],
+                "url": r["product_url"],
+                "history": [] # 李⑦듃???덉뒪?좊━ (?꾩슂 ??蹂닿컯)
             })
             
         return report
 
     def get_dashboard_data(self, targets: Any) -> dict[str, Any]:
-        """대시보드 UI용 데이터 생성"""
+        """??쒕낫???쒓컖?붿슜 ?듯빀 ?곗씠???앹꽦 (GSheet 踰꾩쟾)"""
         ws = self._get_worksheet("observations")
         records = ws.get_all_records()
         
         target_map = {t.name: t for t in targets}
-        from .util import utc_now_iso
+        # KST ?곸슜
+        from .util import now_iso
         data = {
-            "generated_at": utc_now_iso(),
+            "generated_at": now_iso(),
             "products": []
         }
 
         for name, t_config in target_map.items():
+            # ?뱀젙 ?곹뭹???섏쭛 湲곕줉 ?꾪꽣留?(?깃났??寃껊쭔)
             p_history = [r for r in records if r.get("target_name") == name and r.get("success") == 1]
             if not p_history:
                 continue
             
+            # 理쒖떊 湲곕줉
             latest = sorted(p_history, key=lambda x: x["collected_at"], reverse=True)[0]
-            prices = [int(r["price"]) for r in p_history if r.get("price")]
             
+            # ?듦퀎 怨꾩궛
+            prices = [int(r["price"]) for r in p_history if r.get("price")]
+            all_time_low = min(prices) if prices else None
+            all_time_high = max(prices) if prices else None
+            
+            def calc_avg(days):
+                cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+                recent_prices = [int(r["price"]) for r in p_history if r["collected_at"] >= cutoff and r.get("price")]
+                return round(sum(recent_prices) / len(recent_prices)) if recent_prices else None
+
             product_data = {
                 "name": name,
                 "category": t_config.category,
+                "rank_query": t_config.rank_query,
                 "current_price": latest["price"],
-                "seller": latest.get("seller_name") or "네이버",
+                "seller": latest.get("seller_name") or "?ㅼ씠踰?,
                 "status": latest.get("price_change_status"),
                 "change_pct": latest.get("price_delta_pct"),
                 "product_id": latest.get("product_id"),
+                "avg_7d": calc_avg(7),
+                "avg_30d": calc_avg(30),
+                "avg_90d": calc_avg(90),
+                "all_time_low": all_time_low,
+                "all_time_high": all_time_high,
                 "image_url": latest.get("image_url"),
+                "search_rank": latest.get("search_rank"),
                 "history": [
-                    {"t": r["collected_at"], "p": r["price"]} for r in p_history[-50:]
+                    {"t": r["collected_at"], "p": r["price"]} for r in p_history[-200:] # 理쒓렐 200媛쒕줈 ?쒗븳
                 ]
             }
             data["products"].append(product_data)
@@ -265,7 +265,7 @@ class GoogleSheetStore:
         return data
 
     def get_latest_success(self, target_name: str) -> dict[str, Any] | None:
-        """특정 상품의 가장 최근 성공 수집 기록 반환"""
+        """?뱀젙 ?곹뭹??媛??理쒓렐 ?깃났 ?섏쭛 湲곕줉??諛섑솚?⑸땲??"""
         ws = self._get_worksheet("observations")
         records = ws.get_all_records()
         matches = [r for r in records if r.get("target_name") == target_name and r.get("success") == 1]
@@ -274,4 +274,5 @@ class GoogleSheetStore:
         return sorted(matches, key=lambda x: x["collected_at"], reverse=True)[0]
 
     def close(self):
+        # gspread???몄뀡???먮룞?쇰줈 愿由ы븯誘濡?紐낆떆??醫낅즺媛 ?꾩슂 ?놁쑝???명꽣?섏씠???좎?
         pass

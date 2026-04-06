@@ -1,10 +1,9 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import asyncio
 import logging
 import os
-import sys
 import time
 from pathlib import Path
 
@@ -16,7 +15,7 @@ from .browser_scraper import (
     collect_lowest_offer_via_browser,
     collect_current_offer_via_browser
 )
-from .config import StoreType, TargetConfig, load_config
+from .config import TargetConfig, load_config
 from .gsheet_store import GoogleSheetStore
 from .naver_api import (
     NaverShoppingSearchClient,
@@ -41,19 +40,19 @@ def setup_logging(verbose: bool = False) -> None:
 
 
 async def _collect_one(client: NaverShoppingSearchClient, target: TargetConfig, app_config, artifacts_dir: str) -> dict:
-    """단일 타겟 수집 및 NO_MATCH 시 자동 폴백 로직"""
+    """?⑥씪 ?寃??섏쭛 諛?NO_MATCH ???먮룞 ?대갚 濡쒖쭅"""
     result = None
     
     if target.mode == "api_query":
         try:
             result = collect_lowest_offer_via_api(client, app_config, target)
         except Exception as e:
-            # 401, 429, 네트워크 오류 등은 폴백하지 않고 예외 발생 (main 루프에서 처리)
+            # 401, 429, ?ㅽ듃?뚰겕 ?ㅻ쪟 ?깆? ?대갚?섏? ?딄퀬 ?덉쇅 諛쒖깮 (main 猷⑦봽?먯꽌 泥섎━)
             raise e
 
-        # API 결과가 NO_MATCH이고 fallback_url이 있는 경우에만 브라우저 폴백
+        # API 寃곌낵媛 NO_MATCH?닿퀬 fallback_url???덈뒗 寃쎌슦?먮쭔 釉뚮씪?곗? ?대갚
         if result.get("status") == "NO_MATCH" and target.fallback_url:
-            logger.info("API NO_MATCH -> Browser 폴백 실행 | %s", target.name)
+            logger.info("API NO_MATCH -> Browser ?대갚 ?ㅽ뻾 | %s", target.name)
             fallback_target = TargetConfig(
                 name=target.name,
                 mode="browser_url",
@@ -62,9 +61,9 @@ async def _collect_one(client: NaverShoppingSearchClient, target: TargetConfig, 
                 match=target.match,
             )
             fallback_result = await collect_lowest_offer_via_browser(fallback_target, artifacts_dir)
-            # 폴백 정보 기록 루틴 (status 오염 금지)
+            # ?대갚 ?뺣낫 湲곕줉 猷⑦떞 (status ?ㅼ뿼 湲덉?)
             fallback_result["fallback_used"] = 1
-            fallback_result["status"] = "OK"  # 폴백 성공 시에도 순수 OK 유지
+            fallback_result["status"] = "OK"  # ?대갚 ?깃났 ?쒖뿉???쒖닔 OK ?좎?
             return fallback_result
             
         return result
@@ -74,7 +73,7 @@ async def _collect_one(client: NaverShoppingSearchClient, target: TargetConfig, 
         return result
 
     else:
-        raise ValueError(f"지원하지 않는 수집 모드: {target.mode}")
+        raise ValueError(f"吏?먰븯吏 ?딅뒗 ?섏쭛 紐⑤뱶: {target.mode}")
 
 
 async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json: str | None = None) -> None:
@@ -83,21 +82,20 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
     fallback_used_count = 0
     alerts_triggered_count = 0
     changed_items = []
-    # 데이터 배치 수집용 리스트
-    collected_payloads = []
+    # ?곗씠??諛곗튂 ?섏쭛??由ъ뒪??    collected_payloads = []
     
     service_account_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_KEY")
     if not service_account_json:
-        logger.error("GOOGLE_SERVICE_ACCOUNT_KEY 환경변수가 설정되지 않았습니다.")
+        logger.error("GOOGLE_SERVICE_ACCOUNT_KEY ?섍꼍蹂?섍? ?ㅼ젙?섏? ?딆븯?듬땲??")
         return
 
     store = GoogleSheetStore(gsheet_id, service_account_json)
     client = NaverShoppingSearchClient(timeout_seconds=app_config.timeout_seconds)
 
     for target in app_config.targets:
-        logger.info("수집 시작 | %s | mode=%s", target.name, target.mode)
+        logger.info("?섏쭛 ?쒖옉 | %s | mode=%s", target.name, target.mode)
         try:
-            # 직전 성공 기록 조회 (가격 변동 체크용)
+            # 吏곸쟾 ?깃났 湲곕줉 議고쉶 (媛寃?蹂??泥댄겕??
             prev_success = store.get_latest_success(target.name)
             prev_price = prev_success["price"] if prev_success else None
 
@@ -105,7 +103,7 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
             result["collected_at"] = utc_now_iso()
             result["config_mode"] = target.mode
 
-            # 가격 변동 및 상태 계산
+            # 媛寃?蹂??諛??곹깭 怨꾩궛
             current_price = result.get("price")
             if current_price is not None:
                 if prev_price is None:
@@ -125,17 +123,17 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
             else:
                 result["price_change_status"] = None
 
-            # 필수 필드 보장
+            # ?꾩닔 ?꾨뱶 蹂댁옣
             result.setdefault("fallback_used", 0)
             result["alert_triggered"] = 0
             
-            # 알림 체크
-            # 알림 체크 (가격 변동 기반)
+            # ?뚮┝ 泥댄겕
+            # ?뚮┝ 泥댄겕 (媛寃?蹂??湲곕컲)
             if result.get("success"):
                 ok += 1
                 status = result.get("price_change_status")
 
-                # 가격이 변동된 경우 (상승 or 하락)
+                # 媛寃⑹씠 蹂?숇맂 寃쎌슦 (?곸듅 or ?섎씫)
                 if status in ["PRICE_DOWN", "PRICE_UP"]:
                     result["alert_triggered"] = 1
                     alerts_triggered_count += 1
@@ -146,16 +144,16 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                 if result.get("fallback_used"):
                     fallback_used_count += 1
                 
-                logger.info("수집 완료 | %s | %s", target.name, result.get("price_change_status"))
+                logger.info("?섏쭛 ?꾨즺 | %s | %s", target.name, result.get("price_change_status"))
                 collected_payloads.append(result)
             else:
                 fail += 1
-                logger.warning("수집 미일치 | %s | %s", target.name, result.get("status"))
+                logger.warning("?섏쭛 誘몄씪移?| %s | %s", target.name, result.get("status"))
                 collected_payloads.append(result)
 
         except Exception as exc:
             fail += 1
-            logger.exception("수집 실패 | %s", target.name)
+            logger.exception("?섏쭛 ?ㅽ뙣 | %s", target.name)
             collected_payloads.append({
                 "target_name": target.name,
                 "config_mode": target.mode,
@@ -174,36 +172,36 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                 "alert_triggered": 0
             })
 
-    # 루프 종료 후 한 번에 저장 (Batch Insert)
+    # 猷⑦봽 醫낅즺 ????踰덉뿉 ???(Batch Insert)
     if collected_payloads:
         try:
             store.insert_batch(collected_payloads)
         except Exception as e:
-            logger.error(f"GSheet 배치 저장 최종 실패: {e}")
+            logger.error(f"GSheet 諛곗튂 ???理쒖쥌 ?ㅽ뙣: {e}")
 
-    # ---------- [대상 쇼핑몰(Mall) 트래커 수집 루틴] ----------
+    # ---------- [???紐??몃옒而??섏쭛 猷⑦떞 - 理쒖쟻??踰꾩쟾] ----------
     if app_config.mall_targets:
-        logger.info("대상 쇼핑몰(Mall) 수집 시작 (%d개 타겟)", len(app_config.mall_targets))
+        logger.info("???Mall) ?섏쭛 ?쒖옉 (%d媛??寃?", len(app_config.mall_targets))
         mall_collected_at = utc_now_iso()
         
-        # 1. 쿼리별로 타겟 그룹화 (API 호출 최소화)
-        query_groups: dict[str, list] = {}
+        # 1. 荑쇰━蹂꾨줈 ?寃?洹몃９??        query_groups: dict[str, list] = {}
         for m_target in app_config.mall_targets:
             q = m_target.query
             if q not in query_groups:
                 query_groups[q] = []
             query_groups[q].append(m_target)
         
-        # 2. 쿼리 그룹별로 검색 및 필터링 수집
-        for query, targets in query_groups.items():
+        # 2. 荑쇰━ 洹몃９蹂꾨줈 API ?몄텧 諛??ㅼ쨷 ?꾪꽣留?        for query, targets in query_groups.items():
             try:
+                # ?대떦 洹몃９??理쒕? ?섏씠吏 ???뺤씤
                 max_pages = max(t.request.pages for t in targets)
-                logger.info(f"쿼리 그룹 수집: '{query}' (최대 {max_pages}페이지)")
+                logger.info("荑쇰━ 洹몃９ ?섏쭛 以? '%s' (?寃???? %d媛? 理쒕? %d?섏씠吏)", 
+                            query, len(targets), max_pages)
                 
-                # API 호출 (한 번의 검색으로 여러 쇼핑몰 데이터 확보)
+                # API ?몄텧 (1嫄댁쓽 荑쇰━濡?紐⑤뱺 ?寃??곗씠??寃??
                 all_items = collect_mall_items(client, app_config, query, max_pages)
                 
-                for m_target in targets:
+                # 媛??寃잙퀎濡??꾪꽣留?諛????                for m_target in targets:
                     target_mall = clean_text(m_target.mall_name)
                     candidates = [item for item in all_items if target_mall in clean_text(item.get("seller_name", ""))]
                     
@@ -211,28 +209,26 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                         for c in candidates:
                             c["collected_at"] = mall_collected_at
                         store.insert_mall_records(m_target.name, m_target.query, m_target.mall_name, m_target.category, candidates)
-                        logger.info(f"  └─ [{m_target.name}] 필터링 완료: {len(candidates)}개 상품 저장")
+                        logger.info("  ??[%s] ?꾪꽣留??꾨즺: %d媛??곹뭹 ???, m_target.name, len(candidates))
                     else:
-                        # 상품이 없는 경우에도 '없음' 상태를 기록하여 데이터 연속성 유지
-                        logger.warning(f"  └─ [{m_target.name}] 해당 쇼핑몰 상품을 찾을 수 없음")
+                        logger.warning("  ??[%s] ?꾪꽣留?寃곌낵 ?놁쓬", m_target.name)
                         
             except Exception as e:
-                logger.error(f"쇼핑몰 그룹 수집 실패 ({query}): {e}")
+                logger.error("荑쇰━ 洹몃９ ?섏쭛 ?ㅽ뙣 (%s): %s", query, e)
 
-    # ---------- [랭킹 수집 최적화 루틴] ----------
+    # ---------- [??궧 ?섏쭛 理쒖쟻??猷⑦떞] ----------
     unique_rank_queries = {t.rank_query for t in app_config.targets if t.rank_query}
     expanded_queries = set(unique_rank_queries)
 
-    logger.info("고유 랭킹 키워드 수집 시작 (%d개)", len(expanded_queries))
+    logger.info("怨좎쑀 ??궧 ?ㅼ썙???섏쭛 ?쒖옉 (%d媛?", len(expanded_queries))
     
     rank_collected_at = utc_now_iso()
     
     for r_query in expanded_queries:
         try:
-            limit = getattr(app_config, "ranking_limit", 50)
-            logger.info(f"랭킹 수집 중 (API): {r_query} (최대 {limit}위)")
-            # Naver API 검색 (sim=네이버 랭킹순)
-            rank_payload = client.search(query=r_query, display=limit, sort="sim")
+            logger.info(f"??궧 ?섏쭛 以?(API): {r_query}")
+            # Naver API 寃??(sim=?ㅼ씠踰???궧??
+            rank_payload = client.search(query=r_query, display=15, sort="sim")
             rank_items = rank_payload.get("items", [])
             
             rows_to_insert = []
@@ -254,15 +250,15 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
             
             if rows_to_insert:
                 store.insert_ranking_batch(rows_to_insert)
-                logger.info(f"랭킹 수집 완료: {r_query} ({len(rows_to_insert)}개)")
+                logger.info(f"??궧 ?섏쭛 ?꾨즺: {r_query} ({len(rows_to_insert)}媛?")
             else:
-                logger.warning(f"랭킹 수집 결과 없음: {r_query}")
+                logger.warning(f"??궧 ?섏쭛 寃곌낵 ?놁쓬: {r_query}")
         except Exception as e:
-            logger.error(f"랭킹 수집 실패 ({r_query}): {e}")
+            logger.error(f"??궧 ?섏쭛 ?ㅽ뙣 ({r_query}): {e}")
     
     store.close()
 
-    # 이메일 알림 (KST 기준 야간 시간대 21:00~08:00 제외)
+    # ?대찓???뚮┝ (KST 湲곗? ?쇨컙 ?쒓컙? 21:00~08:00 ?쒖쇅)
     if changed_items:
         if not is_night_time_kst():
             send_price_alert(
@@ -272,9 +268,9 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                 app_config.email.email_to
             )
         else:
-            logger.info("야간 시간(21:00-08:00 KST)이므로 이메일 알림을 건너뜁니다.")
+            logger.info("?쇨컙 ?쒓컙(21:00-08:00 KST)?대?濡??대찓???뚮┝??嫄대꼫?곷땲??")
 
-    logger.info("최종 결과 | OK: %d, FAIL: %d, Fallback: %d, Alert: %d", ok, fail, fallback_used_count, alerts_triggered_count)
+    logger.info("理쒖쥌 寃곌낵 | OK: %d, FAIL: %d, Fallback: %d, Alert: %d", ok, fail, fallback_used_count, alerts_triggered_count)
 
     if summary_json:
         summary_data = {
@@ -285,18 +281,18 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
             "collected_at": utc_now_iso()
         }
         Path(summary_json).write_text(dump_json(summary_data), encoding="utf-8")
-        logger.info(f"수집 요약 저장 완료: {summary_json}")
+        logger.info(f"?섏쭛 ?붿빟 ????꾨즺: {summary_json}")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Naver Shopping Price Tracker")
-    parser.add_argument("command", choices=["once", "monitor", "export-ui", "serve", "sync-from-gcs", "sync-to-gcs", "daily-report", "export-report", "export-mall-report"], help="실행할 커맨드")
-    parser.add_argument("--config", default="targets.yaml", help="설정 파일 경로")
-    parser.add_argument("--db", default="price_tracker.sqlite3", help="DB 파일 경로")
-    parser.add_argument("--interval", type=int, default=3600, help="모니터링 주기 (초)")
-    parser.add_argument("--summary-json", help="수집 결과 요약을 저장할 JSON 경로")
-    parser.add_argument("--output", help="파일 저장 경로 (export-report 등에서 사용)")
-    parser.add_argument("--verbose", action="store_true", help="상세 로그 출력")
+    parser.add_argument("command", choices=["once", "monitor", "export-ui", "serve", "sync-from-gcs", "sync-to-gcs", "daily-report", "export-report", "export-mall-report"], help="?ㅽ뻾??而ㅻ㎤??)
+    parser.add_argument("--config", default="targets.yaml", help="?ㅼ젙 ?뚯씪 寃쎈줈")
+    parser.add_argument("--db", default="price_tracker.sqlite3", help="DB ?뚯씪 寃쎈줈")
+    parser.add_argument("--interval", type=int, default=3600, help="紐⑤땲?곕쭅 二쇨린 (珥?")
+    parser.add_argument("--summary-json", help="?섏쭛 寃곌낵 ?붿빟????ν븷 JSON 寃쎈줈")
+    parser.add_argument("--output", help="?뚯씪 ???寃쎈줈 (export-report ?깆뿉???ъ슜)")
+    parser.add_argument("--verbose", action="store_true", help="?곸꽭 濡쒓렇 異쒕젰")
     args = parser.parse_args()
 
     setup_logging(args.verbose)
@@ -305,38 +301,38 @@ def main() -> None:
     try:
         app_config = load_config(args.config)
     except Exception as e:
-        logger.error("설정 로드 실패: %s", e)
+        logger.error("?ㅼ젙 濡쒕뱶 ?ㅽ뙣: %s", e)
         return
 
     if args.command == "once":
         if not app_config.gsheet_id:
-            logger.error("GSHEET_ID가 설정되지 않았습니다 (YAML 또는 환경변수).")
+            logger.error("GSHEET_ID媛 ?ㅼ젙?섏? ?딆븯?듬땲??(YAML ?먮뒗 ?섍꼍蹂??.")
             return
         asyncio.run(run_once(app_config, "artifacts", app_config.gsheet_id, summary_json=args.summary_json))
 
     elif args.command == "monitor":
         if not app_config.gsheet_id:
-            logger.error("GSHEET_ID가 설정되지 않았습니다.")
+            logger.error("GSHEET_ID媛 ?ㅼ젙?섏? ?딆븯?듬땲??")
             return
-        logger.info("%d초 간격으로 모니터링을 시작합니다...", args.interval)
+        logger.info("%d珥?媛꾧꺽?쇰줈 紐⑤땲?곕쭅???쒖옉?⑸땲??..", args.interval)
         while True:
             try:
                 asyncio.run(run_once(app_config, "artifacts", app_config.gsheet_id, summary_json=args.summary_json))
             except Exception as e:
-                logger.exception("모니터링 루프 중 오류 발생")
+                logger.exception("紐⑤땲?곕쭅 猷⑦봽 以??ㅻ쪟 諛쒖깮")
             time.sleep(args.interval)
 
     elif args.command == "export-ui":
         service_account_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_KEY")
         if not app_config.gsheet_id or not service_account_json:
-            logger.error("GSHEET_ID 또는 GOOGLE_SERVICE_ACCOUNT_KEY 환경변수가 설정되지 않았습니다.")
+            logger.error("GSHEET_ID ?먮뒗 GOOGLE_SERVICE_ACCOUNT_KEY ?섍꼍蹂?섍? ?ㅼ젙?섏? ?딆븯?듬땲??")
             return
             
         store = GoogleSheetStore(app_config.gsheet_id, service_account_json)
         try:
             dashboard_raw = store.get_dashboard_data(app_config.targets)
             
-            # 고유 랭킹 키워드별 최신 데이터 수집
+            # 怨좎쑀 ??궧 ?ㅼ썙?쒕퀎 理쒖떊 ?곗씠???섏쭛
             rankings = {}
             unique_rank_queries = {t.rank_query for t in app_config.targets if t.rank_query}
             
@@ -345,8 +341,8 @@ def main() -> None:
                 if latest:
                     rankings[rq] = latest
             
-            # 셀러별 쇼핑몰 리포트 데이터 수집
-            mall_raw = store.get_mall_report_data(monitored_sellers=app_config.monitored_sellers)
+            # ??щ퀎 ?쇳븨紐?由ы룷???곗씠???섏쭛
+            mall_raw = store.get_mall_report_data()
             mall_reports = {"categories": mall_raw}
             
             data = {
@@ -357,27 +353,27 @@ def main() -> None:
                 "updated_at": dashboard_raw["generated_at"]
             }
             Path("dashboard_data.json").write_text(dump_json(data), encoding="utf-8")
-            logger.info("UI 데이터 내보내기 완료: dashboard_data.json (Google Sheets 기반)")
+            logger.info("UI ?곗씠???대낫?닿린 ?꾨즺: dashboard_data.json (Google Sheets 湲곕컲)")
         finally:
             store.close()
 
     elif args.command == "sync-from-gcs" or args.command == "sync-to-gcs":
-        logger.warning("GCS 연동 기능은 이 브랜치에서 더 이상 사용되지 않습니다 (Google Sheets Only).")
+        logger.warning("GCS ?곕룞 湲곕뒫? ??釉뚮옖移섏뿉?????댁긽 ?ъ슜?섏? ?딆뒿?덈떎 (Google Sheets Only).")
 
     elif args.command == "serve":
-        # 간단한 HTTP 서버 실행 (대시보드 확인용)
+        # 媛꾨떒??HTTP ?쒕쾭 ?ㅽ뻾 (??쒕낫???뺤씤??
         import http.server
         import socketserver
         PORT = 8000
         Handler = http.server.SimpleHTTPRequestHandler
         with socketserver.TCPServer(("", PORT), Handler) as httpd:
-            logger.info("http://localhost:%d 에서 대시보드 서비스를 시작합니다.", PORT)
+            logger.info("http://localhost:%d ?먯꽌 ??쒕낫???쒕퉬?ㅻ? ?쒖옉?⑸땲??", PORT)
             httpd.serve_forever()
 
     elif args.command == "daily-report":
         service_account_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_KEY")
         if not app_config.gsheet_id or not service_account_json:
-            logger.error("GSHEET_ID 또는 GOOGLE_SERVICE_ACCOUNT_KEY 환경변수가 설정되지 않았습니다.")
+            logger.error("GSHEET_ID ?먮뒗 GOOGLE_SERVICE_ACCOUNT_KEY ?섍꼍蹂?섍? ?ㅼ젙?섏? ?딆븯?듬땲??")
             return
             
         store = GoogleSheetStore(app_config.gsheet_id, service_account_json)
@@ -395,7 +391,7 @@ def main() -> None:
     elif args.command == "export-report":
         service_account_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_KEY")
         if not app_config.gsheet_id or not service_account_json:
-            logger.error("필요한 설정이 누락되었습니다.")
+            logger.error("?꾩슂???ㅼ젙???꾨씫?섏뿀?듬땲??")
             return
             
         from .report import generate_daily_report_html
@@ -404,31 +400,23 @@ def main() -> None:
             html = generate_daily_report_html(store, app_config.targets)
             output_path = args.output or "report.html"
             Path(output_path).write_text(html, encoding="utf-8")
-            logger.info(f"데일리 리포트 생성 완료: {output_path}")
+            logger.info(f"?곗씪由?由ы룷???앹꽦 ?꾨즺: {output_path}")
         finally:
             store.close()
 
     elif args.command == "export-mall-report":
-        # 2. 저장소 결정 (GSheet vs SQLite)
-        store = None
-        if app_config.store_type == StoreType.GSHEET:
-            credential_json = os.getenv("GCP_SA_KEY") or os.getenv("GOOGLE_SERVICE_ACCOUNT_KEY")
-            if not credential_json:
-                logger.error("GSHEET 모드이나 GCP_SA_KEY (또는 GOOGLE_SERVICE_ACCOUNT_KEY) 환경변수가 설정되지 않았습니다.")
-                sys.exit(1)
-            store = GoogleSheetStore(app_config.gsheet_id, credential_json)
-            logger.info(f"Google Sheets 저장소 사용 준비 완료 (ID: {app_config.gsheet_id})")
-        else:
-            db_path = os.getenv("DB_PATH", "data/tracker.db")
-            store = ObservationStore(db_path)
-            logger.info(f"SQLite 저장소 사용 준비 완료 (Path: {db_path})")
+        service_account_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_KEY")
+        if not app_config.gsheet_id or not service_account_json:
+            logger.error("?꾩슂???ㅼ젙???꾨씫?섏뿀?듬땲??")
+            return
             
         from .report import generate_mall_report_html
+        store = GoogleSheetStore(app_config.gsheet_id, service_account_json)
         try:
             html = generate_mall_report_html(store)
             output_path = args.output or "mall_report.html"
             Path(output_path).write_text(html, encoding="utf-8")
-            logger.info(f"쇼핑몰 추적 리포트 생성 완료: {output_path}")
+            logger.info(f"?쇳븨紐?異붿쟻 由ы룷???앹꽦 ?꾨즺: {output_path}")
         finally:
             store.close()
 

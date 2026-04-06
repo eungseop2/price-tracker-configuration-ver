@@ -80,6 +80,7 @@ class AppConfig:
     gsheet_id: str | None = None
     targets: list[TargetConfig] = field(default_factory=list)
     monitored_sellers: list[str] = field(default_factory=list)
+    mall_targets: list[MallTargetConfig] = field(default_factory=list)
 
 
 def _to_match(raw: dict[str, Any] | None) -> MatchConfig:

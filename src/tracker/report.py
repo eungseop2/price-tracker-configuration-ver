@@ -14,6 +14,7 @@ def generate_daily_report_html(store: "GoogleSheetStore", targets: list[TargetCo
     """최근 10일간의 가격 동향 HTML 보고서를 생성합니다. (GSheet 버전)"""
     # 10일치 날짜 계산 (KST 기준)
     now_kst = kst_now()
+    now_utc = datetime.now(timezone.utc)
     # 오늘 포함 과거 10일
     dates_kst = [(now_kst - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(9, -1, -1)]
     
@@ -27,18 +28,26 @@ def generate_daily_report_html(store: "GoogleSheetStore", targets: list[TargetCo
     daily_min = {}
     for r in filtered_rows:
         t_name = r["target_name"]
-        t_utc = datetime.fromisoformat(r["collected_at"].replace('Z', '+00:00'))
-        t_kst = t_utc + timedelta(hours=9)
-        d_str = t_kst.strftime("%Y-%m-%d")
+        # ISO 형식에서 UTC datetime 객체 생성
+        try:
+            t_str = r["collected_at"].replace('Z', '+00:00')
+            t_utc = datetime.fromisoformat(t_str)
+            t_kst = t_utc + timedelta(hours=9)
+            d_str = t_kst.strftime("%Y-%m-%d")
+        except:
+            continue
         
         if d_str not in daily_min:
             daily_min[d_str] = {}
         
-        price_val = int(r["price"])
-        if t_name not in daily_min[d_str]:
-            daily_min[d_str][t_name] = price_val
-        else:
-            daily_min[d_str][t_name] = min(daily_min[d_str][t_name], price_val)
+        try:
+            price_val = int(r["price"])
+            if t_name not in daily_min[d_str]:
+                daily_min[d_str][t_name] = price_val
+            else:
+                daily_min[d_str][t_name] = min(daily_min[d_str][t_name], price_val)
+        except:
+            continue
     
     # HTML 빌드
     target_names = [t.name for t in targets]
@@ -100,25 +109,29 @@ def generate_mall_report_html(store: "GoogleSheetStore") -> str:
     for cat, malls in mall_data.items():
         for mall_name, m_info in malls.items():
             rows = []
-            for p in m_info["products"]:
-                rows.append(f'<tr><td>{p["collected_at"]}</td><td>{p["title"]}</td><td>{p["curr_price_fmt"]}</td><td>{p["prev_price_fmt"]}</td><td>{p["delta_str"]}</td></tr>')
+            for p in m_info.get("products", []):
+                price_fmt = format_price(p.get("price"))
+                rows.append(f'<tr><td style="padding:8px;border:1px solid #eee;">{p.get("collected_at", "")}</td><td style="padding:8px;border:1px solid #eee;">{p.get("title", "")}</td><td style="padding:8px;border:1px solid #eee;text-align:right;">{price_fmt}</td><td style="padding:8px;border:1px solid #eee;"><a href="{p.get("url", "#")}" target="_blank">링크</a></td></tr>')
             
             sections.append(f"""
-            <div style="margin-bottom:40px; background:white; padding:20px; border-radius:12px; border:1px solid #eee;">
-                <h3 style="margin-top:0; color:#3182f7;">[{cat}] {mall_name}</h3>
-                <p style="font-size:13px; color:#666;">전체 상품: {m_info['total_products']}개 | 가격 하락: {m_info['price_decreased_count']}개</p>
-                <table style="width:100%; border-collapse:collapse; font-size:12px;">
-                    <thead><tr style="background:#f9fafb;"><th>일시</th><th>상품명</th><th>현재가</th><th>이전가</th><th>변동액</th></tr></thead>
+            <div style="margin-bottom:40px; background:white; padding:20px; border-radius:12px; border:1px solid #eee; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
+                <h3 style="margin-top:0; color:#2563eb;">[{cat}] {mall_name}</h3>
+                <p style="font-size:13px; color:#64748b;">총 수집 상품: {m_info.get('total_products', 0)}개</p>
+                <table style="width:100%; border-collapse:collapse; font-size:12px; border:1px solid #eee;">
+                    <thead><tr style="background:#f8f9fa;"><th style="padding:8px;border:1px solid #eee;">수집시각</th><th style="padding:8px;border:1px solid #eee;">상품명</th><th style="padding:8px;border:1px solid #eee;">현재가</th><th style="padding:8px;border:1px solid #eee;">URL</th></tr></thead>
                     <tbody>{" ".join(rows)}</tbody>
                 </table>
             </div>
             """)
 
     return f"""
-    <html><body style="font-family:sans-serif; background:#f4f7f9; padding:40px; max-width:1000px; margin:auto;">
-        <h2>🏢 쇼핑몰 셀러별 추적 리포트</h2>
-        <p style="color:#666;">수집 시각: {now_kst.strftime('%Y-%m-%d %H:%M:%S')} KST</p>
+    <html><body style="font-family:sans-serif; background:#f8fafc; padding:40px; max-width:1000px; margin:auto;">
+        <h2 style="color:#1e293b">🏢 쇼핑몰 셀러별 추적 리포트</h2>
+        <p style="color:#64748b; margin-bottom:30px;">수집 시각: {now_kst.strftime('%Y-%m-%d %H:%M:%S')} KST</p>
         {" ".join(sections)}
+        <div style="margin-top:40px; text-align:center;">
+            <a href="{get_dashboard_url()}" style="color:#2563eb; text-decoration:none; font-weight:bold;">← 대시보드로 돌아가기</a>
+        </div>
     </body></html>
     """
 
