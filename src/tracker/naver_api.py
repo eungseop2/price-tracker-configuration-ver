@@ -68,8 +68,10 @@ def _item_matches(target: TargetConfig, item: dict[str, Any]) -> bool:
     target_id = str(target.match.product_id or "").strip()
     product_type = int(item.get("productType", 0) or 0)
 
-    # 1. productId가 지정된 경우 ID가 일치하면 즉시 반환 (타입 체크만 병행)
-    if target_id:
+    # 1. productId가 지정된 경우 (플레이스홀더인 '[숫자_ID]' 등은 제외)
+    is_placeholder = "[" in target_id or "ID" in target_id or not target_id
+    
+    if target_id and not is_placeholder:
         if product_id == target_id:
             if target.match.allowed_product_types and product_type not in target.match.allowed_product_types:
                 return False

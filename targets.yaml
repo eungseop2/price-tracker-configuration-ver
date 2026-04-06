@@ -1,3 +1,9 @@
+# [도움말] 정확한 최저가 트래킹을 위해서는 'product_id'가 필요합니다.
+# 1. 네이버 쇼핑에서 상품 검색 후 카탈로그 페이지 접속
+# 2. 주소창의 'https://search.shopping.naver.com/catalog/123456789' 에서 숫자 부분 복사
+# 3. 아래 product_id 필드에 숫자만 입력 (예: product_id: '123456789')
+# 4. ID가 없거나 '[대괄호]' 패턴이면 이름/키워드로 자동 검색하여 가장 싼 상품을 찾습니다.
+
 common:
   exclude: used:cbshop
   display: 50
@@ -22,9 +28,9 @@ targets:
   match:
     required_keywords: ["S26", "울트라", "화이트"]
     exclude_keywords: ["중고", "리퍼", "케이스", "커버", "필름"]
-    product_id: '[숫자_ID]'
+    product_id: '59045494153'
     allowed_product_types: [1, 3]
-  url: https://search.shopping.naver.com/catalog/[숫자_ID]
+  url: https://search.shopping.naver.com/catalog/59045494153
   browser:
     wait_until: domcontentloaded
     click_selectors: []
@@ -44,9 +50,9 @@ targets:
   match:
     required_keywords: ["S26", "울트라", "바이올렛"]
     exclude_keywords: ["중고", "리퍼", "케이스", "커버", "필름"]
-    product_id: '[숫자_ID]'
+    product_id: '59045494155'
     allowed_product_types: [1, 3]
-  url: https://search.shopping.naver.com/catalog/[숫자_ID]
+  url: https://search.shopping.naver.com/catalog/59045494155
   browser:
     wait_until: domcontentloaded
     click_selectors: []
@@ -66,9 +72,9 @@ targets:
   match:
     required_keywords: ["S26", "울트라", "블루"]
     exclude_keywords: ["중고", "리퍼", "케이스", "커버", "필름"]
-    product_id: '[숫자_ID]'
+    product_id: '59045494154'
     allowed_product_types: [1, 3]
-  url: https://search.shopping.naver.com/catalog/[숫자_ID]
+  url: https://search.shopping.naver.com/catalog/59045494154
   browser:
     wait_until: domcontentloaded
     click_selectors: []
@@ -88,9 +94,9 @@ targets:
   match:
     required_keywords: ["S26", "울트라", "블랙"]
     exclude_keywords: ["중고", "리퍼", "케이스", "커버", "필름"]
-    product_id: '[숫자_ID]'
+    product_id: '59045494152'
     allowed_product_types: [1, 3]
-  url: https://search.shopping.naver.com/catalog/[숫자_ID]
+  url: https://search.shopping.naver.com/catalog/59045494152
   browser:
     wait_until: domcontentloaded
     click_selectors: []
