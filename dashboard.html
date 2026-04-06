@@ -554,6 +554,24 @@
             border-bottom: none;
         }
 
+        #mallTableBody tr {
+            transition: all 0.2s ease;
+        }
+
+        #mallTableBody tr:hover {
+            background-color: rgba(49, 130, 247, 0.05);
+            cursor: pointer;
+        }
+
+        #mallTableBody tr.active {
+            background-color: rgba(49, 130, 247, 0.1);
+        }
+
+        #mallTableBody tr.active td {
+            color: var(--toss-blue);
+            font-weight: 600;
+        }
+
         /* Mobile Menu Button */
         .mobile-menu-btn {
             display: none;
@@ -1457,6 +1475,7 @@
         const itemsPerPageFirst = 20;
         const itemsPerPageNormal = 10;
         let currentFilteredHistory = [];
+        let selectedMallProductIndex = 0;
 
         function switchView(viewName) {
             // 메인 탭 전환
@@ -1798,10 +1817,11 @@
         function renderMallDashboard(m) {
             const data = dashboardData.mall_reports.categories[currentMallCategory][m];
             if (!data) return;
+            selectedMallProductIndex = 0; // 셀러 변경 시 첫 번째 상품으로 초기화
             document.getElementById('currentMallTitle').textContent = `[${currentMallCategory}] ${m}`;
             document.getElementById('mallStatTotal').innerText = data.total_products || 0;
             document.getElementById('mallStatDecreased').innerText = data.price_decreased_count || 0;
-            if (data.products && data.products.length > 0 && data.products[0].history) {
+            if (data.products && data.products.length > 0) {
                 renderMallChart(data.products);
             }
             renderMallTable(data.products || []);
@@ -1811,19 +1831,45 @@
             const ctx = document.getElementById('mallPriceChart')?.getContext('2d');
             if (!ctx) return;
             if (mallPriceChart) mallPriceChart.destroy();
+            const product = prods[selectedMallProductIndex];
+            if (!product || !product.history) return;
+
             const labels = [], data = [];
-            prods[0].history.forEach(h => { labels.push(h.t.substring(5, 10)); data.push(h.p); });
+            product.history.forEach(h => { 
+                const d = new Date(h.t);
+                labels.push(`${d.getMonth()+1}/${d.getDate()} ${d.getHours()}시`); 
+                data.push(h.p); 
+            });
+            
             mallPriceChart = new Chart(ctx, {
                 type: 'line',
-                data: { labels, datasets: [{ data, borderColor: '#3182f7', fill: true, backgroundColor: 'rgba(49,130,247,0.1)', tension: 0.4 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                data: { labels, datasets: [{ data, borderColor: '#3182f7', borderWidth: 2, pointRadius: 2, fill: true, backgroundColor: 'rgba(49,130,247,0.1)', tension: 0.4 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { ticks: { callback: v => v.toLocaleString() + '원' } } } }
             });
         }
 
         function renderMallTable(prods) {
             const tbody = document.getElementById('mallTableBody');
             if (!tbody) return;
-            tbody.innerHTML = prods.map(p => `<tr><td class="mono">${p.collected_at}</td><td>${p.title}</td><td class="mono">${p.curr_price_fmt}</td><td class="mono">${p.prev_price_fmt}</td><td class="mono">${p.delta_str}</td><td style="text-align:right"><a href="${p.url}" target="_blank" class="chart-btn">링크</a></td></tr>`).join('');
+            tbody.innerHTML = prods.map((p, idx) => `
+                <tr onclick="selectMallProduct(${idx})" class="${idx === selectedMallProductIndex ? 'active' : ''}">
+                    <td class="mono">${p.collected_at}</td>
+                    <td>${p.title}</td>
+                    <td class="mono" style="font-weight:700; color:var(--text-main)">${p.curr_price_fmt}</td>
+                    <td class="mono">${p.prev_price_fmt}</td>
+                    <td class="mono">${p.delta_str}</td>
+                    <td style="text-align:right">
+                        <a href="${p.url}" target="_blank" class="chart-btn" onclick="event.stopPropagation()">링크</a>
+                    </td>
+                </tr>`).join('');
+        }
+
+        function selectMallProduct(idx) {
+            const data = dashboardData.mall_reports.categories[currentMallCategory][currentMall];
+            if (!data || !data.products) return;
+            selectedMallProductIndex = idx;
+            renderMallChart(data.products);
+            renderMallTable(data.products);
         }
 
         function changeChartDays(days, el) {
