@@ -35,7 +35,15 @@ class GoogleSheetStore:
             return
         
         try:
-            info = json.loads(self.service_account_json)
+            # 환경변수에서 온 JSON 문자열의 줄바꿈 및 이스케이프 문자 정제
+            raw_key = self.service_account_json.strip()
+            # 만약 따옴표로 감싸져 있다면 제거
+            if raw_key.startswith('"') and raw_key.endswith('"'):
+                raw_key = raw_key[1:-1]
+            # 이스케이프된 줄바꿈 처리
+            raw_key = raw_key.replace('\\n', '\n')
+            
+            info = json.loads(raw_key)
             scopes = [
                 "https://www.googleapis.com/auth/spreadsheets",
                 "https://www.googleapis.com/auth/drive"
@@ -44,8 +52,11 @@ class GoogleSheetStore:
             self._gc = gspread.authorize(credentials)
             self._sh = self._gc.open_by_key(self.spreadsheet_id)
             logger.info(f"구글 스프레드시트 연결 성공: {self._sh.title}")
+        except json.JSONDecodeError as e:
+            logger.error(f"구글 서비스 계정 키 JSON 파싱 실패: {e}. 키의 형식을 확인하세요.")
+            raise
         except Exception as e:
-            logger.error(f"구글 스프레드시트 연결 실패: {e}")
+            logger.error(f"구글 스프레드시트 연결 중 최종 실패: {e}")
             raise
 
     def _get_worksheet(self, name: str):
