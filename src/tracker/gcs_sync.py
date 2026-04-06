@@ -1,4 +1,4 @@
-import os
+﻿import os
 import logging
 from pathlib import Path
 from google.cloud import storage
@@ -6,7 +6,7 @@ from google.cloud import storage
 logger = logging.getLogger("tracker.gcs")
 
 def _get_client():
-    """GCS 클라이언트 생성 (인증 실패 시 None 반환)"""
+    """GCS ?대씪?댁뼵???앹꽦 (?몄쬆 ?ㅽ뙣 ??None 諛섑솚)"""
     try:
         return storage.Client()
     except Exception as e:
@@ -14,10 +14,10 @@ def _get_client():
         return None
 
 def upload_db(bucket_name: str, source_file: str, dest_name: str = "price_tracker.sqlite3"):
-    """SQLite DB를 GCS로 업로드합니다."""
+    """SQLite DB瑜?GCS濡??낅줈?쒗빀?덈떎."""
     if not bucket_name:
         return
-    bucket_name = bucket_name.strip()  # 앞뒤 공백 제거 (Secret 오입력 방지)
+    bucket_name = bucket_name.strip()  # ?욌뮘 怨듬갚 ?쒓굅 (Secret ?ㅼ엯??諛⑹?)
     try:
         storage_client = _get_client()
         if not storage_client:
@@ -31,10 +31,10 @@ def upload_db(bucket_name: str, source_file: str, dest_name: str = "price_tracke
         logger.error(f"GCS Upload failed: {e}")
 
 def download_db(bucket_name: str, dest_file: str, source_name: str = "price_tracker.sqlite3"):
-    """GCS에서 SQLite DB를 다운로드합니다."""
+    """GCS?먯꽌 SQLite DB瑜??ㅼ슫濡쒕뱶?⑸땲??"""
     if not bucket_name:
         return False
-    bucket_name = bucket_name.strip()  # 앞뒤 공백 제거 (Secret 오입력 방지)
+    bucket_name = bucket_name.strip()  # ?욌뮘 怨듬갚 ?쒓굅 (Secret ?ㅼ엯??諛⑹?)
     try:
         storage_client = _get_client()
         if not storage_client:
@@ -52,3 +52,4 @@ def download_db(bucket_name: str, dest_file: str, source_name: str = "price_trac
     except Exception as e:
         logger.error(f"GCS Download failed: {e}")
         return False
+

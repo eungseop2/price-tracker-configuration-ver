@@ -1,4 +1,4 @@
-import sqlite3
+﻿import sqlite3
 import json
 
 conn = sqlite3.connect('price_tracker.sqlite3')
@@ -12,3 +12,4 @@ if row:
 else:
     print("No successful records found")
 conn.close()
+

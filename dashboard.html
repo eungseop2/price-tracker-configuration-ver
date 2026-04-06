@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>웨어러블 가격 조사 - 최저가 트래커</title>
+    <title>?⑥뼱?щ툝 媛寃?議곗궗 - 理쒖?媛 ?몃옒而?/title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
@@ -18,9 +18,9 @@
             --text-main: #191f28;
             --text-muted: #4e5968;
             --price-down: #3182f7;
-            /* 낮음: 파란색으로 변경 */
+            /* ??쓬: ?뚮??됱쑝濡?蹂寃?*/
             --price-up: #ef4444;
-            /* 높음: 빨간색으로 변경 */
+            /* ?믪쓬: 鍮④컙?됱쑝濡?蹂寃?*/
             --glass-border: rgba(0, 0, 0, 0.05);
             --toss-blue: #3182f7;
             --toss-grey: #f2f4f6;
@@ -619,7 +619,7 @@
                 overflow-y: auto;
             }
 
-            /* 사이드바 전체 sticky 해제 */
+            /* ?ъ씠?쒕컮 ?꾩껜 sticky ?댁젣 */
             .sidebar {
                 width: 100%;
                 height: auto;
@@ -635,7 +635,7 @@
                 display: none !important;
             }
 
-            /* 로고는 줄이고, 선택 툴바는 숨기지 말고 compact하게 유지 */
+            /* 濡쒓퀬??以꾩씠怨? ?좏깮 ?대컮???④린吏 留먭퀬 compact?섍쾶 ?좎? */
             .logo-container {
                 margin-bottom: 8px;
                 padding: 0 16px;
@@ -648,13 +648,13 @@
                 padding: 0 16px 10px;
             }
 
-            /* 카테고리 탭도 가로 스크롤 유지 */
+            /* 移댄뀒怨좊━ ??룄 媛濡??ㅽ겕濡??좎? */
             .category-tabs {
                 padding: 0 16px 12px;
                 margin-bottom: 8px;
             }
 
-            /* 헤더에 같은 기능이 있으니 모바일에선 사이드바 하단 다운로드 버튼 숨김 */
+            /* ?ㅻ뜑??媛숈? 湲곕뒫???덉쑝??紐⑤컮?쇱뿉???ъ씠?쒕컮 ?섎떒 ?ㅼ슫濡쒕뱶 踰꾪듉 ?④? */
             .sidebar-footer {
                 display: none;
             }
@@ -696,7 +696,7 @@
 
             .mobile-menu-btn {
                 display: none;
-                /* 상단 리스트 방식으로 바꿨으므로 메뉴 버튼 불필요 */
+                /* ?곷떒 由ъ뒪??諛⑹떇?쇰줈 諛붽엥?쇰?濡?硫붾돱 踰꾪듉 遺덊븘??*/
             }
 
             .header-main-row {
@@ -854,7 +854,7 @@
             }
         }
 
-        /* ----- 신규 탭 네비게이션 ----- */
+        /* ----- ?좉퇋 ???ㅻ퉬寃뚯씠??----- */
         .view-tabs {
             display: flex;
             gap: 16px;
@@ -906,7 +906,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* ----- 랭킹 테이블 UI (Stitch MCP 참고) ----- */
+        /* ----- ??궧 ?뚯씠釉?UI (Stitch MCP 李멸퀬) ----- */
         .ranking-card {
             display: flex;
             align-items: center;
@@ -984,22 +984,22 @@
             <div class="logo-icon" id="appLogoContainer">
                 <img src="logo.png" alt="Logo"
                     style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;"
-                    onerror="this.style.display='none'; this.parentElement.innerText='📊'">
+                    onerror="this.style.display='none'; this.parentElement.innerText='?뱤'">
             </div>
-            <div class="logo-text">웨어러블 가격 조사</div>
+            <div class="logo-text">?⑥뼱?щ툝 媛寃?議곗궗</div>
         </div>
         <div class="sidebar-toolbar">
             <label class="select-all-label">
                 <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)">
-                전체선택
+                ?꾩껜?좏깮
             </label>
             <div style="display: flex; align-items: center; gap: 8px;">
-                <span id="checkedCount" style="font-size:11px;color:var(--text-muted);">0개 선택</span>
+                <span id="checkedCount" style="font-size:11px;color:var(--text-muted);">0媛??좏깮</span>
                 <select id="sortOption" onchange="renderProductList()" style="font-size:11px; border:1px solid var(--glass-border); border-radius:4px; padding:2px; color:var(--text-main); background: #ffffff; cursor: pointer; outline: none;">
-                    <option value="default">기본순</option>
-                    <option value="price_asc">가격 낮은순</option>
-                    <option value="price_desc">가격 높은순</option>
-                    <option value="name_asc">가나다순</option>
+                    <option value="default">湲곕낯??/option>
+                    <option value="price_asc">媛寃??????/option>
+                    <option value="price_desc">媛寃??믪???/option>
+                    <option value="name_asc">媛?섎떎??/option>
                 </select>
             </div>
         </div>
@@ -1010,7 +1010,7 @@
             <!-- Loading -->
         </ul>
         <div class="sidebar-footer">
-            <button class="btn-excel" onclick="downloadExcel()">📥 선택 상품 엑셀 다운로드</button>
+            <button class="btn-excel" onclick="downloadExcel()">?뱿 ?좏깮 ?곹뭹 ?묒? ?ㅼ슫濡쒕뱶</button>
         </div>
     </div>
 
@@ -1025,53 +1025,53 @@
                     <h1 id="selectedTitle">Welcome</h1>
                     <div class="header-subtitle">
                         <div class="seller-info" id="sellerInfo">
-                            상품을 선택하여 분석을 시작하세요
+                            ?곹뭹???좏깮?섏뿬 遺꾩꽍???쒖옉?섏꽭??
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="header-actions">
-                <span id="rankBadge" class="header-btn" style="background:#f2f4f6; color:#191f28; border:1px solid #e5e8eb; display:none;">| 네이버랭킹 -위</span>
+                <span id="rankBadge" class="header-btn" style="background:#f2f4f6; color:#191f28; border:1px solid #e5e8eb; display:none;">| ?ㅼ씠踰꾨옲??-??/span>
                 <a href="#" target="_blank" class="header-btn catalog-btn" id="catalogBtn" style="display:none;">
-                    네이버 쇼핑 보기
+                    ?ㅼ씠踰??쇳븨 蹂닿린
                 </a>
             </div>
         </header>
 
-        <!-- 뷰 스위치 탭 -->
+        <!-- 酉??ㅼ쐞移???-->
         <div class="view-tabs">
-            <div class="view-tab active" onclick="switchView('priceView')" id="tabPrice">실시간 최저가 추적</div>
-            <div class="view-tab" onclick="switchView('rankingView')" id="tabRanking">키워드 Top 10 랭킹</div>
+            <div class="view-tab active" onclick="switchView('priceView')" id="tabPrice">?ㅼ떆媛?理쒖?媛 異붿쟻</div>
+            <div class="view-tab" onclick="switchView('rankingView')" id="tabRanking">?ㅼ썙??Top 10 ??궧</div>
         </div>
 
-        <!-- 최고가 추적 뷰 -->
+        <!-- 理쒓퀬媛 異붿쟻 酉?-->
         <div id="priceView" class="view-content active">
             <div class="stats-grid" id="stats-container">
                 <div class="stat-card">
-                    <div class="stat-label">현재 최저가</div>
+                    <div class="stat-label">?꾩옱 理쒖?媛</div>
                     <div class="stat-value" id="currentPriceStat">-</div>
                     <div class="stat-diff" id="currentDiff">-</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">역대 최저가</div>
+                    <div class="stat-label">??? 理쒖?媛</div>
                     <div class="stat-value" id="allTimeLow" style="color: #ef4444;">-</div>
                     <div class="stat-diff" id="lowDiff" style="background: rgba(239, 68, 68, 0.05); color: #ef4444;">BEST
                     </div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">역대 최고가</div>
+                    <div class="stat-label">??? 理쒓퀬媛</div>
                     <div class="stat-value" id="allTimeHigh" style="color: var(--toss-blue);">-</div>
                     <div class="stat-diff" id="highDiff"
                         style="background: rgba(49, 130, 247, 0.05); color: var(--toss-blue);">PEAK</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">7일 평균</div>
+                    <div class="stat-label">7???됯퇏</div>
                     <div class="stat-value" id="avg7d">-</div>
                     <div class="stat-diff" id="avg7dDiff">-</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">30일 평균</div>
+                    <div class="stat-label">30???됯퇏</div>
                     <div class="stat-value" id="avg30d">-</div>
                     <div class="stat-diff" id="avg30dDiff">-</div>
                 </div>
@@ -1079,12 +1079,12 @@
 
             <div class="chart-section">
                 <div class="chart-header">
-                    <div class="chart-title">가격 변동 추이</div>
+                    <div class="chart-title">媛寃?蹂??異붿씠</div>
                     <div class="chart-filters">
-                        <div class="filter-pill" onclick="changeChartDays(7, this)">7일</div>
-                        <div class="filter-pill" onclick="changeChartDays(30, this)">30일</div>
-                        <div class="filter-pill active" onclick="changeChartDays(90, this)">90일</div>
-                        <div class="filter-pill" onclick="changeChartDays(0, this)">전체</div>
+                        <div class="filter-pill" onclick="changeChartDays(7, this)">7??/div>
+                        <div class="filter-pill" onclick="changeChartDays(30, this)">30??/div>
+                        <div class="filter-pill active" onclick="changeChartDays(90, this)">90??/div>
+                        <div class="filter-pill" onclick="changeChartDays(0, this)">?꾩껜</div>
                         <div class="date-filter-container">
                             <input type="date" id="startDate" class="date-input" onchange="customDateFilter()">
                             <span style="font-size: 12px; color: var(--text-muted);">~</span>
@@ -1099,16 +1099,16 @@
             </div>
 
             <div class="history-section">
-                <div class="history-title">시장가 히스토리</div>
+                <div class="history-title">?쒖옣媛 ?덉뒪?좊━</div>
                 <div class="table-container">
                     <table id="historyTable">
                         <thead>
                             <tr>
-                                <th>수집 일시</th>
-                                <th>판매 가격</th>
-                                <th>변동</th>
-                                <th>판매처</th>
-                                <th>상태</th>
+                                <th>?섏쭛 ?쇱떆</th>
+                                <th>?먮ℓ 媛寃?/th>
+                                <th>蹂??/th>
+                                <th>?먮ℓ泥?/th>
+                                <th>?곹깭</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -1118,21 +1118,21 @@
             </div>
         </div>
 
-        <!-- 랭킹 뷰 -->
+        <!-- ??궧 酉?-->
         <div id="rankingView" class="view-content">
             <section class="history-section" style="min-height: 500px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                    <h2 class="history-title" style="margin-bottom: 0;">키워드 Top 10 노출 결과</h2>
+                    <h2 class="history-title" style="margin-bottom: 0;">?ㅼ썙??Top 10 ?몄텧 寃곌낵</h2>
                     <span style="font-size: 13px; color: var(--text-muted);" id="rankingUpdateTime"></span>
                 </div>
 
-                <!-- 키워드 전환 탭 추가 -->
+                <!-- ?ㅼ썙???꾪솚 ??異붽? -->
                 <div id="ranking-keyword-tabs" style="display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap;">
                 </div>
 
                 <div id="ranking-list-container">
                     <div style="text-align: center; color: var(--text-muted); padding: 40px;">
-                        데이터를 불러오는 중이거나 이 타겟의 랭킹 기록이 없습니다.
+                        ?곗씠?곕? 遺덈윭?ㅻ뒗 以묒씠嫄곕굹 ???寃잛쓽 ??궧 湲곕줉???놁뒿?덈떎.
                     </div>
                 </div>
             </section>
@@ -1143,7 +1143,7 @@
         let dashboardData = { products: [] };
         let mainChart = null;
         let selectedProductIndex = 0;
-        let selectedCategory = '전체';
+        let selectedCategory = '?꾩껜';
         let chartDays = 90;
         let currentPage = 1;
         const itemsPerPageFirst = 20;
@@ -1179,12 +1179,12 @@
                 renderCategoryTabs();
                 renderProductList();
 
-                // 선택된 인덱스가 범위를 벗어나지 않도록 보정
+                // ?좏깮???몃뜳?ㅺ? 踰붿쐞瑜?踰쀬뼱?섏? ?딅룄濡?蹂댁젙
                 if (selectedProductIndex >= dashboardData.products.length) {
                     selectedProductIndex = 0;
                 }
 
-                const firstVisible = dashboardData.products.findIndex(p => selectedCategory === '전체' || p.category === selectedCategory);
+                const firstVisible = dashboardData.products.findIndex(p => selectedCategory === '?꾩껜' || p.category === selectedCategory);
                 selectProduct(firstVisible >= 0 ? firstVisible : 0);
             } catch (e) {
                 console.error("Dashboard init failed:", e);
@@ -1192,25 +1192,25 @@
                 let helpMsg = "";
                 if (window.location.protocol === 'file:') {
                     helpMsg = `<div style="margin-top:20px; padding:15px; background:#fef3c7; color:#92400e; border-radius:8px; line-height:1.6;">
-                        <strong>💡 로컬 파일 보안 정책 안내</strong><br>
-                        브라우저 보안상 파일을 바로 열면 데이터를 불러올 수 없습니다.<br>
-                        터미널에서 아래 명령어를 실행한 후 접속해주세요:<br>
+                        <strong>?뮕 濡쒖뺄 ?뚯씪 蹂댁븞 ?뺤콉 ?덈궡</strong><br>
+                        釉뚮씪?곗? 蹂댁븞???뚯씪??諛붾줈 ?대㈃ ?곗씠?곕? 遺덈윭?????놁뒿?덈떎.<br>
+                        ?곕??먯뿉???꾨옒 紐낅졊?대? ?ㅽ뻾?????묒냽?댁＜?몄슂:<br>
                         <code>python -m src.tracker.main serve</code><br>
-                        접속 주소: <a href="http://localhost:8000" target="_blank">http://localhost:8000</a>
+                        ?묒냽 二쇱냼: <a href="http://localhost:8000" target="_blank">http://localhost:8000</a>
                     </div>`;
                 }
                 list.innerHTML = `<div style="padding: 20px; color: #ef4444; font-size: 13px;">
-                    ⚠️ 데이터를 불러오지 못했습니다.<br>
+                    ?좑툘 ?곗씠?곕? 遺덈윭?ㅼ? 紐삵뻽?듬땲??<br>
                     <small>${e.message}</small><br>
                     ${helpMsg}
-                    <button onclick="init()" style="margin-top:15px; padding:8px 16px; background:#4f46e5; color:white; border:none; border-radius:4px; cursor:pointer;">다시 시도</button>
+                    <button onclick="init()" style="margin-top:15px; padding:8px 16px; background:#4f46e5; color:white; border:none; border-radius:4px; cursor:pointer;">?ㅼ떆 ?쒕룄</button>
                 </div>`;
             }
         }
 
         function formatPrice(num) {
             if (num === null || num === undefined || num === 0) return '-';
-            return new Intl.NumberFormat('ko-KR').format(num) + '원';
+            return new Intl.NumberFormat('ko-KR').format(num) + '??;
         }
 
         function toggleSelectAll(el) {
@@ -1220,14 +1220,14 @@
 
         function updateCheckedCount() {
             const count = document.querySelectorAll('.product-checkbox:checked').length;
-            document.getElementById('checkedCount').textContent = count + '개 선택';
+            document.getElementById('checkedCount').textContent = count + '媛??좏깮';
         }
 
         function renderCategoryTabs() {
             const container = document.getElementById('categoryTabs');
-            const order = ['전체', '버즈', '워치', '핏', '기타'];
+            const order = ['?꾩껜', '踰꾩쫰', '?뚯튂', '??, '湲고?'];
             const existingCategories = new Set(dashboardData.products.map(p => p.category).filter(c => c));
-            const categories = order.filter(cat => cat === '전체' || existingCategories.has(cat));
+            const categories = order.filter(cat => cat === '?꾩껜' || existingCategories.has(cat));
             existingCategories.forEach(cat => { if (!order.includes(cat)) categories.push(cat); });
 
             container.innerHTML = categories.map(cat => `
@@ -1241,7 +1241,7 @@
             renderCategoryTabs();
             renderProductList();
             const filteredIndices = dashboardData.products
-                .map((p, i) => (selectedCategory === '전체' || p.category === selectedCategory) ? i : -1)
+                .map((p, i) => (selectedCategory === '?꾩껜' || p.category === selectedCategory) ? i : -1)
                 .filter(i => i !== -1);
             if (filteredIndices.length > 0) selectProduct(filteredIndices[0]);
         }
@@ -1249,7 +1249,7 @@
         function renderProductList() {
             const list = document.getElementById('productList');
             let filtered = dashboardData.products.map((p, i) => ({ ...p, originalIndex: i }))
-                .filter(p => selectedCategory === '전체' || p.category === selectedCategory);
+                .filter(p => selectedCategory === '?꾩껜' || p.category === selectedCategory);
 
             const sortOption = document.getElementById('sortOption')?.value || 'default';
             if (sortOption === 'price_asc') {
@@ -1265,7 +1265,7 @@
             list.innerHTML = filtered.map((p) => {
                 const change = p.change_pct ? p.change_pct.toFixed(1) + '%' : '0.0%';
                 const badgeClass = p.status === 'PRICE_DOWN' ? 'badge-down' : (p.status === 'PRICE_UP' ? 'badge-up' : 'badge-none');
-                const trendIcon = p.status === 'PRICE_DOWN' ? '⬇️' : (p.status === 'PRICE_UP' ? '⬆️' : '➖');
+                const trendIcon = p.status === 'PRICE_DOWN' ? '燧뉛툘' : (p.status === 'PRICE_UP' ? '燧놅툘' : '??);
                 const isChecked = checkedIndices.includes(p.originalIndex) ? 'checked' : '';
                 return `
                     <li class="product-item ${p.originalIndex === selectedProductIndex ? 'active' : ''}" 
@@ -1366,15 +1366,15 @@
             if (product.image_url) { imgEl.src = product.image_url; imgContainer.style.display = 'flex'; }
             else { imgContainer.style.display = 'none'; }
 
-            const rankHtml = product.search_rank ? ` <span style="margin: 0 8px; color: var(--glass-border);">|</span> <span style="color:var(--toss-blue); font-weight:700;">네이버랭킹 ${product.search_rank}위</span>` : '';
-            const keywordHtml = ` <span style="margin: 0 8px; color: var(--glass-border);">|</span> <span style="font-size:12px; color:var(--text-muted);">검색키워드: "${product.rank_query || product.name}"</span>`;
-            document.getElementById('sellerInfo').innerHTML = `<span class="seller-tag">${product.seller}</span>에서 실시간 최저가 수집 중${rankHtml}${keywordHtml}`;
+            const rankHtml = product.search_rank ? ` <span style="margin: 0 8px; color: var(--glass-border);">|</span> <span style="color:var(--toss-blue); font-weight:700;">?ㅼ씠踰꾨옲??${product.search_rank}??/span>` : '';
+            const keywordHtml = ` <span style="margin: 0 8px; color: var(--glass-border);">|</span> <span style="font-size:12px; color:var(--text-muted);">寃?됲궎?뚮뱶: "${product.rank_query || product.name}"</span>`;
+            document.getElementById('sellerInfo').innerHTML = `<span class="seller-tag">${product.seller}</span>?먯꽌 ?ㅼ떆媛?理쒖?媛 ?섏쭛 以?{rankHtml}${keywordHtml}`;
             
-            // 랭킹 헤더에 키워드 표시 (그룹화된 rank_query 사용)
+            // ??궧 ?ㅻ뜑???ㅼ썙???쒖떆 (洹몃９?붾맂 rank_query ?ъ슜)
             const rankingListTitle = document.querySelector('.ranking-list-title');
             const displayKeyword = product.rank_query || product.name;
             if (rankingListTitle) {
-                rankingListTitle.innerHTML = `검색키워드: "${displayKeyword}" <small style="font-weight:400; font-size:12px; color:var(--text-muted); margin-left:8px;">(정확도 랭킹순 상위 10개)</small>`;
+                rankingListTitle.innerHTML = `寃?됲궎?뚮뱶: "${displayKeyword}" <small style="font-weight:400; font-size:12px; color:var(--text-muted); margin-left:8px;">(?뺥솗????궧???곸쐞 10媛?</small>`;
             }
 
             renderRankingView(displayKeyword);
@@ -1394,28 +1394,28 @@
                 if (!avg) { el.innerText = '-'; return; }
                 const diff = current - avg;
                 const pct = ((diff / avg) * 100).toFixed(1);
-                if (diff < 0) { el.innerText = `평균대비 ${Math.abs(pct)}% 낮음 ✨`; el.style.color = 'var(--price-down)'; }
-                else if (diff > 0) { el.innerText = `평균대비 ${pct}% 높음`; el.style.color = 'var(--price-up)'; }
-                else { el.innerText = '평균가와 동일'; el.style.color = 'var(--text-muted)'; }
+                if (diff < 0) { el.innerText = `?됯퇏?鍮?${Math.abs(pct)}% ??쓬 ??; el.style.color = 'var(--price-down)'; }
+                else if (diff > 0) { el.innerText = `?됯퇏?鍮?${pct}% ?믪쓬`; el.style.color = 'var(--price-up)'; }
+                else { el.innerText = '?됯퇏媛? ?숈씪'; el.style.color = 'var(--text-muted)'; }
             };
             setDiff('avg7dDiff', product.current_price, product.avg_7d);
             setDiff('avg30dDiff', product.current_price, product.avg_30d);
-            document.getElementById('currentDiff').innerText = product.status === 'PRICE_DOWN' ? '최근 하락세 감지 ✅' : (product.status === 'PRICE_UP' ? '가격 상승 중 주의 ⚠️' : '현재가 유지 중');
+            document.getElementById('currentDiff').innerText = product.status === 'PRICE_DOWN' ? '理쒓렐 ?섎씫??媛먯? ?? : (product.status === 'PRICE_UP' ? '媛寃??곸듅 以?二쇱쓽 ?좑툘' : '?꾩옱媛 ?좎? 以?);
 
             const badgeContainer = document.getElementById('priceBadgeContainer');
             if (badgeContainer) {
                 if (product.current_price <= product.all_time_low && product.all_time_low > 0) {
-                    badgeContainer.innerHTML = `<div class="chart-badge" style="background: rgba(49, 130, 247, 0.1); color: #3182f7;">✨ 현재 역대 최저가 달성 중!</div>`;
+                    badgeContainer.innerHTML = `<div class="chart-badge" style="background: rgba(49, 130, 247, 0.1); color: #3182f7;">???꾩옱 ??? 理쒖?媛 ?ъ꽦 以?</div>`;
                 } else {
                     const pctFromLow = (((product.current_price - product.all_time_low) / product.all_time_low) * 100).toFixed(1);
-                    badgeContainer.innerHTML = `<div class="chart-badge">역대 최저가 대비 +${pctFromLow}% 높음</div>`;
+                    badgeContainer.innerHTML = `<div class="chart-badge">??? 理쒖?媛 ?鍮?+${pctFromLow}% ?믪쓬</div>`;
                 }
             }
 
             currentPage = 1;
             refreshChartView();
 
-            // 모바일에서 상품 선택 시 사이드바 닫기
+            // 紐⑤컮?쇱뿉???곹뭹 ?좏깮 ???ъ씠?쒕컮 ?リ린
             if (window.innerWidth <= 768) {
                 toggleSidebar(false);
             }
@@ -1426,11 +1426,11 @@
             document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
             if (el) el.classList.add('active');
 
-            // 날짜 리셋
+            // ?좎쭨 由ъ뀑
             document.getElementById('startDate').value = '';
             document.getElementById('endDate').value = '';
 
-            currentPage = 1; // 페이지 초기화
+            currentPage = 1; // ?섏씠吏 珥덇린??
             refreshChartView();
         }
 
@@ -1439,7 +1439,7 @@
             const end = document.getElementById('endDate').value;
 
             if (start || end) {
-                chartDays = -1; // 사용자 정의 모드
+                chartDays = -1; // ?ъ슜???뺤쓽 紐⑤뱶
                 document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
                 currentPage = 1;
                 refreshChartView();
@@ -1514,8 +1514,8 @@
 
             const totalItems = currentFilteredHistory.length;
 
-            // 페이지네이션 계산
-            // 첫 페이지는 20개, 그 다음부터는 10개씩
+            // ?섏씠吏?ㅼ씠??怨꾩궛
+            // 泥??섏씠吏??20媛? 洹??ㅼ쓬遺?곕뒗 10媛쒖뵫
             let startIndex = 0;
             let itemsOnThisPage = itemsPerPageNormal;
 
@@ -1534,24 +1534,24 @@
                 const date = new Date(h.t);
                 let diffStr = '-', diffColor = 'var(--text-muted)';
 
-                // 가격 변동 계산 (다음 데이터와 비교 - reverse 기준)
+                // 媛寃?蹂??怨꾩궛 (?ㅼ쓬 ?곗씠?곗? 鍮꾧탳 - reverse 湲곗?)
                 if (globalIndex < totalItems - 1) {
                     const nextItem = currentFilteredHistory[globalIndex + 1];
                     const diff = h.p - nextItem.p;
-                    if (diff < 0) { diffStr = `⬇️ ${Math.abs(diff).toLocaleString()}`; diffColor = 'var(--price-down)'; }
-                    else if (diff > 0) { diffStr = `⬆️ ${diff.toLocaleString()}`; diffColor = 'var(--price-up)'; }
+                    if (diff < 0) { diffStr = `燧뉛툘 ${Math.abs(diff).toLocaleString()}`; diffColor = 'var(--price-down)'; }
+                    else if (diff > 0) { diffStr = `燧놅툘 ${diff.toLocaleString()}`; diffColor = 'var(--price-up)'; }
                     else diffStr = '0';
                 }
 
-                return `<tr><td>${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}</td><td style="font-weight:700">${formatPrice(h.p)}</td><td style="color:${diffColor};font-weight:600">${diffStr}</td><td>${product.seller}</td><td>정상</td></tr>`;
+                return `<tr><td>${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}</td><td style="font-weight:700">${formatPrice(h.p)}</td><td style="color:${diffColor};font-weight:600">${diffStr}</td><td>${product.seller}</td><td>?뺤긽</td></tr>`;
             }).join('');
 
-            // 페이지네이션 UI 생성
+            // ?섏씠吏?ㅼ씠??UI ?앹꽦
             const totalPages = totalItems <= itemsPerPageFirst ? 1 : Math.ceil((totalItems - itemsPerPageFirst) / itemsPerPageNormal) + 1;
 
-            let navHtml = `<button class="page-btn" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>이전</button>`;
+            let navHtml = `<button class="page-btn" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>?댁쟾</button>`;
 
-            // 페이지 번호 표시 (최대 10개씩)
+            // ?섏씠吏 踰덊샇 ?쒖떆 (理쒕? 10媛쒖뵫)
             const maxPagesToShow = 10;
             let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
             let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
@@ -1563,41 +1563,41 @@
                 navHtml += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
             }
 
-            navHtml += `<button class="page-btn" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>다음</button>`;
+            navHtml += `<button class="page-btn" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>?ㅼ쓬</button>`;
             paginationEl.innerHTML = navHtml;
         }
 
         function goToPage(page) {
             currentPage = page;
             renderTable();
-            // 테이블 상단으로 스크롤 이동 (선택적)
+            // ?뚯씠釉??곷떒?쇰줈 ?ㅽ겕濡??대룞 (?좏깮??
             document.querySelector('.history-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         function downloadExcel() {
             const checked = document.querySelectorAll('.product-checkbox:checked');
-            if (checked.length === 0) { alert("다운로드할 상품을 선택하세요."); return; }
+            if (checked.length === 0) { alert("?ㅼ슫濡쒕뱶???곹뭹???좏깮?섏꽭??"); return; }
             
-            // 1. 현재 최저가 시트 데이터 준비
-            const currentData = [["상품명", "현재 최저가", "판매처", "수집시간", "네이버 랭킹", "수집 키워드"]];
-            // 2. 가격 히스토리 시트 데이터 준비 (날짜와 시간 완전 분리)
-            const historyData = [["상품명", "수집날짜", "수집시간", "가격", "판매처"]];
-            // 3. 키워드 랭킹 시트 데이터 준비
-            const rankingData = [["검색 키워드", "순위", "상품명(네이버)", "가격", "판매처", "수집시간"]];
+            // 1. ?꾩옱 理쒖?媛 ?쒗듃 ?곗씠??以鍮?
+            const currentData = [["?곹뭹紐?, "?꾩옱 理쒖?媛", "?먮ℓ泥?, "?섏쭛?쒓컙", "?ㅼ씠踰???궧", "?섏쭛 ?ㅼ썙??]];
+            // 2. 媛寃??덉뒪?좊━ ?쒗듃 ?곗씠??以鍮?(?좎쭨? ?쒓컙 ?꾩쟾 遺꾨━)
+            const historyData = [["?곹뭹紐?, "?섏쭛?좎쭨", "?섏쭛?쒓컙", "媛寃?, "?먮ℓ泥?]];
+            // 3. ?ㅼ썙????궧 ?쒗듃 ?곗씠??以鍮?
+            const rankingData = [["寃???ㅼ썙??, "?쒖쐞", "?곹뭹紐??ㅼ씠踰?", "媛寃?, "?먮ℓ泥?, "?섏쭛?쒓컙"]];
 
             const addedKeywords = new Set();
 
             Array.from(checked).forEach(cb => {
                 const p = dashboardData.products[cb.dataset.index];
                 
-                // 최신 수집 시간 추출
+                // 理쒖떊 ?섏쭛 ?쒓컙 異붿텧
                 let lastTime = "-";
                 if (p.history && p.history.length > 0) {
                     const d = new Date(p.history[p.history.length - 1].t);
                     lastTime = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
                 }
 
-                // 현재 정보 추가
+                // ?꾩옱 ?뺣낫 異붽?
                 currentData.push([
                     p.name, 
                     p.current_price, 
@@ -1607,7 +1607,7 @@
                     p.rank_query || p.name
                 ]);
 
-                // 히스토리 정보 추가 (날짜와 시간 분리)
+                // ?덉뒪?좊━ ?뺣낫 異붽? (?좎쭨? ?쒓컙 遺꾨━)
                 p.history.forEach(h => {
                     const d = new Date(h.t);
                     const formattedDate = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
@@ -1615,11 +1615,11 @@
                     historyData.push([p.name, formattedDate, formattedTime, h.p, p.seller]);
                 });
 
-                // 랭킹 정보 추가 (중복 방지)
+                // ??궧 ?뺣낫 異붽? (以묐났 諛⑹?)
                 const kw = p.rank_query || p.name;
                 const keywordsToProcess = [kw];
-                if (kw.includes("갤럭시")) {
-                    const short = kw.replace("갤럭시", "").trim();
+                if (kw.includes("媛ㅻ윮??)) {
+                    const short = kw.replace("媛ㅻ윮??, "").trim();
                     if (short) keywordsToProcess.push(short);
                 }
 
@@ -1642,26 +1642,26 @@
                 });
             });
 
-            // Workbook 생성
+            // Workbook ?앹꽦
             const wb = XLSX.utils.book_new();
             
-            // 시트 1: 현재 요약
+            // ?쒗듃 1: ?꾩옱 ?붿빟
             const wsCurrent = XLSX.utils.aoa_to_sheet(currentData);
-            XLSX.utils.book_append_sheet(wb, wsCurrent, "현재_최저가_목록");
+            XLSX.utils.book_append_sheet(wb, wsCurrent, "?꾩옱_理쒖?媛_紐⑸줉");
             
-            // 시트 2: 가격 히스토리
+            // ?쒗듃 2: 媛寃??덉뒪?좊━
             const wsHistory = XLSX.utils.aoa_to_sheet(historyData);
-            XLSX.utils.book_append_sheet(wb, wsHistory, "가격_히스토리");
+            XLSX.utils.book_append_sheet(wb, wsHistory, "媛寃??덉뒪?좊━");
 
-            // 시트 3: 키워드 랭킹
+            // ?쒗듃 3: ?ㅼ썙????궧
             const wsRanking = XLSX.utils.aoa_to_sheet(rankingData);
-            XLSX.utils.book_append_sheet(wb, wsRanking, "키워드_TOP10_랭킹");
+            XLSX.utils.book_append_sheet(wb, wsRanking, "?ㅼ썙??TOP10_??궧");
 
-            // 파일 저장
-            XLSX.writeFile(wb, `웨어러블_가격분석_${new Date().toISOString().slice(0, 10)}.xlsx`);
+            // ?뚯씪 ???
+            XLSX.writeFile(wb, `?⑥뼱?щ툝_媛寃⑸텇??${new Date().toISOString().slice(0, 10)}.xlsx`);
         }
 
-        /* ----- V2: 탭 전환 및 랭킹 뷰 로직 ----- */
+        /* ----- V2: ???꾪솚 諛???궧 酉?濡쒖쭅 ----- */
         function switchView(viewId) {
             document.querySelectorAll('.view-tab').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.view-content').forEach(content => content.classList.remove('active'));
@@ -1683,31 +1683,31 @@
             const tabsContainer = document.getElementById('ranking-keyword-tabs');
             const timeEl = document.getElementById('rankingUpdateTime');
             
-            // 키워드 목록 생성 (갤럭시 포함/제외)
+            // ?ㅼ썙??紐⑸줉 ?앹꽦 (媛ㅻ윮???ы븿/?쒖쇅)
             let keywords = [keyword];
-            if (keyword.includes("갤럭시")) {
-                const short = keyword.replace("갤럭시", "").trim();
+            if (keyword.includes("媛ㅻ윮??)) {
+                const short = keyword.replace("媛ㅻ윮??, "").trim();
                 if (short && short !== keyword) keywords.push(short);
             }
 
-            // 중복 제거
+            // 以묐났 ?쒓굅
             keywords = [...new Set(keywords)];
 
-            // "갤럭시"가 없는 짧은 키워드를 앞으로 정렬 (사용자 요청: 디폴트값)
+            // "媛ㅻ윮??媛 ?녿뒗 吏㏃? ?ㅼ썙?쒕? ?욎쑝濡??뺣젹 (?ъ슜???붿껌: ?뷀뤃?멸컪)
             keywords.sort((a, b) => {
-                const hasA = a.includes("갤럭시");
-                const hasB = b.includes("갤럭시");
+                const hasA = a.includes("媛ㅻ윮??);
+                const hasB = b.includes("媛ㅻ윮??);
                 if (!hasA && hasB) return -1;
                 if (hasA && !hasB) return 1;
                 return a.length - b.length;
             });
 
-            // 탭 버튼 생성
+            // ??踰꾪듉 ?앹꽦
             tabsContainer.innerHTML = keywords.map(k => `
                 <button class="filter-pill ${k === keywords[0] ? 'active' : ''}" onclick="updateRankingData('${k}', '${keyword}')">${k}</button>
             `).join('');
 
-            // 첫 번째 키워드(짧은 것)를 기본으로 데이터 로드
+            // 泥?踰덉㎏ ?ㅼ썙??吏㏃? 寃?瑜?湲곕낯?쇰줈 ?곗씠??濡쒕뱶
             updateRankingData(keywords[0], keyword);
         }
 
@@ -1715,13 +1715,13 @@
             const container = document.getElementById('ranking-list-container');
             const timeEl = document.getElementById('rankingUpdateTime');
             
-            // 탭 활성화 상태 업데이트
+            // ???쒖꽦???곹깭 ?낅뜲?댄듃
             document.querySelectorAll('#ranking-keyword-tabs .filter-pill').forEach(btn => {
                 btn.classList.toggle('active', btn.innerText === targetK);
             });
 
             if (!dashboardData.rankings || !dashboardData.rankings[targetK]) {
-                container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 40px;">[${targetK}]에 대한 데이터가 아직 수집되지 않았습니다.</div>`;
+                container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 40px;">[${targetK}]??????곗씠?곌? ?꾩쭅 ?섏쭛?섏? ?딆븯?듬땲??</div>`;
                 timeEl.innerText = "";
                 return;
             }
@@ -1729,7 +1729,7 @@
             const rankings = dashboardData.rankings[targetK].slice(0, 10);
             if (rankings.length > 0) {
                 const date = new Date(rankings[0].collected_at);
-                timeEl.innerText = '수집: ' + date.toLocaleString();
+                timeEl.innerText = '?섏쭛: ' + date.toLocaleString();
             }
 
             let html = '';
@@ -1743,7 +1743,7 @@
                     <div class="rank-num ${isTop1}">${rank}</div>
                     <img class="thumb" src="${imgUrl}" alt="thumbnail"/>
                     <div class="ranking-card-body">
-                        <div class="mall">${item.seller_name || '네이버쇼핑'}</div>
+                        <div class="mall">${item.seller_name || '?ㅼ씠踰꾩눥??}</div>
                         <div class="title">${item.title}</div>
                         <div class="price">${formatPrice(item.price)}</div>
                     </div>

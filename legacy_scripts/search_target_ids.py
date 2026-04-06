@@ -1,4 +1,4 @@
-import asyncio
+﻿import asyncio
 import os
 import logging
 import json
@@ -10,8 +10,8 @@ async def main():
     load_dotenv()
     
     client = NaverShoppingSearchClient()
-    # 갤럭시 버즈4프로 블랙의 인증점 ID라고 지목된 값
-    cert_ids = ["13104063712", "13104069397", "13104046827", "13104060742"]
+    # 媛ㅻ윮??踰꾩쫰4?꾨줈 釉붾옓???몄쬆??ID?쇨퀬 吏紐⑸맂 媛?
+    cert_ids = ["[숫자_ID]", "[숫자_ID]", "[숫자_ID]", "[숫자_ID]"]
     
     for c_id in cert_ids:
         print(f"\nSearching for ID directly: {c_id}")
@@ -23,3 +23,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+

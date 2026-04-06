@@ -1,4 +1,4 @@
-import asyncio
+﻿import asyncio
 import os
 import logging
 from dotenv import load_dotenv
@@ -9,12 +9,12 @@ async def main():
     load_dotenv()
     
     client = NaverShoppingSearchClient()
-    # 검증할 ID 리소드
+    # 寃利앺븷 ID 由ъ냼??
     ids = [
-        ("53508451504", "User says: Buds3 Pro White?"),
-        ("53508451505", "User says: Buds3 Silver? (Existing says Pro Silver)"),
-        ("53507707536", "User says: Buds3 White?"),
-        ("53508451507", "Maybe Buds3 Pro Silver??")
+        ("[숫자_ID]", "User says: Buds3 Pro White?"),
+        ("[숫자_ID]", "User says: Buds3 Silver? (Existing says Pro Silver)"),
+        ("[숫자_ID]", "User says: Buds3 White?"),
+        ("[숫자_ID]", "Maybe Buds3 Pro Silver??")
     ]
     
     print(f"\n{'='*90}")
@@ -32,3 +32,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+

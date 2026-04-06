@@ -1,13 +1,13 @@
-from tracker.naver_api import NaverShoppingSearchClient
+﻿from tracker.naver_api import NaverShoppingSearchClient
 import os
 from dotenv import load_dotenv
 load_dotenv()
 
 def test_strategy():
     client = NaverShoppingSearchClient()
-    product_name = "갤럭시 버즈3 실버"
-    catalog_id = "53507707537"
-    cert_malls = ["포디아이", "엠디텍", "제이유 디지탈", "제이유디지탈"]
+    product_name = "媛ㅻ윮??踰꾩쫰3 ?ㅻ쾭"
+    catalog_id = "[숫자_ID]"
+    cert_malls = ["?щ뵒?꾩씠", "?좊뵒??, "?쒖씠???붿???, "?쒖씠?좊뵒吏??]
     
     print(f"Searching for: {product_name}")
     res = client.search(query=product_name, display=100)
@@ -27,3 +27,4 @@ def test_strategy():
 
 if __name__ == "__main__":
     test_strategy()
+

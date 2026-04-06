@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import os
 from dataclasses import asdict
@@ -27,7 +27,7 @@ class NaverShoppingSearchClient:
 
     def _headers(self) -> dict[str, str]:
         if not self.client_id or not self.client_secret:
-            raise RuntimeError("NAVER_CLIENT_ID / NAVER_CLIENT_SECRET 가 설정되지 않았습니다.")
+            raise RuntimeError("NAVER_CLIENT_ID / NAVER_CLIENT_SECRET 媛 ?ㅼ젙?섏? ?딆븯?듬땲??")
         return {
             "X-Naver-Client-Id": self.client_id,
             "X-Naver-Client-Secret": self.client_secret,
@@ -64,7 +64,7 @@ def _item_matches(target: TargetConfig, item: dict[str, Any]) -> bool:
     target_id = str(target.match.product_id or "").strip()
     product_type = int(item.get("productType", 0) or 0)
 
-    # 1. productId가 지정된 경우 ID가 일치하면 즉시 반환 (타입 체크만 병행)
+    # 1. productId媛 吏?뺣맂 寃쎌슦 ID媛 ?쇱튂?섎㈃ 利됱떆 諛섑솚 (???泥댄겕留?蹂묓뻾)
     if target_id:
         if product_id == target_id:
             if target.match.allowed_product_types and product_type not in target.match.allowed_product_types:
@@ -72,7 +72,7 @@ def _item_matches(target: TargetConfig, item: dict[str, Any]) -> bool:
             return True
         return False
 
-    # 2. product_id가 없는 경우 기존 키워드 기반 매칭 유지
+    # 2. product_id媛 ?녿뒗 寃쎌슦 湲곗〈 ?ㅼ썙??湲곕컲 留ㅼ묶 ?좎?
     if target.match.allowed_product_types and product_type not in target.match.allowed_product_types:
         return False
     if target.match.required_keywords and not all_keywords_present(title, target.match.required_keywords):
@@ -100,7 +100,7 @@ def _normalized_item(item: dict[str, Any]) -> dict[str, Any]:
 
 def collect_lowest_offer_via_api(client: NaverShoppingSearchClient, app_config: AppConfig, target: TargetConfig) -> dict[str, Any]:
     if not target.query:
-        raise ValueError(f"target '{target.name}' 에 query 가 없습니다.")
+        raise ValueError(f"target '{target.name}' ??query 媛 ?놁뒿?덈떎.")
 
     pages = max(1, target.request.pages)
     items: list[dict[str, Any]] = []
@@ -141,10 +141,10 @@ def collect_lowest_offer_via_api(client: NaverShoppingSearchClient, app_config: 
                 "match": asdict(target.match),
                 "items_examined": len(items),
             },
-            "error_message": "조건에 맞는 상품을 찾지 못했습니다.",
+            "error_message": "議곌굔??留욌뒗 ?곹뭹??李얠? 紐삵뻽?듬땲??",
         }
 
-    # 가격과 판매처 이름을 기준으로 정렬하여 최우선 상품 선택
+    # 媛寃⑷낵 ?먮ℓ泥??대쫫??湲곗??쇰줈 ?뺣젹?섏뿬 理쒖슦???곹뭹 ?좏깮
     best = min(candidates, key=lambda x: (x["price"], x["seller_name"] or "zzzz"))
     return {
         "target_name": target.name,
@@ -154,3 +154,4 @@ def collect_lowest_offer_via_api(client: NaverShoppingSearchClient, app_config: 
         **best,
         "error_message": None,
     }
+

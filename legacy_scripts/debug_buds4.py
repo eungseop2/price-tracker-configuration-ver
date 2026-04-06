@@ -1,4 +1,4 @@
-import asyncio
+﻿import asyncio
 import os
 import logging
 from dotenv import load_dotenv
@@ -13,7 +13,7 @@ async def main():
     app_config = load_config(config_path)
     client = NaverShoppingSearchClient()
     
-    buds4_targets = [t for t in app_config.targets if "버즈4" in t.name]
+    buds4_targets = [t for t in app_config.targets if "踰꾩쫰4" in t.name]
     
     print(f"\n{'='*60}")
     print(f"{'Target Name':<30} | {'Status':<10} | {'Price':<10}")
@@ -33,3 +33,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+

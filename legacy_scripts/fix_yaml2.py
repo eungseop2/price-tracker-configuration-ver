@@ -1,4 +1,4 @@
-import re
+﻿import re
 
 with open('targets.yaml', 'r', encoding='utf-8') as f:
     text = f.read()
@@ -10,3 +10,4 @@ text = re.sub(pattern, replacement, text)
 
 with open('targets.yaml', 'w', encoding='utf-8') as f:
     f.write(text)
+

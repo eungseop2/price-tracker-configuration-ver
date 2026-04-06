@@ -1,4 +1,4 @@
-import asyncio
+﻿import asyncio
 import os
 import logging
 import json
@@ -12,8 +12,8 @@ async def main():
     
     client = NaverShoppingSearchClient()
     queries = [
-        ('갤럭시 버즈4프로 블랙', '59061283797'),
-        ('갤럭시 버즈4 블랙', '59061250873')
+        ('媛ㅻ윮??踰꾩쫰4?꾨줈 釉붾옓', '[숫자_ID]'),
+        ('媛ㅻ윮??踰꾩쫰4 釉붾옓', '[숫자_ID]')
     ]
     
     for q_str, expected_id in queries:
@@ -43,3 +43,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+

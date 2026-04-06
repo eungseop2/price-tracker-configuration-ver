@@ -1,4 +1,4 @@
-import asyncio
+﻿import asyncio
 import os
 import logging
 import json
@@ -10,8 +10,8 @@ async def main():
     load_dotenv()
     
     client = NaverShoppingSearchClient()
-    # 갤럭시 핏3 (카탈로그가 잘 잡히는 제품 예시)
-    query = "갤럭시 핏3"
+    # 媛ㅻ윮???? (移댄깉濡쒓렇媛 ???≫엳???쒗뭹 ?덉떆)
+    query = "媛ㅻ윮????"
     
     print(f"Searching for: {query}")
     payload = client.search(query=query, display=10)
@@ -30,8 +30,8 @@ async def main():
         print(f"    - MallName: {m_name if m_name else 'N/A (Multi-vendor)'}")
         print(f"    - Lowest Price: {lprice}")
         
-        # 카탈로그일 경우 내부 리스트 필드가 있는지 확인
-        # (실제로는 API v1 응답에 그런 필드가 없음)
+        # 移댄깉濡쒓렇??寃쎌슦 ?대? 由ъ뒪???꾨뱶媛 ?덈뒗吏 ?뺤씤
+        # (?ㅼ젣濡쒕뒗 API v1 ?묐떟??洹몃윴 ?꾨뱶媛 ?놁쓬)
         internal_fields = [k for k in i.keys() if 'list' in k.lower() or 'offer' in k.lower()]
         if internal_fields:
             print(f"    - Found internal list fields: {internal_fields}")
@@ -40,3 +40,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+

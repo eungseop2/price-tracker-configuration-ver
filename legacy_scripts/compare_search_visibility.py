@@ -1,4 +1,4 @@
-import asyncio
+﻿import asyncio
 import os
 import logging
 from dotenv import load_dotenv
@@ -14,11 +14,11 @@ async def main():
     client = NaverShoppingSearchClient()
     
     test_products = [
-        ("버즈3프로 화이트", "53508451504"),
-        ("버즈3프로 실버", "53508451505"),
-        ("버즈4프로 블랙", "59061283797"),
-        ("워치8 40mm 실버", "55668557960"),
-        ("핏3", "55900277515")
+        ("踰꾩쫰3?꾨줈 ?붿씠??, "[숫자_ID]"),
+        ("踰꾩쫰3?꾨줈 ?ㅻ쾭", "[숫자_ID]"),
+        ("踰꾩쫰4?꾨줈 釉붾옓", "[숫자_ID]"),
+        ("?뚯튂8 40mm ?ㅻ쾭", "[숫자_ID]"),
+        ("??", "[숫자_ID]")
     ]
     
     print(f"\n{'='*60}")
@@ -31,7 +31,7 @@ async def main():
         items_id = payload_id.get("items", [])
         
         # 2. Search by Name and check if ID exists in top 100
-        payload_name = client.search(query=name if "버즈" not in name else "갤럭시 " + name, display=100)
+        payload_name = client.search(query=name if "踰꾩쫰" not in name else "媛ㅻ윮??" + name, display=100)
         items_name = payload_name.get("items", [])
         in_top_100 = any(str(i.get("productId")) == str(c_id) for i in items_name)
         
@@ -42,3 +42,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+

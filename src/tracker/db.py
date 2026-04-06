@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import csv
 import sqlite3
@@ -57,8 +57,8 @@ CREATE INDEX IF NOT EXISTS idx_ranking_query_time
 ON ranking_history(query, collected_at DESC);
 """
 
-# 인증점 관련 컬럼들은 스키마 정의에서 제거하지만, 
-# 마이그레이션 로직에서는 DB 호환성을 위해 남겨두거나 필요한 것만 유지합니다.
+# ?몄쬆??愿??而щ읆?ㅼ? ?ㅽ궎留??뺤쓽?먯꽌 ?쒓굅?섏?留? 
+# 留덉씠洹몃젅?댁뀡 濡쒖쭅?먯꽌??DB ?명솚?깆쓣 ?꾪빐 ?④꺼?먭굅???꾩슂??寃껊쭔 ?좎??⑸땲??
 _MIGRATION_COLUMNS = [
     ("config_mode", "TEXT"),
     ("fallback_used", "INTEGER DEFAULT 0"),
@@ -74,7 +74,7 @@ _MIGRATION_COLUMNS = [
 
 
 def _migrate(conn: sqlite3.Connection) -> None:
-    """기존 DB에 신규 컬럼이 없으면 ALTER TABLE로 추가합니다."""
+    """湲곗〈 DB???좉퇋 而щ읆???놁쑝硫?ALTER TABLE濡?異붽??⑸땲??"""
     existing = {row[1] for row in conn.execute("PRAGMA table_info(observations)").fetchall()}
     for col_name, col_type in _MIGRATION_COLUMNS:
         if col_name not in existing:
@@ -129,7 +129,7 @@ class ObservationStore:
         self.conn.commit()
 
     def get_latest_success(self, target_name: str) -> dict[str, Any] | None:
-        """특정 상품의 가장 최근 성공 수집 기록(success=1)을 반환합니다."""
+        """?뱀젙 ?곹뭹??媛??理쒓렐 ?깃났 ?섏쭛 湲곕줉(success=1)??諛섑솚?⑸땲??"""
         row = self.conn.execute(
             """
             SELECT * FROM observations
@@ -142,7 +142,7 @@ class ObservationStore:
         return dict(row) if row else None
 
     def get_price_history(self, target_name: str, limit: int = 20) -> list[dict[str, Any]]:
-        """특정 상품의 최근 수집 이력을 반환합니다."""
+        """?뱀젙 ?곹뭹??理쒓렐 ?섏쭛 ?대젰??諛섑솚?⑸땲??"""
         rows = self.conn.execute(
             """
             SELECT * FROM observations
@@ -155,7 +155,7 @@ class ObservationStore:
         return [dict(r) for r in rows]
 
     def get_dashboard_data(self, targets: list[TargetConfig]) -> dict[str, Any]:
-        """대시보드 시각화용 통합 데이터를 반환합니다 (7일/30일/90일 분석 포함)."""
+        """??쒕낫???쒓컖?붿슜 ?듯빀 ?곗씠?곕? 諛섑솚?⑸땲??(7??30??90??遺꾩꽍 ?ы븿)."""
         target_map = {t.name: t for t in targets}
         target_names = list(target_map.keys())
 
@@ -167,12 +167,12 @@ class ObservationStore:
         for name in target_names:
             t_config = target_map[name]
 
-            # 1. 최신 정보 가져오기
+            # 1. 理쒖떊 ?뺣낫 媛?몄삤湲?
             latest = self.get_latest_success(name)
             if not latest:
                 continue
 
-            # 2. 분석용 데이터 추출 (전체 히스토리 분석 가능하도록 필터 제거)
+            # 2. 遺꾩꽍???곗씠??異붿텧 (?꾩껜 ?덉뒪?좊━ 遺꾩꽍 媛?ν븯?꾨줉 ?꾪꽣 ?쒓굅)
             hist_all = self.conn.execute(
                 """
                 SELECT collected_at, price 
@@ -182,7 +182,7 @@ class ObservationStore:
                 """, (name,)
             ).fetchall()
 
-            # 3. 역대 최저/최고가 계산 (전체 히스토리 대상)
+            # 3. ??? 理쒖?/理쒓퀬媛 怨꾩궛 (?꾩껜 ?덉뒪?좊━ ???
             stats_all = self.conn.execute(
                 """
                 SELECT MIN(price) as min_p, MAX(price) as max_p
@@ -196,7 +196,7 @@ class ObservationStore:
             if not hist_all:
                 continue
             
-            # 기간별 평균 계산 함수 (데이터가 부족하면 None 반환)
+            # 湲곌컙蹂??됯퇏 怨꾩궛 ?⑥닔 (?곗씠?곌? 遺議깊븯硫?None 諛섑솚)
             def calc_avg(days):
                 cutoff = datetime.now(timezone.utc) - timedelta(days=days)
                 prices = [r["price"] for r in hist_all if datetime.fromisoformat(r["collected_at"].replace('Z', '+00:00')) >= cutoff]
@@ -207,7 +207,7 @@ class ObservationStore:
                 "category": t_config.category,
                 "rank_query": t_config.rank_query,
                 "current_price": latest["price"],
-                "seller": latest["seller_name"] or "네이버",
+                "seller": latest["seller_name"] or "?ㅼ씠踰?,
                 "status": latest["price_change_status"],
                 "change_pct": latest["price_delta_pct"],
                 "product_id": latest["product_id"],
@@ -219,7 +219,7 @@ class ObservationStore:
                 "image_url": latest["image_url"],
                 "search_rank": latest.get("search_rank"),
                 "history": [
-                    {"t": r["collected_at"], "p": r["price"]} for r in hist_all[-500:] # 최근 500개 데이터 포인트로 확장
+                    {"t": r["collected_at"], "p": r["price"]} for r in hist_all[-500:] # 理쒓렐 500媛??곗씠???ъ씤?몃줈 ?뺤옣
                 ]
             }
             data["products"].append(product_data)
@@ -227,7 +227,7 @@ class ObservationStore:
         return data
 
     def export_dashboard_json(self, out_path: str, categories: dict[str, str] | None = None) -> str:
-        """대시보드 데이터를 JSON 파일로 저장합니다."""
+        """??쒕낫???곗씠?곕? JSON ?뚯씪濡???ν빀?덈떎."""
         data = self.get_dashboard_data(categories=categories)
         out = Path(out_path).resolve()
         ensure_dir(out.parent)
@@ -271,7 +271,7 @@ class ObservationStore:
         return str(out)
 
     def export_html_report(self, out_path: str, limit: int = 20) -> str:
-        """HTML 리포트 생성 (이스케이프 및 폴백 정보 추가)"""
+        """HTML 由ы룷???앹꽦 (?댁뒪耳?댄봽 諛??대갚 ?뺣낫 異붽?)"""
         import html as py_html
         target_names = [
             r[0] for r in self.conn.execute(
@@ -286,14 +286,14 @@ class ObservationStore:
             rows_html = []
             for rec in history:
                 status_cls = rec.get("price_change_status") or "UNKNOWN"
-                status_color = "#94a3b8"  # 기본 회색
-                if status_cls == "PRICE_DOWN": status_color = "#22c55e"  # 초록
-                elif status_cls == "PRICE_UP": status_color = "#ef4444"  # 빨강
-                elif status_cls == "PRICE_SAME": status_color = "#6b7280" # 중립 회색
+                status_color = "#94a3b8"  # 湲곕낯 ?뚯깋
+                if status_cls == "PRICE_DOWN": status_color = "#22c55e"  # 珥덈줉
+                elif status_cls == "PRICE_UP": status_color = "#ef4444"  # 鍮④컯
+                elif status_cls == "PRICE_SAME": status_color = "#6b7280" # 以묐┰ ?뚯깋
                 
                 row_style = ""
                 if not rec.get("success"):
-                    row_style = 'style="background: #2d0a0a"'  # 더 어두운 빨강 배경 (success=0)
+                    row_style = 'style="background: #2d0a0a"'  # ???대몢??鍮④컯 諛곌꼍 (success=0)
 
                 delta_pct = rec.get("price_delta_pct")
                 pct_str = f"{delta_pct:+.1f}%" if delta_pct is not None else "-"
@@ -327,17 +327,17 @@ class ObservationStore:
       <table style="width:100%; border-collapse:collapse; font-size:14px">
         <thead>
             <tr style="background:#1e293b; color:#94a3b8">
-            <th style="padding:10px; text-align:left">수집시각</th>
-            <th style="padding:10px; text-align:left">상품명</th>
-            <th style="padding:10px; text-align:left">판매자</th>
-            <th style="padding:10px; text-align:left">수집경로</th>
-            <th style="padding:10px; text-align:left">현재가</th>
-            <th style="padding:10px; text-align:left">이전가</th>
-            <th style="padding:10px; text-align:left">변동액</th>
-            <th style="padding:10px; text-align:left">변동률</th>
-            <th style="padding:10px; text-align:left">순위</th>
-            <th style="padding:10px; text-align:left">변동상태</th>
-            <th style="padding:10px; text-align:left">수집상태</th>
+            <th style="padding:10px; text-align:left">?섏쭛?쒓컖</th>
+            <th style="padding:10px; text-align:left">?곹뭹紐?/th>
+            <th style="padding:10px; text-align:left">?먮ℓ??/th>
+            <th style="padding:10px; text-align:left">?섏쭛寃쎈줈</th>
+            <th style="padding:10px; text-align:left">?꾩옱媛</th>
+            <th style="padding:10px; text-align:left">?댁쟾媛</th>
+            <th style="padding:10px; text-align:left">蹂?숈븸</th>
+            <th style="padding:10px; text-align:left">蹂?숇쪧</th>
+            <th style="padding:10px; text-align:left">?쒖쐞</th>
+            <th style="padding:10px; text-align:left">蹂?숈긽??/th>
+            <th style="padding:10px; text-align:left">?섏쭛?곹깭</th>
           </tr>
         </thead>
         <tbody style="color:#e2e8f0">
@@ -352,7 +352,7 @@ class ObservationStore:
 <html>
 <head>
 <meta charset="UTF-8">
-<title>네이버 쇼핑 가격 추적 리포트</title>
+<title>?ㅼ씠踰??쇳븨 媛寃?異붿쟻 由ы룷??/title>
 <style>
   body {{ background: #0f172a; color: #e2e8f0; font-family: system-ui, sans-serif; padding: 30px; }}
   table {{ width: 100%; border-collapse: collapse; }}
@@ -361,8 +361,8 @@ class ObservationStore:
 </style>
 </head>
 <body>
-  <h1 style="margin-bottom:8px">📊 가격 추적 리포트</h1>
-  <p style="color:#64748b; margin-bottom:30px">생성: {now_str}</p>
+  <h1 style="margin-bottom:8px">?뱤 媛寃?異붿쟻 由ы룷??/h1>
+  <p style="color:#64748b; margin-bottom:30px">?앹꽦: {now_str}</p>
   {''.join(sections)}
 </body>
 </html>"""
@@ -383,11 +383,11 @@ class RankingStore:
         self.conn.row_factory = sqlite3.Row
         self.conn.executescript(SCHEMA_SQL)
         
-        # [Migration] is_ad 컬럼 추가 (기존 DB 대응)
+        # [Migration] is_ad 而щ읆 異붽? (湲곗〈 DB ???
         try:
             self.conn.execute("ALTER TABLE ranking_history ADD COLUMN is_ad INTEGER DEFAULT 0")
         except sqlite3.OperationalError:
-            pass # 이미 컬럼이 존재함
+            pass # ?대? 而щ읆??議댁옱??
             
         self.conn.commit()
 
@@ -410,7 +410,7 @@ class RankingStore:
         self.conn.commit()
 
     def get_latest_rankings(self, query: str, limit: int = 15) -> list[dict[str, Any]]:
-        # 가장 최근 수집된 시간을 찾음
+        # 媛??理쒓렐 ?섏쭛???쒓컙??李얠쓬
         recent_time_row = self.conn.execute(
             "SELECT collected_at FROM ranking_history WHERE query = ? ORDER BY collected_at DESC LIMIT 1", 
             (query,)
@@ -435,3 +435,4 @@ class RankingStore:
 
     def close(self) -> None:
         self.conn.close()
+

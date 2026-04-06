@@ -1,4 +1,4 @@
-import json
+﻿import json
 import os
 from dotenv import load_dotenv
 load_dotenv()
@@ -26,10 +26,11 @@ def find_seller_id(query, product_id):
             print(f"{mall_name:<20} | {mall_pid:<15} | {price:<10} | {cat_id:<15}")
 
 if __name__ == "__main__":
-    # 갤럭시 버즈3 실버 Catalog: 53507707537
-    print("Listing all sellers for catalog 53507707537 (Galaxy Buds 3 Silver)...")
-    find_seller_id("갤럭시 버즈3 실버", "53507707537")
+    # 媛ㅻ윮??踰꾩쫰3 ?ㅻ쾭 Catalog: [숫자_ID]
+    print("Listing all sellers for catalog [숫자_ID] (Galaxy Buds 3 Silver)...")
+    find_seller_id("媛ㅻ윮??踰꾩쫰3 ?ㅻ쾭", "[숫자_ID]")
     
-    # Also check Buds 3 White Catalog: 53507707536
-    print("\nListing all sellers for catalog 53507707536 (Galaxy Buds 3 White)...")
-    find_seller_id("갤럭시 버즈3 화이트", "53507707536")
+    # Also check Buds 3 White Catalog: [숫자_ID]
+    print("\nListing all sellers for catalog [숫자_ID] (Galaxy Buds 3 White)...")
+    find_seller_id("媛ㅻ윮??踰꾩쫰3 ?붿씠??, "[숫자_ID]")
+

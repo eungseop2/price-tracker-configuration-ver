@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import asyncio
@@ -39,19 +39,19 @@ def setup_logging(verbose: bool = False) -> None:
 
 
 async def _collect_one(client: NaverShoppingSearchClient, target: TargetConfig, app_config, artifacts_dir: str) -> dict:
-    """단일 타겟 수집 및 NO_MATCH 시 자동 폴백 로직"""
+    """?⑥씪 ?寃??섏쭛 諛?NO_MATCH ???먮룞 ?대갚 濡쒖쭅"""
     result = None
     
     if target.mode == "api_query":
         try:
             result = collect_lowest_offer_via_api(client, app_config, target)
         except Exception as e:
-            # 401, 429, 네트워크 오류 등은 폴백하지 않고 예외 발생 (main 루프에서 처리)
+            # 401, 429, ?ㅽ듃?뚰겕 ?ㅻ쪟 ?깆? ?대갚?섏? ?딄퀬 ?덉쇅 諛쒖깮 (main 猷⑦봽?먯꽌 泥섎━)
             raise e
 
-        # API 결과가 NO_MATCH이고 fallback_url이 있는 경우에만 브라우저 폴백
+        # API 寃곌낵媛 NO_MATCH?닿퀬 fallback_url???덈뒗 寃쎌슦?먮쭔 釉뚮씪?곗? ?대갚
         if result.get("status") == "NO_MATCH" and target.fallback_url:
-            logger.info("API NO_MATCH -> Browser 폴백 실행 | %s", target.name)
+            logger.info("API NO_MATCH -> Browser ?대갚 ?ㅽ뻾 | %s", target.name)
             fallback_target = TargetConfig(
                 name=target.name,
                 mode="browser_url",
@@ -60,9 +60,9 @@ async def _collect_one(client: NaverShoppingSearchClient, target: TargetConfig, 
                 match=target.match,
             )
             fallback_result = await collect_lowest_offer_via_browser(fallback_target, artifacts_dir)
-            # 폴백 정보 기록 루틴 (status 오염 금지)
+            # ?대갚 ?뺣낫 湲곕줉 猷⑦떞 (status ?ㅼ뿼 湲덉?)
             fallback_result["fallback_used"] = 1
-            fallback_result["status"] = "OK"  # 폴백 성공 시에도 순수 OK 유지
+            fallback_result["status"] = "OK"  # ?대갚 ?깃났 ?쒖뿉???쒖닔 OK ?좎?
             return fallback_result
             
         return result
@@ -72,7 +72,7 @@ async def _collect_one(client: NaverShoppingSearchClient, target: TargetConfig, 
         return result
 
     else:
-        raise ValueError(f"지원하지 않는 수집 모드: {target.mode}")
+        raise ValueError(f"吏?먰븯吏 ?딅뒗 ?섏쭛 紐⑤뱶: {target.mode}")
 
 
 async def run_once(app_config, artifacts_dir: str, db_path: str, summary_json: str | None = None) -> None:
@@ -86,9 +86,9 @@ async def run_once(app_config, artifacts_dir: str, db_path: str, summary_json: s
     client = NaverShoppingSearchClient(timeout_seconds=app_config.timeout_seconds)
 
     for target in app_config.targets:
-        logger.info("수집 시작 | %s | mode=%s", target.name, target.mode)
+        logger.info("?섏쭛 ?쒖옉 | %s | mode=%s", target.name, target.mode)
         try:
-            # 직전 성공 기록 조회 (가격 변동 체크용)
+            # 吏곸쟾 ?깃났 湲곕줉 議고쉶 (媛寃?蹂??泥댄겕??
             prev_success = store.get_latest_success(target.name)
             prev_price = prev_success["price"] if prev_success else None
 
@@ -96,7 +96,7 @@ async def run_once(app_config, artifacts_dir: str, db_path: str, summary_json: s
             result["collected_at"] = utc_now_iso()
             result["config_mode"] = target.mode
 
-            # 가격 변동 및 상태 계산
+            # 媛寃?蹂??諛??곹깭 怨꾩궛
             current_price = result.get("price")
             if current_price is not None:
                 if prev_price is None:
@@ -116,17 +116,17 @@ async def run_once(app_config, artifacts_dir: str, db_path: str, summary_json: s
             else:
                 result["price_change_status"] = None
 
-            # 필수 필드 보장
+            # ?꾩닔 ?꾨뱶 蹂댁옣
             result.setdefault("fallback_used", 0)
             result["alert_triggered"] = 0
             
-            # 알림 체크
-            # 알림 체크 (가격 변동 기반)
+            # ?뚮┝ 泥댄겕
+            # ?뚮┝ 泥댄겕 (媛寃?蹂??湲곕컲)
             if result.get("success"):
                 ok += 1
                 status = result.get("price_change_status")
 
-                # 가격이 변동된 경우 (상승 or 하락)
+                # 媛寃⑹씠 蹂?숇맂 寃쎌슦 (?곸듅 or ?섎씫)
                 if status in ["PRICE_DOWN", "PRICE_UP"]:
                     result["alert_triggered"] = 1
                     alerts_triggered_count += 1
@@ -137,16 +137,16 @@ async def run_once(app_config, artifacts_dir: str, db_path: str, summary_json: s
                 if result.get("fallback_used"):
                     fallback_used_count += 1
                 
-                logger.info("수집 완료 | %s | %s", target.name, result.get("price_change_status"))
+                logger.info("?섏쭛 ?꾨즺 | %s | %s", target.name, result.get("price_change_status"))
                 store.insert(result)
             else:
                 fail += 1
-                logger.warning("수집 미일치 | %s | %s", target.name, result.get("status"))
+                logger.warning("?섏쭛 誘몄씪移?| %s | %s", target.name, result.get("status"))
                 store.insert(result)
 
         except Exception as exc:
             fail += 1
-            logger.exception("수집 실패 | %s", target.name)
+            logger.exception("?섏쭛 ?ㅽ뙣 | %s", target.name)
             store.insert({
                 "target_name": target.name,
                 "config_mode": target.mode,
@@ -165,26 +165,26 @@ async def run_once(app_config, artifacts_dir: str, db_path: str, summary_json: s
                 "alert_triggered": 0
             })
 
-    # ---------- [랭킹 수집 최적화 루틴] ----------
+    # ---------- [??궧 ?섏쭛 理쒖쟻??猷⑦떞] ----------
     unique_rank_queries = {t.rank_query for t in app_config.targets if t.rank_query}
-    # "갤럭시"가 포함된 경우 제외된 버전도 수집 목록에 추가
+    # "媛ㅻ윮??媛 ?ы븿??寃쎌슦 ?쒖쇅??踰꾩쟾???섏쭛 紐⑸줉??異붽?
     expanded_queries = set()
     for q in unique_rank_queries:
         expanded_queries.add(q)
-        if "갤럭시" in q:
-            short_q = q.replace("갤럭시", "").strip()
+        if "媛ㅻ윮?? in q:
+            short_q = q.replace("媛ㅻ윮??, "").strip()
             if short_q:
                 expanded_queries.add(short_q)
     
-    logger.info("고유 랭킹 키워드 수집 시작 (%d개 -> 확장 %d개)", len(unique_rank_queries), len(expanded_queries))
+    logger.info("怨좎쑀 ??궧 ?ㅼ썙???섏쭛 ?쒖옉 (%d媛?-> ?뺤옣 %d媛?", len(unique_rank_queries), len(expanded_queries))
     
     r_store = RankingStore(db_path)
     rank_collected_at = utc_now_iso()
     
     for r_query in expanded_queries:
         try:
-            logger.info(f"랭킹 수집 중 (API): {r_query}")
-            # Naver API 검색 (sim=네이버 랭킹순)
+            logger.info(f"??궧 ?섏쭛 以?(API): {r_query}")
+            # Naver API 寃??(sim=?ㅼ씠踰???궧??
             rank_payload = client.search(query=r_query, display=15, sort="sim")
             rank_items = rank_payload.get("items", [])
             
@@ -207,16 +207,16 @@ async def run_once(app_config, artifacts_dir: str, db_path: str, summary_json: s
             
             if rows_to_insert:
                 r_store.insert_ranking_batch(rows_to_insert)
-                logger.info(f"랭킹 수집 완료: {r_query} ({len(rows_to_insert)}개)")
+                logger.info(f"??궧 ?섏쭛 ?꾨즺: {r_query} ({len(rows_to_insert)}媛?")
             else:
-                logger.warning(f"랭킹 수집 결과 없음: {r_query}")
+                logger.warning(f"??궧 ?섏쭛 寃곌낵 ?놁쓬: {r_query}")
         except Exception as e:
-            logger.error(f"랭킹 수집 실패 ({r_query}): {e}")
+            logger.error(f"??궧 ?섏쭛 ?ㅽ뙣 ({r_query}): {e}")
     
     r_store.close()
     store.close()
 
-    # 이메일 알림 (KST 기준 야간 시간대 21:00~08:00 제외)
+    # ?대찓???뚮┝ (KST 湲곗? ?쇨컙 ?쒓컙? 21:00~08:00 ?쒖쇅)
     if changed_items:
         if not is_night_time_kst():
             send_price_alert(
@@ -226,9 +226,9 @@ async def run_once(app_config, artifacts_dir: str, db_path: str, summary_json: s
                 app_config.email.email_to
             )
         else:
-            logger.info("야간 시간(21:00-08:00 KST)이므로 이메일 알림을 건너뜁니다.")
+            logger.info("?쇨컙 ?쒓컙(21:00-08:00 KST)?대?濡??대찓???뚮┝??嫄대꼫?곷땲??")
 
-    logger.info("최종 결과 | OK: %d, FAIL: %d, Fallback: %d, Alert: %d", ok, fail, fallback_used_count, alerts_triggered_count)
+    logger.info("理쒖쥌 寃곌낵 | OK: %d, FAIL: %d, Fallback: %d, Alert: %d", ok, fail, fallback_used_count, alerts_triggered_count)
 
     if summary_json:
         summary_data = {
@@ -239,18 +239,18 @@ async def run_once(app_config, artifacts_dir: str, db_path: str, summary_json: s
             "collected_at": utc_now_iso()
         }
         Path(summary_json).write_text(dump_json(summary_data), encoding="utf-8")
-        logger.info(f"수집 요약 저장 완료: {summary_json}")
+        logger.info(f"?섏쭛 ?붿빟 ????꾨즺: {summary_json}")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Naver Shopping Price Tracker")
-    parser.add_argument("command", choices=["once", "monitor", "export-ui", "serve", "sync-from-gcs", "sync-to-gcs", "daily-report", "export-report"], help="실행할 커맨드")
-    parser.add_argument("--config", default="targets.yaml", help="설정 파일 경로")
-    parser.add_argument("--db", default="price_tracker.sqlite3", help="DB 파일 경로")
-    parser.add_argument("--interval", type=int, default=3600, help="모니터링 주기 (초)")
-    parser.add_argument("--summary-json", help="수집 결과 요약을 저장할 JSON 경로")
-    parser.add_argument("--output", help="파일 저장 경로 (export-report 등에서 사용)")
-    parser.add_argument("--verbose", action="store_true", help="상세 로그 출력")
+    parser.add_argument("command", choices=["once", "monitor", "export-ui", "serve", "sync-from-gcs", "sync-to-gcs", "daily-report", "export-report"], help="?ㅽ뻾??而ㅻ㎤??)
+    parser.add_argument("--config", default="targets.yaml", help="?ㅼ젙 ?뚯씪 寃쎈줈")
+    parser.add_argument("--db", default="price_tracker.sqlite3", help="DB ?뚯씪 寃쎈줈")
+    parser.add_argument("--interval", type=int, default=3600, help="紐⑤땲?곕쭅 二쇨린 (珥?")
+    parser.add_argument("--summary-json", help="?섏쭛 寃곌낵 ?붿빟????ν븷 JSON 寃쎈줈")
+    parser.add_argument("--output", help="?뚯씪 ???寃쎈줈 (export-report ?깆뿉???ъ슜)")
+    parser.add_argument("--verbose", action="store_true", help="?곸꽭 濡쒓렇 異쒕젰")
     args = parser.parse_args()
 
     setup_logging(args.verbose)
@@ -259,19 +259,19 @@ def main() -> None:
     try:
         app_config = load_config(args.config)
     except Exception as e:
-        logger.error("설정 로드 실패: %s", e)
+        logger.error("?ㅼ젙 濡쒕뱶 ?ㅽ뙣: %s", e)
         return
 
     if args.command == "once":
         asyncio.run(run_once(app_config, "artifacts", args.db, summary_json=args.summary_json))
 
     elif args.command == "monitor":
-        logger.info("%d초 간격으로 모니터링을 시작합니다...", args.interval)
+        logger.info("%d珥?媛꾧꺽?쇰줈 紐⑤땲?곕쭅???쒖옉?⑸땲??..", args.interval)
         while True:
             try:
                 asyncio.run(run_once(app_config, "artifacts", args.db, summary_json=args.summary_json))
             except Exception as e:
-                logger.exception("모니터링 루프 중 오류 발생")
+                logger.exception("紐⑤땲?곕쭅 猷⑦봽 以??ㅻ쪟 諛쒖깮")
             time.sleep(args.interval)
 
     elif args.command == "export-ui":
@@ -280,15 +280,15 @@ def main() -> None:
         try:
             dashboard_raw = store.get_dashboard_data(app_config.targets)
             
-            # 고유 랭킹 키워드별 최신 데이터 수집 (확장 버전 포함)
+            # 怨좎쑀 ??궧 ?ㅼ썙?쒕퀎 理쒖떊 ?곗씠???섏쭛 (?뺤옣 踰꾩쟾 ?ы븿)
             rankings = {}
             unique_rank_queries = {t.rank_query for t in app_config.targets if t.rank_query}
             
             expanded_queries = set()
             for q in unique_rank_queries:
                 expanded_queries.add(q)
-                if "갤럭시" in q:
-                    short_q = q.replace("갤럭시", "").strip()
+                if "媛ㅻ윮?? in q:
+                    short_q = q.replace("媛ㅻ윮??, "").strip()
                     if short_q:
                         expanded_queries.add(short_q)
 
@@ -303,7 +303,7 @@ def main() -> None:
                 "updated_at": dashboard_raw["generated_at"]
             }
             Path("dashboard_data.json").write_text(dump_json(data), encoding="utf-8")
-            logger.info("UI 데이터 내보내기 완료: dashboard_data.json")
+            logger.info("UI ?곗씠???대낫?닿린 ?꾨즺: dashboard_data.json")
         finally:
             store.close()
             r_store.close()
@@ -311,25 +311,25 @@ def main() -> None:
     elif args.command == "sync-from-gcs":
         bucket = os.getenv("GCS_BUCKET")
         if not bucket:
-            logger.error("GCS_BUCKET 환경변수가 설정되지 않았습니다.")
+            logger.error("GCS_BUCKET ?섍꼍蹂?섍? ?ㅼ젙?섏? ?딆븯?듬땲??")
             return
         download_db(bucket, args.db)
 
     elif args.command == "sync-to-gcs":
         bucket = os.getenv("GCS_BUCKET")
         if not bucket:
-            logger.error("GCS_BUCKET 환경변수가 설정되지 않았습니다.")
+            logger.error("GCS_BUCKET ?섍꼍蹂?섍? ?ㅼ젙?섏? ?딆븯?듬땲??")
             return
         upload_db(bucket, args.db)
 
     elif args.command == "serve":
-        # 간단한 HTTP 서버 실행 (대시보드 확인용)
+        # 媛꾨떒??HTTP ?쒕쾭 ?ㅽ뻾 (??쒕낫???뺤씤??
         import http.server
         import socketserver
         PORT = 8000
         Handler = http.server.SimpleHTTPRequestHandler
         with socketserver.TCPServer(("", PORT), Handler) as httpd:
-            logger.info("http://localhost:%d 에서 대시보드 서비스를 시작합니다.", PORT)
+            logger.info("http://localhost:%d ?먯꽌 ??쒕낫???쒕퉬?ㅻ? ?쒖옉?⑸땲??", PORT)
             httpd.serve_forever()
 
     elif args.command == "daily-report":
@@ -340,8 +340,9 @@ def main() -> None:
         html = generate_daily_report_html(args.db, app_config.targets)
         out_path = args.output or "daily_report.html"
         Path(out_path).write_text(html, encoding="utf-8")
-        logger.info(f"보고서 저장 완료: {out_path}")
+        logger.info(f"蹂닿퀬??????꾨즺: {out_path}")
 
 
 if __name__ == "__main__":
     main()
+

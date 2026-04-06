@@ -1,4 +1,4 @@
-import asyncio
+﻿import asyncio
 import os
 import logging
 from dotenv import load_dotenv
@@ -24,11 +24,12 @@ async def main():
             })
             
     with open("summary_status.txt", "w", encoding="utf-8") as f:
-        f.write("전체 상품 API 최저가 수집 현황\n")
+        f.write("?꾩껜 ?곹뭹 API 理쒖?媛 ?섏쭛 ?꾪솴\n")
         f.write("="*50 + "\n")
         for r in results:
             price_str = f"{r['price']:,}" if r['price'] else "-"
-            f.write(f"[{r['status']}] {r['name']:<25} | {price_str:>10}원 | ID: {r['product_id']}\n")
+            f.write(f"[{r['status']}] {r['name']:<25} | {price_str:>10}??| ID: {r['product_id']}\n")
 
 if __name__ == "__main__":
     asyncio.run(main())
+

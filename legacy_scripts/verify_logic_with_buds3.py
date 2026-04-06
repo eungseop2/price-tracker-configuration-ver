@@ -1,4 +1,4 @@
-import asyncio
+﻿import asyncio
 import os
 import logging
 from dotenv import load_dotenv
@@ -13,8 +13,8 @@ async def main():
     app_config = load_config(config_path)
     client = NaverShoppingSearchClient()
     
-    # 이미 인증점이 잘 잡히는 것으로 알려진 버즈3프로 블랙/화이트 테스트
-    test_targets = [t for t in app_config.targets if "버즈3프로" in t.name]
+    # ?대? ?몄쬆?먯씠 ???≫엳??寃껋쑝濡??뚮젮吏?踰꾩쫰3?꾨줈 釉붾옓/?붿씠???뚯뒪??
+    test_targets = [t for t in app_config.targets if "踰꾩쫰3?꾨줈" in t.name]
     
     print(f"\n{'='*60}")
     print(f"{'Target Name':<30} | {'Status':<10} | {'Price':<10}")
@@ -35,3 +35,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+

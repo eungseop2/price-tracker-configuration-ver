@@ -1,9 +1,9 @@
-import asyncio
+﻿import asyncio
 import os
 from playwright.async_api import async_playwright
 
 async def inspect_dom():
-    url = "https://search.shopping.naver.com/catalog/53507707537"
+    url = "https://search.shopping.naver.com/catalog/[숫자_ID]"
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         page = await browser.new_page(viewport={"width": 1440, "height": 2400})
@@ -36,3 +36,4 @@ async def inspect_dom():
 
 if __name__ == "__main__":
     asyncio.run(inspect_dom())
+

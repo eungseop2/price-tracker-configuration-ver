@@ -1,4 +1,4 @@
-from tracker.naver_api import NaverShoppingSearchClient, collect_certified_rank
+﻿from tracker.naver_api import NaverShoppingSearchClient, collect_certified_rank
 from tracker.config import AppConfig
 import json
 from dotenv import load_dotenv
@@ -14,8 +14,8 @@ class DummyTarget:
 
 def debug_existing_case():
     client = NaverShoppingSearchClient()
-    cat_id = "55727496884"
-    cert_id = "11989781594"
+    cat_id = "[숫자_ID]"
+    cert_id = "[숫자_ID]"
     
     print(f"Searching for Catalog ID: {cat_id}...")
     res = client.search(query=cat_id, display=100)
@@ -29,3 +29,4 @@ def debug_existing_case():
 
 if __name__ == "__main__":
     debug_existing_case()
+

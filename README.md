@@ -1,19 +1,20 @@
-# Price Tracker (Configuration Version)
+﻿# Price Tracker (Configuration Version)
 
-네이버 쇼핑 최저가 추적 및 랭킹 수집 엔진입니다.  
-`targets.yaml`을 수정하여 원하는 제품을 추적할 수 있습니다.
+?ㅼ씠踰??쇳븨 理쒖?媛 異붿쟻 諛???궧 ?섏쭛 ?붿쭊?낅땲??  
+`targets.yaml`???섏젙?섏뿬 ?먰븯???쒗뭹??異붿쟻?????덉뒿?덈떎.
 
-## 빠른 시작
+## 鍮좊Ⅸ ?쒖옉
 
 ```bash
 pip install -r requirements.txt
-cp .env.example .env          # API 키 설정
-vi targets.yaml               # 추적 대상 편집
+cp .env.example .env          # API ???ㅼ젙
+vi targets.yaml               # 異붿쟻 ????몄쭛
 python -m tracker.main once --config targets.yaml
 ```
 
-## 문서
+## 臾몄꽌
 
-- [한국어 상세 설명](docs/README_ko.md)
-- [설정 필드 명세서](configs/SCHEMA.md)
-- [설정 예시 파일](configs/targets.example.yaml)
+- [?쒓뎅???곸꽭 ?ㅻ챸](docs/README_ko.md)
+- [?ㅼ젙 ?꾨뱶 紐낆꽭??(configs/SCHEMA.md)
+- [?ㅼ젙 ?덉떆 ?뚯씪](configs/targets.example.yaml)
+

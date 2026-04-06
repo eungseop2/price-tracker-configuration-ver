@@ -1,4 +1,4 @@
-import asyncio
+﻿import asyncio
 import os
 import logging
 import json
@@ -11,9 +11,9 @@ async def main():
     load_dotenv()
     
     client = NaverShoppingSearchClient()
-    # 갤럭시 버즈3프로 화이트 (Catalog: 53508451504, Expected CertID: 11554945823)
-    target_query = "갤럭시 버즈3프로 화이트"
-    catalog_id = "53508451504"
+    # 媛ㅻ윮??踰꾩쫰3?꾨줈 ?붿씠??(Catalog: [숫자_ID], Expected CertID: [숫자_ID])
+    target_query = "媛ㅻ윮??踰꾩쫰3?꾨줈 ?붿씠??
+    catalog_id = "[숫자_ID]"
     
     print(f"Searching for: {target_query}")
     payload = client.search(query=target_query, display=100)
@@ -30,3 +30,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+

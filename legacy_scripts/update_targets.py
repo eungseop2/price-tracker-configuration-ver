@@ -1,4 +1,4 @@
-import yaml
+﻿import yaml
 
 def update_yaml():
     with open('targets.yaml', 'r', encoding='utf-8') as f:
@@ -6,7 +6,7 @@ def update_yaml():
 
     changed = False
     for t in data.get('targets', []):
-        if '갤럭시' in t['name'] and t.get('mode') == 'api_query':
+        if '媛ㅻ윮?? in t['name'] and t.get('mode') == 'api_query':
             product_id = t.get('match', {}).get('product_id')
             if product_id:
                 t['mode'] = 'browser_url'
@@ -32,3 +32,4 @@ def update_yaml():
 
 if __name__ == '__main__':
     update_yaml()
+

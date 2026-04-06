@@ -1,4 +1,4 @@
-import urllib.request, json
+﻿import urllib.request, json
 url = "https://api.github.com/repos/eungseop2/Lowest-Price-Tracker/actions/runs?per_page=1"
 req = urllib.request.Request(url)
 with urllib.request.urlopen(req) as response:
@@ -23,3 +23,4 @@ for job in jobs:
                 print(log_text[-2000:])
         except Exception as e:
             print('Could not fetch log:', e)
+

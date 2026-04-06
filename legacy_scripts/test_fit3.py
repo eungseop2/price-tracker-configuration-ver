@@ -1,4 +1,4 @@
-import asyncio
+﻿import asyncio
 import os
 import logging
 from dotenv import load_dotenv
@@ -13,8 +13,8 @@ async def main():
     app_config = load_config(config_path)
     client = NaverShoppingSearchClient()
     
-    # 핏3 테스트 (정상 작동 예상)
-    target = next(t for t in app_config.targets if "핏3" in t.name)
+    # ?? ?뚯뒪??(?뺤긽 ?묐룞 ?덉긽)
+    target = next(t for t in app_config.targets if "??" in t.name)
     
     print(f"\nTesting: {target.name}")
     print(f"Catalog ID: {target.match.product_id}")
@@ -36,3 +36,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+

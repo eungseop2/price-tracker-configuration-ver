@@ -1,4 +1,4 @@
-import yaml
+﻿import yaml
 import json
 import os
 import sys
@@ -6,9 +6,9 @@ from tracker.naver_api import NaverShoppingSearchClient, collect_certified_rank
 
 def main():
     client = NaverShoppingSearchClient()
-    # 갤럭시 버즈3프로 실버 (Catalog: 53508451505)
-    catalog_id = "53508451505"
-    certified_id = "10497605595"
+    # 媛ㅻ윮??踰꾩쫰3?꾨줈 ?ㅻ쾭 (Catalog: [숫자_ID])
+    catalog_id = "[숫자_ID]"
+    certified_id = "[숫자_ID]"
     
     class AppConfig:
         def __init__(self): self.exclude = ""
@@ -19,7 +19,7 @@ def main():
     class Target:
         def __init__(self):
             self.name = "Test"
-            self.query = "갤럭시 버즈3프로 실버"
+            self.query = "媛ㅻ윮??踰꾩쫰3?꾨줈 ?ㅻ쾭"
             self.mode = "api"
             self.match = TargetMatch()
             self.certified_item_id = certified_id
@@ -30,3 +30,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

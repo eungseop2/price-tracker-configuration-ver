@@ -1,4 +1,4 @@
-import asyncio
+﻿import asyncio
 import os
 import logging
 from dotenv import load_dotenv
@@ -9,7 +9,7 @@ async def main():
     load_dotenv()
     
     client = NaverShoppingSearchClient()
-    queries = ["갤럭시 버즈3 실버", "갤럭시 버즈3 화이트"]
+    queries = ["媛ㅻ윮??踰꾩쫰3 ?ㅻ쾭", "媛ㅻ윮??踰꾩쫰3 ?붿씠??]
     
     print(f"\n{'='*80}")
     print(f"{'Query':<25} | {'PID':<12} | {'Mall':<15} | {'Title'}")
@@ -24,9 +24,10 @@ async def main():
             m_name = i.get("mallName")
             title = i.get("title").replace("<b>", "").replace("</b>", "")
             
-            # 카탈로그 형태(2, 3)를 우선적으로 찾음
+            # 移댄깉濡쒓렇 ?뺥깭(2, 3)瑜??곗꽑?곸쑝濡?李얠쓬
             is_catalog = "[CATALOG]" if str(p_type) in ['2', '3'] else ""
             print(f"{q:<25} | {p_id:<12} | {m_name if m_name else 'N/A':<15} | {is_catalog} {title}")
 
 if __name__ == "__main__":
     asyncio.run(main())
+

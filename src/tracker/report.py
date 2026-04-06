@@ -1,4 +1,4 @@
-import sqlite3
+﻿import sqlite3
 from datetime import datetime, timedelta, timezone
 import logging
 from email.mime.multipart import MIMEMultipart
@@ -11,14 +11,14 @@ from .util import format_price
 logger = logging.getLogger("tracker.report")
 
 def generate_daily_report_html(db_path: str, targets: list[TargetConfig]) -> str:
-    """최근 10일간의 가격 동향 HTML 보고서를 생성합니다."""
+    """理쒓렐 10?쇨컙??媛寃??숉뼢 HTML 蹂닿퀬?쒕? ?앹꽦?⑸땲??"""
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     
-    # 10일치 날짜 계산 (KST 기준)
+    # 10?쇱튂 ?좎쭨 怨꾩궛 (KST 湲곗?)
     now_utc = datetime.now(timezone.utc)
     now_kst = now_utc + timedelta(hours=9)
-    # 오늘 포함 과거 10일
+    # ?ㅻ뒛 ?ы븿 怨쇨굅 10??
     dates_kst = [(now_kst - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(9, -1, -1)]
     
     cutoff_utc = now_utc - timedelta(days=12)
@@ -48,10 +48,10 @@ def generate_daily_report_html(db_path: str, targets: list[TargetConfig]) -> str
             
     conn.close()
     
-    # HTML 빌드
+    # HTML 鍮뚮뱶
     target_names = [t.name for t in targets]
     
-    # 테이블 헤더
+    # ?뚯씠釉??ㅻ뜑
     header_html = ''.join(f'<th style="padding:10px;text-align:right;border:1px solid #ddd;background:#f8f9fa;">{d[5:]}</th>' for d in dates_kst)
     
     rows_html = ""
@@ -63,8 +63,8 @@ def generate_daily_report_html(db_path: str, targets: list[TargetConfig]) -> str
             if price_val is not None:
                 color = "#000"
                 if prev_price is not None:
-                    if price_val < prev_price: color = "#2563eb" # 하락(파란색)
-                    elif price_val > prev_price: color = "#dc2626" # 상승(빨간색)
+                    if price_val < prev_price: color = "#2563eb" # ?섎씫(?뚮???
+                    elif price_val > prev_price: color = "#dc2626" # ?곸듅(鍮④컙??
                 row_cells.append(f'<td style="padding:10px;text-align:right;border:1px solid #ddd;color:{color};">{format_price(price_val)}</td>')
                 prev_price = price_val
             else:
@@ -74,13 +74,13 @@ def generate_daily_report_html(db_path: str, targets: list[TargetConfig]) -> str
 
     html_body = f"""
     <html><body style="font-family:sans-serif;max-width:900px;margin:auto;padding:20px">
-    <h2 style="color:#1e293b">📊 최근 10일 모델별 최저가 일일 리포트</h2>
-    <p style="color:#64748b;font-size:14px;margin-bottom:20px">KST 기준, 매일 수집된 가격 중 최저가를 보여줍니다. (생성: {now_kst.strftime('%Y-%m-%d %H:%M:%S')} KST)</p>
+    <h2 style="color:#1e293b">?뱤 理쒓렐 10??紐⑤뜽蹂?理쒖?媛 ?쇱씪 由ы룷??/h2>
+    <p style="color:#64748b;font-size:14px;margin-bottom:20px">KST 湲곗?, 留ㅼ씪 ?섏쭛??媛寃?以?理쒖?媛瑜?蹂댁뿬以띾땲?? (?앹꽦: {now_kst.strftime('%Y-%m-%d %H:%M:%S')} KST)</p>
     <div style="overflow-x:auto;">
         <table style="width:100%; border-collapse:collapse; font-size:13px; min-width:800px;">
             <thead>
                 <tr>
-                    <th style="padding:10px;text-align:left;border:1px solid #ddd;background:#f8f9fa;width:180px;">모델명</th>
+                    <th style="padding:10px;text-align:left;border:1px solid #ddd;background:#f8f9fa;width:180px;">紐⑤뜽紐?/th>
                     {header_html}
                 </tr>
             </thead>
@@ -92,7 +92,7 @@ def generate_daily_report_html(db_path: str, targets: list[TargetConfig]) -> str
     <div style="margin-top:32px;text-align:center">
         <a href="https://youngseop77.github.io/price-tracker-configuration-ver/" 
            style="background-color:#2563eb;color:white;padding:12px 24px;text-decoration:none;border-radius:6px;font-weight:bold;display:inline-block">
-           📊 대시보드 바로가기
+           ?뱤 ??쒕낫??諛붾줈媛湲?
         </a>
     </div>
     </body></html>
@@ -102,15 +102,15 @@ def generate_daily_report_html(db_path: str, targets: list[TargetConfig]) -> str
 
 def send_daily_report(db_path: str, email_from: str, email_password: str, email_to: str | list[str], targets: list[TargetConfig]) -> bool:
     if not all([email_from, email_password, email_to]):
-        logger.info("이메일 설정이 없어 데일리 리포트 알림을 건너뜁니다.")
+        logger.info("?대찓???ㅼ젙???놁뼱 ?곗씪由?由ы룷???뚮┝??嫄대꼫?곷땲??")
         return False
         
     html_body = generate_daily_report_html(db_path, targets)
     
-    # 10일치 날짜 계산 (제목용)
+    # 10?쇱튂 ?좎쭨 怨꾩궛 (?쒕ぉ??
     now_kst = datetime.now(timezone.utc) + timedelta(hours=9)
     date_str = now_kst.strftime("%Y-%m-%d")
-    subject = f"📊 [Daily Report] {date_str} 최저가 변동 요약"
+    subject = f"?뱤 [Daily Report] {date_str} 理쒖?媛 蹂???붿빟"
     
     try:
         msg = MIMEMultipart("alternative")
@@ -129,8 +129,9 @@ def send_daily_report(db_path: str, email_from: str, email_password: str, email_
             server.login(email_from, email_password)
             server.sendmail(email_from, recipients, msg.as_string())
 
-        logger.info("데일리 리포트 이메일 발송 완료 → %s", ", ".join(recipients))
+        logger.info("?곗씪由?由ы룷???대찓??諛쒖넚 ?꾨즺 ??%s", ", ".join(recipients))
         return True
     except Exception as e:
-        logger.error("데일리 리포트 이메일 발송 실패: %s", e)
+        logger.error("?곗씪由?由ы룷???대찓??諛쒖넚 ?ㅽ뙣: %s", e)
         return False
+

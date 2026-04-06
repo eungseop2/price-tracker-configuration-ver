@@ -1,4 +1,4 @@
-from tracker.naver_api import NaverShoppingSearchClient
+﻿from tracker.naver_api import NaverShoppingSearchClient
 import json
 from dotenv import load_dotenv
 load_dotenv()
@@ -21,5 +21,6 @@ def debug_certified_search(catalog_id, cert_id):
             print(f"     >>> FOUND EXACT MATCH! index: {i} <<<")
 
 if __name__ == "__main__":
-    # 갤럭시 버즈3 실버 (상품명으로 검색하여 카탈로그 매칭 확인)
-    debug_certified_search("갤럭시 버즈3 실버", None) # 카탈로그 ID 53507707537 확인용
+    # 媛ㅻ윮??踰꾩쫰3 ?ㅻ쾭 (?곹뭹紐낆쑝濡?寃?됲븯??移댄깉濡쒓렇 留ㅼ묶 ?뺤씤)
+    debug_certified_search("媛ㅻ윮??踰꾩쫰3 ?ㅻ쾭", None) # 移댄깉濡쒓렇 ID [숫자_ID] ?뺤씤??
+

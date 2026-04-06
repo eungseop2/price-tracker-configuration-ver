@@ -1,4 +1,4 @@
-import asyncio
+﻿import asyncio
 import os
 import logging
 from dotenv import load_dotenv
@@ -9,12 +9,12 @@ async def main():
     load_dotenv()
     
     client = NaverShoppingSearchClient()
-    # 검증할 PID 리스트
+    # 寃利앺븷 PID 由ъ뒪??
     test_pids = [
-        "53508451504", # 기존 Buds3 Pro White
-        "53508451505", # 기존 Buds3 Pro Silver / 사용자 Buds3 Silver
-        "53507707536", # 사용자 Buds3 White
-        "53508451507"  # 혹시 모를 다른 후보
+        "[숫자_ID]", # 湲곗〈 Buds3 Pro White
+        "[숫자_ID]", # 湲곗〈 Buds3 Pro Silver / ?ъ슜??Buds3 Silver
+        "[숫자_ID]", # ?ъ슜??Buds3 White
+        "[숫자_ID]"  # ?뱀떆 紐⑤? ?ㅻⅨ ?꾨낫
     ]
     
     print(f"\n{'PID':<12} | {'Title'}")
@@ -31,3 +31,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+

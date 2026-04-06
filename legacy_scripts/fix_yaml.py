@@ -1,4 +1,4 @@
-import re
+﻿import re
 
 with open('targets.yaml', 'r', encoding='utf-8') as f:
     text = f.read()
@@ -16,3 +16,4 @@ for target in targets[1:]:
 
 with open('targets.yaml', 'w', encoding='utf-8') as f:
     f.write(''.join(new_targets))
+

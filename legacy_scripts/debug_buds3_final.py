@@ -1,4 +1,4 @@
-import asyncio
+﻿import asyncio
 import os
 from dotenv import load_dotenv
 from tracker.config import load_config
@@ -9,7 +9,7 @@ import json
 async def debug_one():
     load_dotenv()
     app_cfg = load_config("./targets.yaml")
-    target = next(t for t in app_cfg.targets if "버즈3 실버" in t.name)
+    target = next(t for t in app_cfg.targets if "踰꾩쫰3 ?ㅻ쾭" in t.name)
     client = NaverShoppingSearchClient()
     
     print(f"--- Debugging Target: {target.name} ---")
@@ -40,3 +40,4 @@ async def debug_one():
 
 if __name__ == "__main__":
     asyncio.run(debug_one())
+

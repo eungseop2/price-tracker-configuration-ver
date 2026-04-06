@@ -1,4 +1,4 @@
-import asyncio
+﻿import asyncio
 import os
 import logging
 import json
@@ -14,7 +14,7 @@ async def main():
     app_config = load_config(config_path)
     client = NaverShoppingSearchClient()
     
-    target_name = "갤럭시 버즈4프로 블랙"
+    target_name = "媛ㅻ윮??踰꾩쫰4?꾨줈 釉붾옓"
     target = next(t for t in app_config.targets if t.name == target_name)
     
     catalog_id = target.match.product_id
@@ -47,3 +47,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+

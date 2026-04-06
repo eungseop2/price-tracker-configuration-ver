@@ -1,7 +1,7 @@
-import requests
+﻿import requests
 
 def main():
-    catalog_id = "53508451505"
+    catalog_id = "[숫자_ID]"
     url = f"https://search.shopping.naver.com/catalog/{catalog_id}"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -15,3 +15,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

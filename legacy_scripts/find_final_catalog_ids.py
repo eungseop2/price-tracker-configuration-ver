@@ -1,4 +1,4 @@
-import asyncio
+﻿import asyncio
 import os
 import logging
 from dotenv import load_dotenv
@@ -10,10 +10,10 @@ async def main():
     
     client = NaverShoppingSearchClient()
     queries = [
-        "갤럭시 버즈3 실버",
-        "갤럭시 버즈3 화이트",
-        "갤럭시 버즈3프로 실버",
-        "갤럭시 버즈3프로 화이트"
+        "媛ㅻ윮??踰꾩쫰3 ?ㅻ쾭",
+        "媛ㅻ윮??踰꾩쫰3 ?붿씠??,
+        "媛ㅻ윮??踰꾩쫰3?꾨줈 ?ㅻ쾭",
+        "媛ㅻ윮??踰꾩쫰3?꾨줈 ?붿씠??
     ]
     
     print(f"\n{'Target':<25} | {'PID':<12} | {'Title'}")
@@ -36,3 +36,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
