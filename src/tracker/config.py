@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -47,10 +47,19 @@ class TargetConfig:
     rank_query: str | None = None
     url: str | None = None
     fallback_url: str | None = None
-    category: str = "湲고?"  # ?곹뭹 移댄뀒怨좊━ (遺꾨쪟??
+    category: str = "기타"  # 상품 카테고리 (분류용)
     match: MatchConfig = field(default_factory=MatchConfig)
     request: RequestConfig = field(default_factory=RequestConfig)
     browser: BrowserConfig = field(default_factory=BrowserConfig)
+
+
+@dataclass
+class MallTargetConfig:
+    name: str
+    query: str
+    mall_name: str
+    category: str = "기타"
+    request: RequestConfig = field(default_factory=RequestConfig)
 
 
 @dataclass
@@ -60,7 +69,9 @@ class AppConfig:
     timeout_seconds: int = 20
     alert_threshold_percent: float = 5.0
     email: EmailConfig = field(default_factory=EmailConfig)
+    gsheet_id: str | None = None
     targets: list[TargetConfig] = field(default_factory=list)
+    mall_targets: list[MallTargetConfig] = field(default_factory=list)
 
 
 def _to_match(raw: dict[str, Any] | None) -> MatchConfig:
@@ -99,40 +110,50 @@ def _to_browser(raw: dict[str, Any] | None) -> BrowserConfig:
 
 
 def validate_config(app: AppConfig, extra_errors: list[str] | None = None) -> None:
-    """?ㅼ젙 ?좏슚?깆쓣 寃利앺븯怨??ㅻ쪟媛 ?덉쑝硫?ValueError瑜?諛쒖깮?쒗궢?덈떎 (Fail-Fast)."""
+    """설정 유효성을 검증하고 오류가 있으면 ValueError를 발생시킵니다 (Fail-Fast)."""
     errors: list[str] = list(extra_errors or [])
     names: set[str] = set()
 
     for t in app.targets:
-        # ?대쫫 以묐났 寃??
+        # 이름 중복 검사
         if t.name in names:
-            errors.append(f"以묐났???寃??대쫫: {t.name}")
+            errors.append(f"중복된 타겟 이름: {t.name}")
         names.add(t.name)
 
-        # 紐⑤뱶 寃??
+        # 모드 검사
         if t.mode not in ("api_query", "browser_url"):
-            errors.append(f"[{t.name}] 吏?먰븯吏 ?딅뒗 mode: {t.mode!r}")
+            errors.append(f"[{t.name}] 지원하지 않는 mode: {t.mode!r}")
 
-        # ?꾩닔 ?꾨뱶 寃??
+        # 필수 필드 검사
         if t.mode == "api_query" and not t.query:
-            errors.append(f"[{t.name}] api_query 紐⑤뱶?먮뒗 'query' ?꾨뱶媛 ?꾩닔?낅땲??")
+            errors.append(f"[{t.name}] api_query 모드에는 'query' 필드가 필수입니다.")
         if t.mode == "browser_url" and not t.url:
-            errors.append(f"[{t.name}] browser_url 紐⑤뱶?먮뒗 'url' ?꾨뱶媛 ?꾩닔?낅땲??")
+            errors.append(f"[{t.name}] browser_url 모드에는 'url' 필드가 필수입니다.")
 
-        # ?대갚 議곌굔 寃??
+        # 폴백 조건 검사
         if t.fallback_url and t.mode != "api_query":
-            errors.append(f"[{t.name}] fallback_url? api_query 紐⑤뱶?먯꽌留??ъ슜?????덉뒿?덈떎.")
+            errors.append(f"[{t.name}] fallback_url은 api_query 모드에서만 사용할 수 있습니다.")
 
-        # ?섏씠吏 踰붿쐞 寃??
+        # 페이지 범위 검사
         if t.request.pages < 1:
-            errors.append(f"[{t.name}] pages??1 ?댁긽?댁뼱???⑸땲??")
+            errors.append(f"[{t.name}] pages는 1 이상이어야 합니다.")
 
-    # ?뚮┝ ?꾧퀎媛?寃??
+    # mall_targets 검사
+    for t in app.mall_targets:
+        if t.name in names:
+            errors.append(f"중복된 타겟 이름 (mall_target): {t.name}")
+        names.add(t.name)
+        if not t.query:
+            errors.append(f"[{t.name}] mall_targets 에는 'query' 필드가 필수입니다.")
+        if not t.mall_name:
+            errors.append(f"[{t.name}] mall_targets 에는 'mall_name' 필드가 필수입니다.")
+
+    # 알림 임계값 검사
     if not (0 < app.alert_threshold_percent < 100):
-        errors.append(f"alert_threshold_percent 踰붿쐞媛 鍮꾩젙?곸쟻?낅땲??(0~100): {app.alert_threshold_percent}")
+        errors.append(f"alert_threshold_percent 범위가 비정상적입니다 (0~100): {app.alert_threshold_percent}")
 
     if errors:
-        raise ValueError("?ㅼ젙 ?좏슚??寃利??ㅽ뙣:\n" + "\n".join(f"- {e}" for e in errors))
+        raise ValueError("설정 유효성 검증 실패:\n" + "\n".join(f"- {e}" for e in errors))
 
 
 def load_config(path: str | Path) -> AppConfig:
@@ -142,7 +163,7 @@ def load_config(path: str | Path) -> AppConfig:
     
     path = Path(path)
     if not path.exists():
-        raise FileNotFoundError(f"?ㅼ젙 ?뚯씪??李얠쓣 ???놁뒿?덈떎: {path}")
+        raise FileNotFoundError(f"설정 파일을 찾을 수 없습니다: {path}")
 
     raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     common = raw.get("common", {}) or {}
@@ -150,26 +171,26 @@ def load_config(path: str | Path) -> AppConfig:
 
     errors = []
     
-    # 1. common ?뱀뀡 ?뚯떛 (?먮윭 ?꾩쟻)
+    # 1. common 섹션 파싱 (에러 누적)
     try:
         display = min(100, max(1, int(common.get("display", 100))))
     except (ValueError, TypeError):
-        errors.append(f"common.display 媛믪씠 ?щ컮瑜댁? ?딆뒿?덈떎: {common.get('display')}")
+        errors.append(f"common.display 값이 올바르지 않습니다: {common.get('display')}")
         display = 100
 
     try:
         timeout_seconds = max(5, int(common.get("timeout_seconds", 20)))
     except (ValueError, TypeError):
-        errors.append(f"common.timeout_seconds 媛믪씠 ?щ컮瑜댁? ?딆뒿?덈떎: {common.get('timeout_seconds')}")
+        errors.append(f"common.timeout_seconds 값이 올바르지 않습니다: {common.get('timeout_seconds')}")
         timeout_seconds = 20
 
     try:
         alert_threshold_percent = float(common.get("alert_threshold_percent", 5.0))
     except (ValueError, TypeError):
-        errors.append(f"common.alert_threshold_percent 媛믪씠 ?щ컮瑜댁? ?딆뒿?덈떎: {common.get('alert_threshold_percent')}")
+        errors.append(f"common.alert_threshold_percent 값이 올바르지 않습니다: {common.get('alert_threshold_percent')}")
         alert_threshold_percent = 5.0
 
-    # 1-1. ?대찓???ㅼ젙 ?뚯떛 (?섍꼍蹂??-> YAML ?쒖꽌濡??곗꽑?쒖쐞)
+    # 1-1. 이메일 설정 파싱 (환경변수 -> YAML 순서로 우선순위)
     email_from = os.getenv("EMAIL_FROM") or email_raw.get("from")
     email_password = os.getenv("EMAIL_APP_PASSWORD") or email_raw.get("password")
     
@@ -189,17 +210,19 @@ def load_config(path: str | Path) -> AppConfig:
             email_password=email_password,
             email_to=email_to
         ),
+        gsheet_id=os.getenv("GSHEET_ID") or common.get("gsheet_id"),
         targets=[],
+        mall_targets=[],
     )
 
-    # 2. targets ?뱀뀡 ?뚯떛 (?먮윭 ?꾩쟻)
+    # 2. targets 섹션 파싱 (에러 누적)
     for i, item in enumerate(raw.get("targets", []) or []):
         try:
             name = item.get("name")
             mode = item.get("mode")
             
             if not name or not mode:
-                errors.append(f"targets[{i}]??'name' ?먮뒗 'mode'媛 ?꾨씫?섏뿀?듬땲??")
+                errors.append(f"targets[{i}]에 'name' 또는 'mode'가 누락되었습니다.")
                 continue
 
             target = TargetConfig(
@@ -209,7 +232,7 @@ def load_config(path: str | Path) -> AppConfig:
                 rank_query=item.get("rank_query") or str(name),
                 url=item.get("url"),
                 fallback_url=item.get("fallback_url"),
-                category=str(item.get("category", "湲고?")),
+                category=str(item.get("category", "기타")),
                 match=_to_match(item.get("match")),
                 request=_to_request(item.get("request")),
                 browser=_to_browser(item.get("browser")),
@@ -217,11 +240,30 @@ def load_config(path: str | Path) -> AppConfig:
             
             app.targets.append(target)
         except Exception as e:
-            errors.append(f"targets[{i}] ({item.get('name', 'unknown')}) 泥섎━ 以??ㅻ쪟: {e}")
+            errors.append(f"targets[{i}] ({item.get('name', 'unknown')}) 처리 중 오류: {e}")
+
+    # 3. mall_targets 섹션 파싱
+    for i, item in enumerate(raw.get("mall_targets", []) or []):
+        try:
+            name = item.get("name")
+            if not name:
+                errors.append(f"mall_targets[{i}]에 'name'이 누락되었습니다.")
+                continue
+
+            target = MallTargetConfig(
+                name=str(name),
+                query=str(item.get("query", "")),
+                mall_name=str(item.get("mall_name", "")),
+                category=str(item.get("category", "기타")),
+                request=_to_request(item.get("request"))
+            )
+            app.mall_targets.append(target)
+        except Exception as e:
+            errors.append(f"mall_targets[{i}] ({item.get('name', 'unknown')}) 처리 중 오류: {e}")
 
     if errors:
-        # validate_config瑜??몄텧?섍린 ?꾩뿉 ?대? ?섏쭛???먮윭媛 ?덉쑝硫??ш린???섏쭏 ?섎룄 ?덉쓬
-        # ?섏?留?validate_config源뚯? ?⑹퀜??蹂댁뿬二쇰뒗 寃껋씠 ?붽뎄 ?ы빆
+        # validate_config를 호출하기 전에 이미 수집된 에러가 있으면 여기서 던질 수도 있음
+        # 하지만 validate_config까지 합쳐서 보여주는 것이 요구 사항
         pass
 
     try:
@@ -230,4 +272,3 @@ def load_config(path: str | Path) -> AppConfig:
         raise e
     
     return app
-

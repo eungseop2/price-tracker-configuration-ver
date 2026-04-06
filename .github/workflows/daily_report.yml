@@ -29,22 +29,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Google Cloud 인증
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      - name: Cloud SDK 설정
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: GCS에서 최신 데이터 동기화 및 수집
-        env:
-          GCS_BUCKET: ${{ secrets.GCS_BUCKET }}
+      - name: 이번 회차 데이터 수집 및 UI 갱신
         run: |
-          # 1. GCS에서 최신 DB 가져오기
-          python -m src.tracker.main sync-from-gcs || echo "GCS에서 DB를 가져오지 못했습니다. 새로 시작합니다."
-          
-          # 2. 이번 회차 데이터 수집 및 UI 갱신
+          # 1. 이번 회차 데이터 수집 및 UI 갱신
           python -m src.tracker.main once
           python -m src.tracker.main export-ui
 
@@ -56,13 +44,6 @@ jobs:
         run: |
           python -m src.tracker.main daily-report
 
-      - name: 결과 DB 및 대시보드 GCS에 동기화
-        if: always()
-        env:
-          GCS_BUCKET: ${{ secrets.GCS_BUCKET }}
-        run: |
-          # 3. 업데이트된 DB를 GCS에 업로드
-          python -m src.tracker.main sync-to-gcs || echo "GCS 동기화 실패"
 
       - name: 결과물(대시보드 파일) 업로드
         if: always()

@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import json
 import re
@@ -97,7 +97,7 @@ async def _extract_from_dom(page, target: TargetConfig) -> list[dict[str, Any]]:
         seller_nodes = row.locator(target.browser.seller_selector)
         for j in range(await seller_nodes.count()):
             text = clean_text(await seller_nodes.nth(j).text_content() or "")
-            if len(text) >= 2 and not re.fullmatch(r"[0-9,??s]+", text):
+            if len(text) >= 2 and not re.fullmatch(r"[0-9,원\s]+", text):
                 seller = text
                 break
 
@@ -115,13 +115,13 @@ async def _extract_from_dom(page, target: TargetConfig) -> list[dict[str, Any]]:
 
 
 async def collect_lowest_offer_via_browser(target: TargetConfig, artifacts_dir: str = "./artifacts") -> dict[str, Any]:
-    """釉뚮씪?곗?瑜??댁슜??理쒖?媛瑜??섏쭛?⑸땲?? (collect_current_offer_via_browser? ?숈씪)"""
+    """브라우저를 이용해 최저가를 수집합니다. (collect_current_offer_via_browser와 동일)"""
     return await collect_current_offer_via_browser(target, artifacts_dir)
 
 
 async def collect_current_offer_via_browser(target: TargetConfig, artifacts_dir: str = "./artifacts") -> dict[str, Any]:
     if not target.url:
-        raise ValueError(f"target '{target.name}' ??url ???놁뒿?덈떎.")
+        raise ValueError(f"target '{target.name}' 에 url 이 없습니다.")
 
     from playwright.async_api import async_playwright
 
@@ -131,7 +131,7 @@ async def collect_current_offer_via_browser(target: TargetConfig, artifacts_dir:
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
-        # 酉고룷?몃? ?볤쾶 ?ㅼ젙?섏뿬 諛섏쓳???????
+        # 뷰포트를 넓게 설정하여 반응형 웹 대응
         page = await browser.new_page(viewport={"width": 1440, "height": 2400})
         try:
             await page.goto(target.url, wait_until=target.browser.wait_until, timeout=45000)
@@ -159,7 +159,7 @@ async def collect_current_offer_via_browser(target: TargetConfig, artifacts_dir:
                 html_path.write_text(await page.content(), encoding="utf-8")
                 if target.browser.take_screenshot_on_failure:
                     await page.screenshot(path=str(screenshot_dir / f"{target.name.replace('/', '_')}.png"), full_page=True)
-                raise BrowserScrapeError("媛寃?異붿텧 ?ㅽ뙣")
+                raise BrowserScrapeError("가격 추출 실패")
 
             best = min(offers, key=lambda x: (parse_int(x.get("price"), 0), clean_text(x.get("seller_name"))))
             
@@ -184,4 +184,3 @@ async def collect_current_offer_via_browser(target: TargetConfig, artifacts_dir:
             }
         finally:
             await browser.close()
-

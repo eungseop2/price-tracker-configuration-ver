@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import html
 import json
@@ -6,14 +6,26 @@ import re
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any, Iterable
+import os
 
 TAG_RE = re.compile(r"<[^>]+>")
 WHITESPACE_RE = re.compile(r"\s+")
 PRICE_RE = re.compile(r"([0-9][0-9,]{0,20})")
 
 
+def kst_now() -> datetime:
+    """한국 표준시(KST) 현재 시각을 반환합니다."""
+    return datetime.now(timezone(timedelta(hours=9)))
+
+
+def now_iso() -> str:
+    """KST 현재 시각을 ISO 포맷(YYYY-MM-DDTHH:MM:SS.mmmmmm+09:00)으로 반환합니다."""
+    return kst_now().isoformat()
+
+
 def utc_now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    """기존 코드와의 호환성을 유지하되, 내부적으로 KST(now_iso)를 사용합니다."""
+    return now_iso()
 
 
 def clean_text(value: Any) -> str:
@@ -35,7 +47,7 @@ def parse_int(value: Any, default: int = 0) -> int:
         return default
     if isinstance(value, int):
         return value
-    match = PRICE_RE.search(str(value).replace("??, ""))
+    match = PRICE_RE.search(str(value).replace("원", ""))
     if not match:
         return default
     try:
@@ -65,23 +77,40 @@ def any_keyword_present(text: str, keywords: Iterable[str]) -> bool:
 
 
 def format_price(value: int | None) -> str:
-    """?뺤닔 媛寃⑹쓣 '12,345?? ?뺤떇??臾몄옄?대줈 蹂?섑빀?덈떎."""
+    """정수 가격을 '12,345원' 형식의 문자열로 변환합니다."""
     if value is None:
         return "-"
-    return f"{value:,}??
+    return f"{value:,}원"
 
 
 def calc_change_metrics(current: int, previous: int | None) -> tuple[int | None, float | None]:
-    """?댁쟾 媛寃??鍮??꾩옱 媛寃⑹쓽 蹂?숈븸(delta)怨?蹂?숇쪧(delta_pct)??諛섑솚?⑸땲??"""
+    """이전 가격 대비 현재 가격의 변동액(delta)과 변동률(delta_pct)을 반환합니다."""
     if previous is None or previous == 0:
         return None, None
     delta = current - previous
     pct = round(delta / previous * 100, 2)
     return delta, pct
 def is_night_time_kst() -> bool:
-    """KST(?쒓뎅 ?쒖??? 湲곗? ?쇨컙 ?쒓컙(21:00 ~ 08:00) ?щ?瑜??뺤씤?⑸땲??"""
+    """KST(한국 표준시) 기준 야간 시간(21:00 ~ 08:00) 여부를 확인합니다."""
     kst = timezone(timedelta(hours=9))
     current_hour_kst = datetime.now(kst).hour
-    # 21?쒕????ㅼ쓬 ??08???ъ씠???쇨컙?쇰줈 媛꾩＜
+    # 21시부터 다음 날 08시 사이는 야간으로 간주
     return current_hour_kst >= 21 or current_hour_kst < 8
 
+
+def get_dashboard_url() -> str:
+    """대시보드 URL을 환경 변수에서 가져오거나 자동 생성합니다."""
+    # 1. 명시적 환경 변수 (커스텀 도메인 등)
+    env_url = os.getenv("DASHBOARD_URL")
+    if env_url:
+        return env_url.rstrip("/") + "/"
+
+    # 2. GitHub 환경 변수 기반 자동 생성
+    # GITHUB_REPOSITORY = "owner/repo"
+    repo_full_name = os.getenv("GITHUB_REPOSITORY")
+    if repo_full_name and "/" in repo_full_name:
+        owner, repo = repo_full_name.split("/", 1)
+        return f"https://{owner}.github.io/{repo}/"
+
+    # 3. 기본값 (원본 저장소)
+    return "https://eungseop2.github.io/price-tracker-configuration-ver/"

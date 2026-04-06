@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import os
 from dataclasses import asdict
@@ -8,7 +8,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from .config import AppConfig, TargetConfig
+from .config import AppConfig, TargetConfig, MallTargetConfig
 from .util import all_keywords_present, any_keyword_present, clean_text, parse_int
 
 
@@ -27,7 +27,7 @@ class NaverShoppingSearchClient:
 
     def _headers(self) -> dict[str, str]:
         if not self.client_id or not self.client_secret:
-            raise RuntimeError("NAVER_CLIENT_ID / NAVER_CLIENT_SECRET 媛 ?ㅼ젙?섏? ?딆븯?듬땲??")
+            raise RuntimeError("NAVER_CLIENT_ID / NAVER_CLIENT_SECRET 가 설정되지 않았습니다.")
         return {
             "X-Naver-Client-Id": self.client_id,
             "X-Naver-Client-Secret": self.client_secret,
@@ -64,7 +64,7 @@ def _item_matches(target: TargetConfig, item: dict[str, Any]) -> bool:
     target_id = str(target.match.product_id or "").strip()
     product_type = int(item.get("productType", 0) or 0)
 
-    # 1. productId媛 吏?뺣맂 寃쎌슦 ID媛 ?쇱튂?섎㈃ 利됱떆 諛섑솚 (???泥댄겕留?蹂묓뻾)
+    # 1. productId가 지정된 경우 ID가 일치하면 즉시 반환 (타입 체크만 병행)
     if target_id:
         if product_id == target_id:
             if target.match.allowed_product_types and product_type not in target.match.allowed_product_types:
@@ -72,7 +72,7 @@ def _item_matches(target: TargetConfig, item: dict[str, Any]) -> bool:
             return True
         return False
 
-    # 2. product_id媛 ?녿뒗 寃쎌슦 湲곗〈 ?ㅼ썙??湲곕컲 留ㅼ묶 ?좎?
+    # 2. product_id가 없는 경우 기존 키워드 기반 매칭 유지
     if target.match.allowed_product_types and product_type not in target.match.allowed_product_types:
         return False
     if target.match.required_keywords and not all_keywords_present(title, target.match.required_keywords):
@@ -100,7 +100,7 @@ def _normalized_item(item: dict[str, Any]) -> dict[str, Any]:
 
 def collect_lowest_offer_via_api(client: NaverShoppingSearchClient, app_config: AppConfig, target: TargetConfig) -> dict[str, Any]:
     if not target.query:
-        raise ValueError(f"target '{target.name}' ??query 媛 ?놁뒿?덈떎.")
+        raise ValueError(f"target '{target.name}' 에 query 가 없습니다.")
 
     pages = max(1, target.request.pages)
     items: list[dict[str, Any]] = []
@@ -141,10 +141,10 @@ def collect_lowest_offer_via_api(client: NaverShoppingSearchClient, app_config: 
                 "match": asdict(target.match),
                 "items_examined": len(items),
             },
-            "error_message": "議곌굔??留욌뒗 ?곹뭹??李얠? 紐삵뻽?듬땲??",
+            "error_message": "조건에 맞는 상품을 찾지 못했습니다.",
         }
 
-    # 媛寃⑷낵 ?먮ℓ泥??대쫫??湲곗??쇰줈 ?뺣젹?섏뿬 理쒖슦???곹뭹 ?좏깮
+    # 가격과 판매처 이름을 기준으로 정렬하여 최우선 상품 선택
     best = min(candidates, key=lambda x: (x["price"], x["seller_name"] or "zzzz"))
     return {
         "target_name": target.name,
@@ -154,4 +154,64 @@ def collect_lowest_offer_via_api(client: NaverShoppingSearchClient, app_config: 
         **best,
         "error_message": None,
     }
+
+def collect_mall_inventory(client: NaverShoppingSearchClient, app_config: AppConfig, target: MallTargetConfig) -> list[dict[str, Any]]:
+    if not target.query:
+        raise ValueError(f"mall_target '{target.name}' 에 query 가 없습니다.")
+
+    pages = max(1, target.request.pages)
+    items: list[dict[str, Any]] = []
+    
+    for page_index in range(pages):
+        start = page_index * app_config.display + 1
+        payload = client.search(
+            query=target.query,
+            display=app_config.display,
+            start=start,
+            sort=target.request.sort,
+            filter_=target.request.filter,
+            exclude=app_config.exclude,
+        )
+        page_items = payload.get("items", []) or []
+        for i, itm in enumerate(page_items, start=len(items) + 1):
+            itm["_search_rank"] = i
+        items.extend(page_items)
+
+    candidates = []
+    target_mall = clean_text(target.mall_name)
+    for item in items:
+        seller = clean_text(item.get("mallName"))
+        if target_mall in seller:
+            candidates.append(_normalized_item(item))
+
+    return candidates
+
+
+def collect_mall_items(client: NaverShoppingSearchClient, app_config: AppConfig, query: str, pages: int) -> list[dict[str, Any]]:
+    """지정된 쿼리로 네이버 쇼핑 API를 호출하여 전체 상품 리스트를 반환합니다."""
+    if not query:
+        raise ValueError("query 가 없습니다.")
+
+    pages = max(1, pages)
+    items: list[dict[str, Any]] = []
+    
+    for page_index in range(pages):
+        start = page_index * app_config.display + 1
+        try:
+            payload = client.search(
+                query=query,
+                display=app_config.display,
+                start=start,
+                sort="sim", # 몰 수집은 기본적으로 유사도순(랭킹순)으로 수집
+                exclude=app_config.exclude,
+            )
+            page_items = payload.get("items", []) or []
+            for i, itm in enumerate(page_items, start=len(items) + 1):
+                itm["_search_rank"] = i
+            items.extend(page_items)
+        except Exception:
+            # 한 페이지 실패해도 나머지는 계속 시도
+            continue
+
+    return [_normalized_item(item) for item in items]
 

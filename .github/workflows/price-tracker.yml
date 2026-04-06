@@ -29,28 +29,17 @@ jobs:
           pip install -r requirements.txt
           playwright install --with-deps chromium
 
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
-
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
 
       - name: Run Price Tracker
         env:
           NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
           NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
-          GCS_BUCKET: ${{ secrets.GCS_BUCKET }}
           EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
           EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
           PYTHONPATH: src
         run: |
-          # 1. Sync DB from GCS
-          python -m tracker.main sync-from-gcs || echo "First run or GCS unavailable, starting fresh"
-          
-          # 2. Collect Prices (Strict failure reporting)
+          # 1. Collect Prices (Strict failure reporting)
           python -m tracker.main once --summary-json summary.json
           
           if [ -f "summary.json" ]; then
@@ -79,13 +68,6 @@ jobs:
           [ -f "dashboard_data.json" ] && cp dashboard_data.json public/ || echo "No dashboard_data.json found"
           [ -f "logo.png" ] && cp logo.png public/ || echo "No logo.png found"
 
-      - name: Sync Result back to GCS
-        if: always()
-        env:
-          GCS_BUCKET: ${{ secrets.GCS_BUCKET }}
-          PYTHONPATH: src
-        run: |
-          python -m tracker.main sync-to-gcs || echo "GCS sync SKIP or FAILED"
 
       - name: Commit and Push Changes (Data Accumulation)
         if: always()
