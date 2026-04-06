@@ -72,36 +72,60 @@
 
 ### [AI 마법 프롬프트 복사하기]
 ```text
-너는 '네이버 쇼핑 최저가 트래커'의 설정 전문가야. 내가 아래에 주는 상품 정보를 바탕으로 아래 제시된 [출력 양식]의 규칙과 구조를 '토씨 하나 틀리지 말고' 정확히 지켜서 `targets.yaml` 파일 내용을 생성해줘.
+너는 '네이버 쇼핑 최저가 트래커'의 전문 구성 작가야. 내가 주는 상품 정보를 바탕으로 아래 [표준 템플릿]의 구조를 100% 유지하며 `targets.yaml` 내용을 생성해줘.
 
-### 📋 내가 추적하고 싶은 정보 (예시)
-1. 카테고리: 스마트폰
-2. 상품명: 갤럭시 S26 울트라
-3. 검색어: 갤럭시 S26 울트라 자급제폰
-4. 카탈로그 ID: 1234567890
-5. 추적 셀러: 위드모바일, 삼성디지털프라자, 케이원정보
-6. 순위 키워드: 자급제 추천, 최신폰 순위
+### 📋 내가 추적하고 싶은 정보
+- 상품명: [갤럭시 S26 울트라]
+- 세부모델: [화이트 512GB, 바이올렛 512GB]
+- 카테고리: [S26]
+- 카탈로그 ID들: [화이트: 59045494153, 바이올렛: 59045494155]
+- 추적 셀러: [위드모바일, 쇼마젠시, 코잇, 케이원정보]
 
-### 🛠️ 출력 양식 (이 구조와 키 이름을 반드시 지킬 것)
+### 🛠️ 출력할 [표준 템플릿] (이 구조를 절대로 변형하지 말 것)
 common:
+  exclude: used:cbshop
+  display: 50
+  timeout_seconds: 20
+  ranking_limit: 100
   monitored_sellers:
     - "셀러명1"
     - "셀러명2"
 
 targets:
-  - name: "상품명(대시보드 표시용)"
-    mode: "api_query"
-    category: "카테고리(스마트폰/워치/냉장고/세탁기 등)"
-    query: "네이버 쇼핑 검색어"
+  - name: "상품명 식별자"
+    mode: api_query
+    query: "검색어"
+    rank_query: "순위체크용 검색어"
+    category: "대분류"
+    request:
+      pages: 1
+      sort: sim
     match:
-      product_id: "카탈로그ID"
+      required_keywords: ["필수", "키워드"]
+      exclude_keywords: ["중고", "리퍼", "케이스"]
+      product_id: "카탈로그ID(문자열)"
+      allowed_product_types: [1, 3]
+    url: "https://search.shopping.naver.com/catalog/ID"
+    browser:
+      wait_until: domcontentloaded
+      price_selector: "[class^='style_price_num']"
+      seller_selector: "[class^='style_mall_name']"
+      offer_row_selector: "li[class^='style_seller_item']"
 
-### ⚠️ 주의사항
-- `targets` 리스트 내부의 `name`은 대시보드에 표시될 별명이야.
-- `product_id`는 반드시 큰따옴표("")로 감싸서 문자열로 표현할 것.
-- `monitored_sellers`는 `common:` 섹션 바로 아래에 위치해야 해.
-- 모든 리스트 항목의 들여쓰기(띄어쓰기 2칸)를 정확히 지킬 것.
-- 불필요한 설명 없이 오직 YAML 코드 블록만 출력할 것.
+mall_targets:
+  - name: "셀러별 타겟 별명"
+    query: "검색어"
+    mall_name: "추적할 셀러명"
+    category: "대분류"
+    request:
+      pages: 10
+
+### ⚠️ 작성 규칙
+1. `common.monitored_sellers`: 입력한 추적 셀러들을 리스트로 만듦.
+2. `targets`: 각 세부 모델별로 하나씩 생성. `product_id`는 반드시 큰따옴표("")로 감쌀 것.
+3. `match.required_keywords`: 상품명에서 중요한 단어들을 추출해서 리스트화.
+4. `mall_targets`: 입력한 추적 셀러별로 각 상품에 대한 감시 설정을 생성 (pages: 10 고정).
+5. 불필요한 설명 없이 바로 YAML 코드 블록만 출력할 것.
 ```
 
 ---
