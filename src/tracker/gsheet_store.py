@@ -16,10 +16,6 @@ HEADERS = {
         "title", "seller_name", "product_id", "product_url", "image_url", "search_rank",
         "fallback_used", "alert_triggered"
     ],
-    "mall_observations": [
-        "target_name", "query", "mall_name", "category", "collected_at", 
-        "title", "price", "product_id", "product_type", "product_url", "image_url", "search_rank"
-    ],
     "ranking_history": [
         "query", "rank", "collected_at", "title", "price", "seller_name", 
         "product_id", "product_type", "product_url", "image_url", "is_ad"
@@ -98,28 +94,6 @@ class GoogleSheetStore:
         except Exception as e:
             logger.error(f"데이터 배치 저장 실패 (observations): {e}")
 
-    def insert_mall_records(self, target_name: str, query: str, mall_name: str, category: str, items: list[dict[str, Any]]):
-        """셀러 몰 수집 기록 저장"""
-        if not items:
-            return
-        
-        ws = self._get_worksheet("mall_observations")
-        cols = HEADERS["mall_observations"]
-        rows = []
-        for itm in items:
-            row_data = {
-                "target_name": target_name,
-                "query": query,
-                "mall_name": mall_name,
-                "category": category,
-                **itm
-            }
-            rows.append([row_data.get(col) for col in cols])
-        
-        try:
-            ws.append_rows(rows)
-        except Exception as e:
-            logger.error(f"데이터 저장 실패 (mall_observations): {e}")
 
     def insert_ranking_batch(self, rows_to_insert: list[dict[str, Any]]):
         """랭킹 히스토리 저장"""
@@ -148,33 +122,46 @@ class GoogleSheetStore:
         latest_time = max(m["collected_at"] for m in matches)
         return [m for m in matches if m["collected_at"] == latest_time]
 
-    def get_mall_report_data(self) -> dict[str, Any]:
-        """쇼핑몰 리포트용 계층 데이터 구성 (대시보드 호환용)"""
-        ws = self._get_worksheet("mall_observations")
-        records = ws.get_all_records()
+    def get_mall_report_data(self, monitored_sellers: list[str] | None = None) -> dict[str, Any]:
+        """쇼핑몰 리포트용 계층 데이터 구성 (Ranking 기반 통합 버전)"""
+        monitored_sellers = monitored_sellers or []
+        ws_rank = self._get_worksheet("ranking_history")
+        all_ranks = ws_rank.get_all_records()
         
-        # 셀러(`target_name`)별로 그룹화하여 각각의 최신 수집 시점 데이터를 취합합니다.
-        if not records:
+        if not all_ranks:
             return {}
             
-        by_target = {}
-        for r in records:
-            tn = r.get("target_name")
-            if not tn: continue
-            if tn not in by_target: by_target[tn] = []
-            by_target[tn].append(r)
-            
-        latest_records = []
-        for tn, group in by_target.items():
-            max_t = max(g["collected_at"] for g in group)
-            latest_records.extend([g for g in group if g["collected_at"] == max_t])
-        
-        # 카테고리/몰별 그룹화
+        # 1. 쿼리별 최신 수집 시점 조회
+        query_latest = {}
+        for r in all_ranks:
+            q = r.get("query")
+            t = r.get("collected_at")
+            if q not in query_latest or t > query_latest[q]:
+                query_latest[q] = t
+                
+        # 2. 최신 랭킹 데이터만 필터링 및 리포트 구성
         report = {}
-        for r in latest_records:
-            cat = r.get("category") or "기타"
-            mall = r.get("mall_name")
+        for r in all_ranks:
+            # 해당 쿼리의 최신 데이터가 아니면 스킵
+            if r.get("collected_at") != query_latest.get(r.get("query")):
+                continue
+                
+            mall = r.get("seller_name")
+            if not mall: continue
             
+            # 모니터링 대상 셀러인지 확인 (부분 일치 포함)
+            is_monitored = False
+            for m in monitored_sellers:
+                if m in mall:
+                    is_monitored = True
+                    break
+            
+            if monitored_sellers and not is_monitored:
+                continue
+
+            # 카테고리 분류 (랭킹 데이터에 카테고리가 없으므로 쿼리나 고정값으로 추정)
+            # 여기서는 편의상 "전체" 또는 쿼리 앞부분 사용
+            cat = "전체"
             if cat not in report: report[cat] = {}
             if mall not in report[cat]: 
                 report[cat][mall] = {
@@ -183,29 +170,21 @@ class GoogleSheetStore:
                     "products": []
                 }
             
-            # 이전 기록 찾기 (변동액 계산용)
-            prev_records = [rec for rec in records if rec.get("product_id") == r.get("product_id") and rec["collected_at"] < latest_time]
-            prev_price = None
+            # 가격 변동액 계산 (GSheet 특성상 단순화)
+            # ranking_history에서 이전 가격 정보를 찾기는 비용이 크므로 0으로 우선 처리
+            # (필요 시 observations 시트를 크로스 체크할 수도 있으나 구조 단순화 우선)
             delta = 0
-            if prev_records:
-                prev_latest = sorted(prev_records, key=lambda x: x["collected_at"], reverse=True)[0]
-                prev_price = prev_latest.get("price")
-                if prev_price and r.get("price"):
-                    delta = int(r["price"]) - int(prev_price)
 
             report[cat][mall]["total_products"] += 1
-            if delta < 0:
-                report[cat][mall]["price_decreased_count"] += 1
-
             report[cat][mall]["products"].append({
-                "title": r["title"],
-                "collected_at": r["collected_at"][:16], # YYYY-MM-DD HH:mm
+                "title": r.get("title", ""),
+                "collected_at": r.get("collected_at", "")[:16],
                 "curr_price_fmt": f"{int(r['price']):,}원" if r.get("price") else "-",
-                "prev_price_fmt": f"{int(prev_price):,}원" if prev_price else "-",
-                "delta_str": f"{delta:+,}원" if delta != 0 else "0원",
-                "price": r["price"],
-                "url": r["product_url"],
-                "history": [] # 차트용 히스토리 (필요 시 보강)
+                "prev_price_fmt": "-",
+                "delta_str": "0원",
+                "price": r.get("price"),
+                "url": r.get("product_url"),
+                "history": []
             })
             
         return report

@@ -64,14 +64,16 @@ class MallTargetConfig:
 
 @dataclass
 class AppConfig:
-    display: int = 100
+    display: int = 50
     exclude: str = "used:cbshop"
-    timeout_seconds: int = 20
+    timeout_seconds: int = 10
+    ranking_limit: int = 50
     alert_threshold_percent: float = 5.0
     email: EmailConfig = field(default_factory=EmailConfig)
     gsheet_id: str | None = None
     targets: list[TargetConfig] = field(default_factory=list)
     mall_targets: list[MallTargetConfig] = field(default_factory=list)
+    monitored_sellers: list[str] = field(default_factory=list)
 
 
 def _to_match(raw: dict[str, Any] | None) -> MatchConfig:
@@ -173,16 +175,22 @@ def load_config(path: str | Path) -> AppConfig:
     
     # 1. common 섹션 파싱 (에러 누적)
     try:
-        display = min(100, max(1, int(common.get("display", 100))))
+        display = int(common.get("display", 50))
     except (ValueError, TypeError):
         errors.append(f"common.display 값이 올바르지 않습니다: {common.get('display')}")
-        display = 100
+        display = 50
 
     try:
-        timeout_seconds = max(5, int(common.get("timeout_seconds", 20)))
+        timeout_seconds = int(common.get("timeout_seconds", 10))
     except (ValueError, TypeError):
         errors.append(f"common.timeout_seconds 값이 올바르지 않습니다: {common.get('timeout_seconds')}")
-        timeout_seconds = 20
+        timeout_seconds = 10
+
+    try:
+        ranking_limit = int(common.get("ranking_limit", 50))
+    except (ValueError, TypeError):
+        errors.append(f"common.ranking_limit 값이 올바르지 않습니다: {common.get('ranking_limit')}")
+        ranking_limit = 50
 
     try:
         alert_threshold_percent = float(common.get("alert_threshold_percent", 5.0))
@@ -204,6 +212,7 @@ def load_config(path: str | Path) -> AppConfig:
         display=display,
         exclude=str(common.get("exclude", "used:cbshop")),
         timeout_seconds=timeout_seconds,
+        ranking_limit=ranking_limit,
         alert_threshold_percent=alert_threshold_percent,
         email=EmailConfig(
             email_from=email_from,
@@ -213,6 +222,7 @@ def load_config(path: str | Path) -> AppConfig:
         gsheet_id=os.getenv("GSHEET_ID") or common.get("gsheet_id"),
         targets=[],
         mall_targets=[],
+        monitored_sellers=list(common.get("monitored_sellers", []) or []),
     )
 
     # 2. targets 섹션 파싱 (에러 누적)

@@ -180,45 +180,9 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
         except Exception as e:
             logger.error(f"GSheet 배치 저장 최종 실패: {e}")
 
-    # ---------- [셀러 몰 트래커 수집 루틴 - 최적화 버전] ----------
-    if app_config.mall_targets:
-        logger.info("셀러(Mall) 수집 시작 (%d개 타겟)", len(app_config.mall_targets))
-        mall_collected_at = utc_now_iso()
-        
-        # 1. 쿼리별로 타겟 그룹화
-        query_groups: dict[str, list] = {}
-        for m_target in app_config.mall_targets:
-            q = m_target.query
-            if q not in query_groups:
-                query_groups[q] = []
-            query_groups[q].append(m_target)
-        
-        # 2. 쿼리 그룹별로 API 호출 및 다중 필터링
-        for query, targets in query_groups.items():
-            try:
-                # 해당 그룹의 최대 페이지 수 확인
-                max_pages = max(t.request.pages for t in targets)
-                logger.info("쿼리 그룹 수집 중: '%s' (타겟 셀러: %d개, 최대 %d페이지)", 
-                            query, len(targets), max_pages)
-                
-                # API 호출 (1건의 쿼리로 모든 타겟 데이터 검색)
-                all_items = collect_mall_items(client, app_config, query, max_pages)
-                
-                # 각 타겟별로 필터링 및 저장
-                for m_target in targets:
-                    target_mall = clean_text(m_target.mall_name)
-                    candidates = [item for item in all_items if target_mall in clean_text(item.get("seller_name", ""))]
-                    
-                    if candidates:
-                        for c in candidates:
-                            c["collected_at"] = mall_collected_at
-                        store.insert_mall_records(m_target.name, m_target.query, m_target.mall_name, m_target.category, candidates)
-                        logger.info("  └ [%s] 필터링 완료: %d개 상품 저장", m_target.name, len(candidates))
-                    else:
-                        logger.warning("  └ [%s] 필터링 결과 없음", m_target.name)
-                        
-            except Exception as e:
-                logger.error("쿼리 그룹 수집 실패 (%s): %s", query, e)
+    # ---------- [랭킹 및 쇼핑몰 추적 수집 루틴] ----------
+    # 모든 타겟의 랭킹 키워드를 수집하여 랭킹 히스토리를 쌓습니다.
+    # 이 데이터는 나중에 '쇼핑몰 추적' 탭의 기반 데이터가 됩니다.
 
     # ---------- [랭킹 수집 최적화 루틴] ----------
     unique_rank_queries = {t.rank_query for t in app_config.targets if t.rank_query}
@@ -230,9 +194,10 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
     
     for r_query in expanded_queries:
         try:
-            logger.info(f"랭킹 수집 중 (API): {r_query}")
+            limit = getattr(app_config, "ranking_limit", 50)
+            logger.info(f"랭킹 수집 중 (API): {r_query} (최대 {limit}위)")
             # Naver API 검색 (sim=네이버 랭킹순)
-            rank_payload = client.search(query=r_query, display=15, sort="sim")
+            rank_payload = client.search(query=r_query, display=limit, sort="sim")
             rank_items = rank_payload.get("items", [])
             
             rows_to_insert = []
@@ -346,7 +311,7 @@ def main() -> None:
                     rankings[rq] = latest
             
             # 셀러별 쇼핑몰 리포트 데이터 수집
-            mall_raw = store.get_mall_report_data()
+            mall_raw = store.get_mall_report_data(monitored_sellers=app_config.monitored_sellers)
             mall_reports = {"categories": mall_raw}
             
             data = {
