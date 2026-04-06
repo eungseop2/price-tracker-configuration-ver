@@ -77,6 +77,7 @@ fork한 레포는 Actions 기능이 기본적으로 비활성화되어 있습니
 2. **Build and deployment** → **Source**: **GitHub Actions** 선택
 3. Actions가 한 번 성공적으로 실행되면 자동으로 아래 URL에서 대시보드 접속 가능:
    - `https://{내 GitHub 아이디}.github.io/price-tracker-configuration-ver`
+   > 💡 **Tip**: 메일 알림에 포함되는 '대시보드 바로가기' 버튼도 위 URL로 자동 연결됩니다. 만약 커스텀 도메인을 사용하신다면, GitHub Secrets에 `DASHBOARD_URL` 변수를 추가하여 본인의 도메인 주소를 등록해 주세요.
 
 ### STEP 8. 품목 설정 (targets.yaml 수정)
 다음 섹션의 AI 프롬프트를 활용하면 더 쉽게 작성할 수 있습니다.
@@ -253,3 +254,7 @@ py -m tracker.main serve
 - `PRICE_SAME`: 가격 변동 없음
 - `PRICE_DOWN`: 가격 하락 (초록색 표시)
 - `PRICE_UP`: 가격 상승 (빨간색 표시)
+
+### 🕒 시간대 및 데이터 기록 안내
+- **한국 표준시(KST) 적용**: 모든 수집 데이터의 `collected_at` 및 대시보드 업데이트 시각은 한국 시간(UTC+9)을 기준으로 기록됩니다.
+- **배치 기록(Batch Insert)**: Google Sheets API 성능 최적화를 위해 한 회차의 모든 수집 결과를 모아서 한 번에 기록합니다. 이를 통해 데이터 누락 방지 및 실행 속도가 대폭 개선되었습니다.

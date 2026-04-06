@@ -2,6 +2,7 @@ import smtplib
 import logging
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from .util import get_dashboard_url
 
 logger = logging.getLogger("tracker.notifier")
 
@@ -104,7 +105,7 @@ def _build_html(downs: list, ups: list) -> str:
         <tbody>{rows}</tbody>
     </table>
     <div style="margin-top:24px;text-align:center">
-        <a href="https://eungseop2.github.io/Lowest-Price-Tracker/" 
+        <a href="{get_dashboard_url()}" 
            style="background-color:#2563eb;color:white;padding:12px 24px;text-decoration:none;border-radius:6px;font-weight:bold;display:inline-block">
            📊 대시보드 바로가기
         </a>

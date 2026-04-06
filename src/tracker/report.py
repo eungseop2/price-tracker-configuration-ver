@@ -6,15 +6,14 @@ from email.mime.text import MIMEText
 import smtplib
 
 from .config import TargetConfig
-from .util import format_price
+from .util import format_price, get_dashboard_url, kst_now
 
 logger = logging.getLogger("tracker.report")
 
 def generate_daily_report_html(store: "GoogleSheetStore", targets: list[TargetConfig]) -> str:
     """최근 10일간의 가격 동향 HTML 보고서를 생성합니다. (GSheet 버전)"""
     # 10일치 날짜 계산 (KST 기준)
-    now_utc = datetime.now(timezone.utc)
-    now_kst = now_utc + timedelta(hours=9)
+    now_kst = kst_now()
     # 오늘 포함 과거 10일
     dates_kst = [(now_kst - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(9, -1, -1)]
     
@@ -83,7 +82,7 @@ def generate_daily_report_html(store: "GoogleSheetStore", targets: list[TargetCo
         </table>
     </div>
     <div style="margin-top:32px;text-align:center">
-        <a href="https://eungseop2.github.io/price-tracker-configuration-ver/" 
+        <a href="{get_dashboard_url()}" 
            style="background-color:#2563eb;color:white;padding:12px 24px;text-decoration:none;border-radius:6px;font-weight:bold;display:inline-block">
            📊 대시보드 바로가기
         </a>
@@ -95,7 +94,7 @@ def generate_daily_report_html(store: "GoogleSheetStore", targets: list[TargetCo
 def generate_mall_report_html(store: "GoogleSheetStore") -> str:
     """쇼핑몰 셀러별 가격 현황 HTML 리포트를 생성합니다."""
     mall_data = store.get_mall_report_data()
-    now_kst = datetime.now(timezone.utc) + timedelta(hours=9)
+    now_kst = kst_now()
     
     sections = []
     for cat, malls in mall_data.items():
@@ -132,7 +131,7 @@ def send_daily_report(store: "GoogleSheetStore", email_from: str, email_password
     html_body = generate_daily_report_html(store, targets)
     
     # 10일치 날짜 계산 (제목용)
-    now_kst = datetime.now(timezone.utc) + timedelta(hours=9)
+    now_kst = kst_now()
     date_str = now_kst.strftime("%Y-%m-%d")
     subject = f"📊 [Daily Report] {date_str} 최저가 변동 요약"
     

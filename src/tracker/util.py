@@ -6,14 +6,26 @@ import re
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any, Iterable
+import os
 
 TAG_RE = re.compile(r"<[^>]+>")
 WHITESPACE_RE = re.compile(r"\s+")
 PRICE_RE = re.compile(r"([0-9][0-9,]{0,20})")
 
 
+def kst_now() -> datetime:
+    """한국 표준시(KST) 현재 시각을 반환합니다."""
+    return datetime.now(timezone(timedelta(hours=9)))
+
+
+def now_iso() -> str:
+    """KST 현재 시각을 ISO 포맷(YYYY-MM-DDTHH:MM:SS.mmmmmm+09:00)으로 반환합니다."""
+    return kst_now().isoformat()
+
+
 def utc_now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    """기존 코드와의 호환성을 유지하되, 내부적으로 KST(now_iso)를 사용합니다."""
+    return now_iso()
 
 
 def clean_text(value: Any) -> str:
@@ -84,3 +96,21 @@ def is_night_time_kst() -> bool:
     current_hour_kst = datetime.now(kst).hour
     # 21시부터 다음 날 08시 사이는 야간으로 간주
     return current_hour_kst >= 21 or current_hour_kst < 8
+
+
+def get_dashboard_url() -> str:
+    """대시보드 URL을 환경 변수에서 가져오거나 자동 생성합니다."""
+    # 1. 명시적 환경 변수 (커스텀 도메인 등)
+    env_url = os.getenv("DASHBOARD_URL")
+    if env_url:
+        return env_url.rstrip("/") + "/"
+
+    # 2. GitHub 환경 변수 기반 자동 생성
+    # GITHUB_REPOSITORY = "owner/repo"
+    repo_full_name = os.getenv("GITHUB_REPOSITORY")
+    if repo_full_name and "/" in repo_full_name:
+        owner, repo = repo_full_name.split("/", 1)
+        return f"https://{owner}.github.io/{repo}/"
+
+    # 3. 기본값 (원본 저장소)
+    return "https://eungseop2.github.io/price-tracker-configuration-ver/"

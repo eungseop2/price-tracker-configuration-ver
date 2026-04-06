@@ -69,14 +69,34 @@ class GoogleSheetStore:
         return ws
 
     def insert(self, payload: dict[str, Any]):
-        """단일 상품 수집 기록 저장"""
+        """단일 상품 수집 기록 저장 (내부적으로 insert_batch 활용)"""
+        self.insert_batch([payload])
+
+    def insert_batch(self, payloads: list[dict[str, Any]]):
+        """여러 상품 수집 기록을 한 번에 저장 (성능 및 신뢰성 최적화)"""
+        if not payloads:
+            return
+
         ws = self._get_worksheet("observations")
         cols = HEADERS["observations"]
-        row = [payload.get(col) for col in cols]
+        
+        rows = []
+        for p in payloads:
+            row = []
+            for col in cols:
+                val = p.get(col)
+                # GSheet 기록 시 None은 빈 문자열로 변환하여 에러 방지
+                if val is None:
+                    row.append("")
+                else:
+                    row.append(val)
+            rows.append(row)
+            
         try:
-            ws.append_row(row)
+            ws.append_rows(rows)
+            logger.info(f"데이터 배치 저장 완료 (observations): {len(rows)}건")
         except Exception as e:
-            logger.error(f"데이터 저장 실패 (observations): {e}")
+            logger.error(f"데이터 배치 저장 실패 (observations): {e}")
 
     def insert_mall_records(self, target_name: str, query: str, mall_name: str, category: str, items: list[dict[str, Any]]):
         """셀러 몰 수집 기록 저장"""
@@ -187,8 +207,10 @@ class GoogleSheetStore:
         records = ws.get_all_records()
         
         target_map = {t.name: t for t in targets}
+        # KST 적용
+        from .util import now_iso
         data = {
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": now_iso(),
             "products": []
         }
 

@@ -82,6 +82,8 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
     fallback_used_count = 0
     alerts_triggered_count = 0
     changed_items = []
+    # 데이터 배치 수집용 리스트
+    collected_payloads = []
     
     service_account_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_KEY")
     if not service_account_json:
@@ -144,16 +146,16 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                     fallback_used_count += 1
                 
                 logger.info("수집 완료 | %s | %s", target.name, result.get("price_change_status"))
-                store.insert(result)
+                collected_payloads.append(result)
             else:
                 fail += 1
                 logger.warning("수집 미일치 | %s | %s", target.name, result.get("status"))
-                store.insert(result)
+                collected_payloads.append(result)
 
         except Exception as exc:
             fail += 1
             logger.exception("수집 실패 | %s", target.name)
-            store.insert({
+            collected_payloads.append({
                 "target_name": target.name,
                 "config_mode": target.mode,
                 "source_mode": target.mode,
@@ -170,6 +172,13 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                 "prev_price": None,
                 "alert_triggered": 0
             })
+
+    # 루프 종료 후 한 번에 저장 (Batch Insert)
+    if collected_payloads:
+        try:
+            store.insert_batch(collected_payloads)
+        except Exception as e:
+            logger.error(f"GSheet 배치 저장 최종 실패: {e}")
 
     # ---------- [셀러 몰 트래커 수집 루틴 - 최적화 버전] ----------
     if app_config.mall_targets:
