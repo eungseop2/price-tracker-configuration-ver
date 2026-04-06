@@ -267,6 +267,15 @@ class GoogleSheetStore:
             elif delta > 0:
                 delta_str = f"+{format_price(delta)}"
             
+            # 히스토리 데이터 구성 (그래프용 최근 50개 포인트)
+            all_history = sorted(history + [r], key=lambda x: x["collected_at"])
+            chart_history = []
+            for h in all_history[-50:]:
+                chart_history.append({
+                    "t": h["collected_at"],
+                    "p": h.get("price", 0)
+                })
+            
             report[cat][mall]["total_products"] += 1
             report[cat][mall]["products"].append({
                 "title": title,
@@ -276,7 +285,8 @@ class GoogleSheetStore:
                 "prev_price_fmt": format_price(prev_price) if prev_price > 0 else "-",
                 "delta": delta,
                 "delta_str": delta_str,
-                "url": r.get("product_url", "")
+                "url": r.get("product_url", ""),
+                "history": chart_history
             })
             
         return report
