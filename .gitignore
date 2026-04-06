@@ -7,3 +7,6 @@ dashboard_data.json.tmp
 summary.json
 *.sqlite3
 tracker.db
+temp_gcp_key.json
+gcp_key*.json
+.env

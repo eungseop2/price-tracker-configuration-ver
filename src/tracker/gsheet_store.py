@@ -339,7 +339,7 @@ class GoogleSheetStore:
                 "avg_7d": avg_7d,
                 "avg_30d": avg_30d,
                 "history": [
-                    {"t": r["collected_at"], "p": r["price"]} for r in p_history_sorted[-50:]
+                    {"t": r["collected_at"], "p": r["price"]} for r in p_history_sorted[-1000:]
                 ]
             }
             data["products"].append(product_data)
