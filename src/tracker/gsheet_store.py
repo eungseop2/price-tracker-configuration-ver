@@ -153,12 +153,21 @@ class GoogleSheetStore:
         ws = self._get_worksheet("mall_observations")
         records = ws.get_all_records()
         
-        # 최신 시간대 확인
+        # 셀러(`target_name`)별로 그룹화하여 각각의 최신 수집 시점 데이터를 취합합니다.
         if not records:
             return {}
             
-        latest_time = max(r["collected_at"] for r in records)
-        latest_records = [r for r in records if r["collected_at"] == latest_time]
+        by_target = {}
+        for r in records:
+            tn = r.get("target_name")
+            if not tn: continue
+            if tn not in by_target: by_target[tn] = []
+            by_target[tn].append(r)
+            
+        latest_records = []
+        for tn, group in by_target.items():
+            max_t = max(g["collected_at"] for g in group)
+            latest_records.extend([g for g in group if g["collected_at"] == max_t])
         
         # 카테고리/몰별 그룹화
         report = {}
