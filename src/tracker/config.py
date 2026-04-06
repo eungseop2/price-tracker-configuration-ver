@@ -7,6 +7,11 @@ from typing import Any
 import yaml
 
 
+class StoreType(Enum):
+    GSHEET = "gsheet"
+    SQLITE = "sqlite"
+
+
 @dataclass
 class MatchConfig:
     required_keywords: list[str] = field(default_factory=list)
@@ -69,10 +74,10 @@ class AppConfig:
     timeout_seconds: int = 10
     ranking_limit: int = 50
     alert_threshold_percent: float = 5.0
+    store_type: StoreType = StoreType.SQLITE
     email: EmailConfig = field(default_factory=EmailConfig)
     gsheet_id: str | None = None
     targets: list[TargetConfig] = field(default_factory=list)
-    mall_targets: list[MallTargetConfig] = field(default_factory=list)
     monitored_sellers: list[str] = field(default_factory=list)
 
 
@@ -208,20 +213,34 @@ def load_config(path: str | Path) -> AppConfig:
     else:
         email_to = [x.strip() for x in str(to_raw).split(",") if x.strip()]
 
+    gsheet_id = os.getenv("GSHEET_ID") or common.get("gsheet_id")
+    
+    # 저장소 유형 결정 로직 (GCP_SA_KEY 또는 GOOGLE_SERVICE_ACCOUNT_KEY 확인)
+    credential_json = os.getenv("GCP_SA_KEY") or os.getenv("GOOGLE_SERVICE_ACCOUNT_KEY")
+    is_gsheet_ready = bool(gsheet_id and credential_json)
+    store_type_val = common.get("store_type", "sqlite").lower()
+    
+    if is_gsheet_ready:
+        store_type = StoreType.GSHEET
+    elif store_type_val == "gsheet":
+        store_type = StoreType.GSHEET
+    else:
+        store_type = StoreType.SQLITE
+
     app = AppConfig(
         display=display,
         exclude=str(common.get("exclude", "used:cbshop")),
         timeout_seconds=timeout_seconds,
         ranking_limit=ranking_limit,
         alert_threshold_percent=alert_threshold_percent,
+        store_type=store_type,
         email=EmailConfig(
             email_from=email_from,
             email_password=email_password,
             email_to=email_to
         ),
-        gsheet_id=os.getenv("GSHEET_ID") or common.get("gsheet_id"),
+        gsheet_id=gsheet_id,
         targets=[],
-        mall_targets=[],
         monitored_sellers=list(common.get("monitored_sellers", []) or []),
     )
 

@@ -374,13 +374,21 @@ def main() -> None:
             store.close()
 
     elif args.command == "export-mall-report":
-        service_account_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_KEY")
-        if not app_config.gsheet_id or not service_account_json:
-            logger.error("필요한 설정이 누락되었습니다.")
-            return
+        # 2. 저장소 결정 (GSheet vs SQLite)
+        store = None
+        if app_config.store_type == StoreType.GSHEET:
+            credential_json = os.getenv("GCP_SA_KEY") or os.getenv("GOOGLE_SERVICE_ACCOUNT_KEY")
+            if not credential_json:
+                logger.error("GSHEET 모드이나 GCP_SA_KEY (또는 GOOGLE_SERVICE_ACCOUNT_KEY) 환경변수가 설정되지 않았습니다.")
+                sys.exit(1)
+            store = GoogleSheetStore(app_config.gsheet_id, credential_json)
+            logger.info(f"Google Sheets 저장소 사용 준비 완료 (ID: {app_config.gsheet_id})")
+        else:
+            db_path = os.getenv("DB_PATH", "data/tracker.db")
+            store = ObservationStore(db_path)
+            logger.info(f"SQLite 저장소 사용 준비 완료 (Path: {db_path})")
             
         from .report import generate_mall_report_html
-        store = GoogleSheetStore(app_config.gsheet_id, service_account_json)
         try:
             html = generate_mall_report_html(store)
             output_path = args.output or "mall_report.html"
