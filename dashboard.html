@@ -1746,6 +1746,7 @@
             const start = (currentPage - 1) * itemsPerPageNormal;
             const pageData = currentFilteredHistory.slice(start, start + itemsPerPageNormal);
             tbody.innerHTML = pageData.map(h => `<tr><td>${new Date(h.t).toLocaleString()}</td><td style="font-weight:700">${formatPrice(h.p)}</td><td>${formatPrice(h.p)}</td><td>${dashboardData.products[selectedProductIndex].seller}</td><td>정상</td></tr>`).join('');
+            renderPagination();
         }
 
         function renderRankingView(kw) {
@@ -1798,10 +1799,12 @@
             const data = dashboardData.mall_reports.categories[currentMallCategory][m];
             if (!data) return;
             document.getElementById('currentMallTitle').textContent = `[${currentMallCategory}] ${m}`;
-            document.getElementById('mallStatTotal').innerText = data.total_products;
-            document.getElementById('mallStatDecreased').innerText = data.price_decreased_count;
-            renderMallChart(data.products);
-            renderMallTable(data.products);
+            document.getElementById('mallStatTotal').innerText = data.total_products || 0;
+            document.getElementById('mallStatDecreased').innerText = data.price_decreased_count || 0;
+            if (data.products && data.products.length > 0 && data.products[0].history) {
+                renderMallChart(data.products);
+            }
+            renderMallTable(data.products || []);
         }
 
         function renderMallChart(prods) {
@@ -1821,6 +1824,66 @@
             const tbody = document.getElementById('mallTableBody');
             if (!tbody) return;
             tbody.innerHTML = prods.map(p => `<tr><td class="mono">${p.collected_at}</td><td>${p.title}</td><td class="mono">${p.curr_price_fmt}</td><td class="mono">${p.prev_price_fmt}</td><td class="mono">${p.delta_str}</td><td style="text-align:right"><a href="${p.url}" target="_blank" class="chart-btn">링크</a></td></tr>`).join('');
+        }
+
+        function changeChartDays(days, el) {
+            chartDays = days;
+            document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+            if (el) el.classList.add('active');
+            // 커스텀 날짜 입력 초기화
+            const sd = document.getElementById('startDate');
+            const ed = document.getElementById('endDate');
+            if (sd) sd.value = '';
+            if (ed) ed.value = '';
+            refreshChartView();
+        }
+
+        function customDateFilter() {
+            const sd = document.getElementById('startDate')?.value;
+            const ed = document.getElementById('endDate')?.value;
+            if (!sd || !ed) return;
+            const product = dashboardData.products[selectedProductIndex];
+            if (!product) return;
+            
+            const startDate = new Date(sd);
+            const endDate = new Date(ed);
+            endDate.setHours(23, 59, 59); // 종료일 끝까지 포함
+            
+            let hist = (product.history || []).filter(h => {
+                const d = new Date(h.t);
+                return d >= startDate && d <= endDate;
+            });
+            
+            // 필터 필 비활성화
+            document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+            
+            renderChart(hist);
+            currentFilteredHistory = hist.slice().reverse();
+            currentPage = 1;
+            renderTable();
+        }
+
+        function renderPagination() {
+            const container = document.getElementById('pagination');
+            if (!container) return;
+            const totalPages = Math.ceil(currentFilteredHistory.length / itemsPerPageNormal);
+            if (totalPages <= 1) { container.innerHTML = ''; return; }
+            
+            let html = '';
+            html += `<button class="page-btn" onclick="changePage(${currentPage - 1})" ${currentPage <= 1 ? 'disabled' : ''}>‹</button>`;
+            for (let i = 1; i <= Math.min(totalPages, 10); i++) {
+                html += `<button class="page-btn ${currentPage === i ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
+            }
+            if (totalPages > 10) html += `<span style="color:var(--text-muted)">... ${totalPages}</span>`;
+            html += `<button class="page-btn" onclick="changePage(${currentPage + 1})" ${currentPage >= totalPages ? 'disabled' : ''}>›</button>`;
+            container.innerHTML = html;
+        }
+
+        function changePage(page) {
+            const totalPages = Math.ceil(currentFilteredHistory.length / itemsPerPageNormal);
+            if (page < 1 || page > totalPages) return;
+            currentPage = page;
+            renderTable();
         }
 
         init();

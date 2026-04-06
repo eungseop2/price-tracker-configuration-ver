@@ -266,18 +266,62 @@ class GoogleSheetStore:
         
         target_map = {t.name: t for t in targets}
         from .util import utc_now_iso
+        from datetime import datetime, timedelta, timezone
+        
         data = {
             "generated_at": utc_now_iso(),
             "products": []
         }
+
+        now = datetime.now(timezone.utc)
 
         for name, t_config in target_map.items():
             p_history = [r for r in records if r.get("target_name") == name and r.get("success") == 1]
             if not p_history:
                 continue
             
-            latest = sorted(p_history, key=lambda x: x["collected_at"], reverse=True)[0]
-            prices = [int(r["price"]) for r in p_history if r.get("price")]
+            # 시간순 정렬
+            p_history_sorted = sorted(p_history, key=lambda x: x.get("collected_at", ""))
+            latest = p_history_sorted[-1]
+            prices = [int(r["price"]) for r in p_history_sorted if r.get("price")]
+            
+            # 통계 계산
+            all_time_low = min(prices) if prices else None
+            all_time_high = max(prices) if prices else None
+            
+            # 7일/30일 평균 계산
+            avg_7d = None
+            avg_30d = None
+            if prices:
+                try:
+                    prices_7d = []
+                    prices_30d = []
+                    for r in p_history_sorted:
+                        if not r.get("price") or not r.get("collected_at"):
+                            continue
+                        try:
+                            # ISO 형식 파싱 (타임존 포함/미포함 모두 대응)
+                            ts_str = str(r["collected_at"])
+                            if "+" in ts_str or ts_str.endswith("Z"):
+                                ts = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
+                            else:
+                                ts = datetime.fromisoformat(ts_str).replace(tzinfo=timezone.utc)
+                            
+                            age_days = (now - ts).total_seconds() / 86400
+                            p = int(r["price"])
+                            if age_days <= 7:
+                                prices_7d.append(p)
+                            if age_days <= 30:
+                                prices_30d.append(p)
+                        except (ValueError, TypeError):
+                            continue
+                    
+                    if prices_7d:
+                        avg_7d = round(sum(prices_7d) / len(prices_7d))
+                    if prices_30d:
+                        avg_30d = round(sum(prices_30d) / len(prices_30d))
+                except Exception:
+                    pass
             
             product_data = {
                 "name": name,
@@ -288,8 +332,14 @@ class GoogleSheetStore:
                 "change_pct": latest.get("price_delta_pct"),
                 "product_id": latest.get("product_id"),
                 "image_url": latest.get("image_url"),
+                "search_rank": latest.get("search_rank"),
+                "rank_query": getattr(t_config, "rank_query", None) or name,
+                "all_time_low": all_time_low,
+                "all_time_high": all_time_high,
+                "avg_7d": avg_7d,
+                "avg_30d": avg_30d,
                 "history": [
-                    {"t": r["collected_at"], "p": r["price"]} for r in p_history[-50:]
+                    {"t": r["collected_at"], "p": r["price"]} for r in p_history_sorted[-50:]
                 ]
             }
             data["products"].append(product_data)

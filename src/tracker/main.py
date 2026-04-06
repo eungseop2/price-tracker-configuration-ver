@@ -181,67 +181,79 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
         except Exception as e:
             logger.error(f"GSheet 배치 저장 최종 실패: {e}")
 
-    # ---------- [대상 쇼핑몰(Mall) 트래커 수집 루틴] ----------
+    # ---------- [셀러 트래킹 + 랭킹 통합 수집 루틴] ----------
+    # 2번(랭킹)과 3번(셀러 트래킹)이 같은 쿼리를 쓸 경우 API 호출을 공유하여 리소스 절약
+    
+    # 1. 필요한 쿼리 전체 목록 수집
+    unique_rank_queries = {t.rank_query for t in app_config.targets if t.rank_query}
+    mall_query_groups: dict[str, list] = {}
     if app_config.mall_targets:
-        logger.info("대상 쇼핑몰(Mall) 수집 시작 (%d개 타겟)", len(app_config.mall_targets))
-        mall_collected_at = utc_now_iso()
-        
-        # 1. 쿼리별로 타겟 그룹화 (API 호출 최소화)
-        query_groups: dict[str, list] = {}
         for m_target in app_config.mall_targets:
             q = m_target.query
-            if q not in query_groups:
-                query_groups[q] = []
-            query_groups[q].append(m_target)
-        
-        # 2. 쿼리 그룹별로 검색 및 필터링 수집
-        for query, targets in query_groups.items():
-            try:
-                max_pages = max(t.request.pages for t in targets)
-                logger.info(f"쿼리 그룹 수집: '{query}' (최대 {max_pages}페이지)")
-                
-                # API 호출 (한 번의 검색으로 여러 쇼핑몰 데이터 확보)
-                all_items = collect_mall_items(client, app_config, query, max_pages)
-                
-                for m_target in targets:
-                    target_mall = clean_text(m_target.mall_name)
-                    candidates = [item for item in all_items if target_mall in clean_text(item.get("seller_name", ""))]
-                    
-                    if candidates:
-                        for c in candidates:
-                            c["collected_at"] = mall_collected_at
-                        store.insert_mall_records(m_target.name, m_target.query, m_target.mall_name, m_target.category, candidates)
-                        logger.info(f"  └─ [{m_target.name}] 필터링 완료: {len(candidates)}개 상품 저장")
-                    else:
-                        # 상품이 없는 경우에도 '없음' 상태를 기록하여 데이터 연속성 유지
-                        logger.warning(f"  └─ [{m_target.name}] 해당 쇼핑몰 상품을 찾을 수 없음")
-                        
-            except Exception as e:
-                logger.error(f"쇼핑몰 그룹 수집 실패 ({query}): {e}")
-
-    # ---------- [랭킹 수집 최적화 루틴] ----------
-    unique_rank_queries = {t.rank_query for t in app_config.targets if t.rank_query}
-    expanded_queries = set(unique_rank_queries)
-
-    logger.info("고유 랭킹 키워드 수집 시작 (%d개)", len(expanded_queries))
+            if q not in mall_query_groups:
+                mall_query_groups[q] = []
+            mall_query_groups[q].append(m_target)
     
-    rank_collected_at = utc_now_iso()
+    # 2. 전체 고유 쿼리 합산 (셀러+랭킹 통합)
+    all_queries = set(unique_rank_queries) | set(mall_query_groups.keys())
+    # API 결과 캐시: {쿼리: [normalized_item, ...]}
+    api_result_cache: dict[str, list] = {}
     
-    for r_query in expanded_queries:
+    combined_collected_at = utc_now_iso()
+    
+    logger.info("셀러+랭킹 통합 수집 시작 (%d개 고유 쿼리)", len(all_queries))
+    
+    for query in all_queries:
         try:
+            # 필요한 최대 페이지 수 결정 (셀러 트래킹이 더 넓은 범위)
+            mall_pages = max((t.request.pages for t in mall_query_groups.get(query, [])), default=0)
+            ranking_limit = getattr(app_config, "ranking_limit", 50)
+            # 랭킹용 필요 페이지 수 (display=50 기준)
+            rank_pages = (ranking_limit + app_config.display - 1) // app_config.display if query in unique_rank_queries else 0
+            
+            max_pages = max(mall_pages, rank_pages, 1)
+            logger.info(f"통합 수집: '{query}' (셀러={mall_pages}p, 랭킹={rank_pages}p → 최대 {max_pages}p)")
+            
+            # API 호출 1회 (가장 넓은 범위로)
+            all_items = collect_mall_items(client, app_config, query, max_pages)
+            api_result_cache[query] = all_items
+            
+        except Exception as e:
+            logger.error(f"통합 수집 실패 ({query}): {e}")
+            api_result_cache[query] = []
+    
+    # 3. 셀러 트래킹 데이터 처리 (캐시된 결과 활용)
+    if app_config.mall_targets:
+        logger.info("대상 쇼핑몰(Mall) 필터링 시작 (%d개 타겟)", len(app_config.mall_targets))
+        for query, targets in mall_query_groups.items():
+            all_items = api_result_cache.get(query, [])
+            for m_target in targets:
+                target_mall = clean_text(m_target.mall_name)
+                candidates = [item for item in all_items if target_mall in clean_text(item.get("seller_name", ""))]
+                
+                if candidates:
+                    for c in candidates:
+                        c["collected_at"] = combined_collected_at
+                    store.insert_mall_records(m_target.name, m_target.query, m_target.mall_name, m_target.category, candidates)
+                    logger.info(f"  └─ [{m_target.name}] 필터링 완료: {len(candidates)}개 상품 저장")
+                else:
+                    logger.warning(f"  └─ [{m_target.name}] 해당 쇼핑몰 상품을 찾을 수 없음")
+
+    # 4. 랭킹 데이터 처리 (캐시된 결과 활용)
+    logger.info("랭킹 데이터 추출 시작 (%d개 키워드)", len(unique_rank_queries))
+    
+    for r_query in unique_rank_queries:
+        try:
+            cached_items = api_result_cache.get(r_query, [])
             limit = getattr(app_config, "ranking_limit", 50)
-            logger.info(f"랭킹 수집 중 (API): {r_query} (최대 {limit}위)")
-            # Naver API 검색 (sim=네이버 랭킹순)
-            rank_payload = client.search(query=r_query, display=limit, sort="sim")
-            rank_items = rank_payload.get("items", [])
+            rank_items = cached_items[:limit]  # 이미 sim 정렬된 결과에서 상위 N개 추출
             
             rows_to_insert = []
-            for rank, item in enumerate(rank_items, start=1):
-                norm = _normalized_item(item)
+            for rank, norm in enumerate(rank_items, start=1):
                 rows_to_insert.append({
                     "query": r_query,
                     "rank": rank,
-                    "collected_at": rank_collected_at,
+                    "collected_at": combined_collected_at,
                     "title": norm.get("title"),
                     "price": norm.get("price"),
                     "seller_name": norm.get("seller_name"),
@@ -254,11 +266,11 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
             
             if rows_to_insert:
                 store.insert_ranking_batch(rows_to_insert)
-                logger.info(f"랭킹 수집 완료: {r_query} ({len(rows_to_insert)}개)")
+                logger.info(f"랭킹 추출 완료: {r_query} ({len(rows_to_insert)}개, 캐시 활용)")
             else:
-                logger.warning(f"랭킹 수집 결과 없음: {r_query}")
+                logger.warning(f"랭킹 추출 결과 없음: {r_query}")
         except Exception as e:
-            logger.error(f"랭킹 수집 실패 ({r_query}): {e}")
+            logger.error(f"랭킹 추출 실패 ({r_query}): {e}")
     
     store.close()
 
