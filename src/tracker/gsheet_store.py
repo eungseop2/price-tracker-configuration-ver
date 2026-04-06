@@ -41,18 +41,35 @@ class GoogleSheetStore:
         try:
             # 환경변수에서 온 JSON 문자열 정제
             raw_key = self.service_account_json.strip()
-            # 만약 따옴표로 감싸져 있다면 제거
-            if raw_key.startswith('"') and raw_key.endswith('"'):
+            
+            # 만약 raw_key가 로컬 파일 경로이고 파일이 존재한다면 파일에서 직접 읽기 (쉘 이스케이프 문제 우회)
+            import os
+            if os.path.exists(raw_key):
+                with open(raw_key, "rb") as f:
+                    content = f.read().decode("utf-8", errors="replace").replace("\xa0", " ").strip()
+                    raw_key = content
+            elif raw_key.startswith('"') and raw_key.endswith('"'):
+                # 만약 따옴표로 감싸져 있다면 제거
                 raw_key = raw_key[1:-1]
             
             # JSON 파싱 시도
             try:
+                # 1. 기본 파싱 시도
                 info = json.loads(raw_key)
             except json.JSONDecodeError:
-                # 만약 실패하면, 이스케이프된 줄바꿈이 깨졌을 가능성 대비 (필요한 경우에만 수행)
-                # 주의: json.loads 호출 전에는 문자열 리터럴을 망가뜨리면 안 됨
-                # 여기서는 흔히 발생하는 '실제 줄바꿈' 문제를 처리하기 위해 strict=False 옵션 고려 가능
-                info = json.loads(raw_key, strict=False)
+                try:
+                    # 2. 쉘 환경(PowerShell 등)에서 오염된 이스케이프 및 중첩 백슬래시 정제
+                    # - 유효하지 않은 백슬래시는 제거하고, 이스케이프된 \n 등은 정상화
+                    import re
+                    # \\n 등을 실제 줄바꿈으로 변경하기 전, JSON에 부적합한 백슬래시 조합 제거
+                    # (예: \> -> >, \m -> m 등)
+                    cleaned_key = re.sub(r'\\([^nrt"\\/u])', r'\1', raw_key)
+                    # 여전히 남아있는 \\n (리터럴 백슬래시+n) 처리
+                    cleaned_key = cleaned_key.replace('\\n', '\n')
+                    info = json.loads(cleaned_key, strict=False)
+                except json.JSONDecodeError as e:
+                    logger.error(f"구글 서비스 계정 키 JSON 파싱 최종 실패: {e}")
+                    raise e
 
             scopes = [
                 "https://www.googleapis.com/auth/spreadsheets",
@@ -226,13 +243,18 @@ class GoogleSheetStore:
                     "products": []
                 }
             
-            # 이전 가격 찾기 (같은 몰의 같은 상품명 중 직전 수집 시점)
+            # 이전 가격 찾기 (같은 몰의 같은 상품 ID 중 직전 수집 시점)
             title = r.get("title", "")
+            p_id = str(r.get("product_id") or "")
             curr_price = r.get("price") or 0
             prev_price = 0
             
-            # 같은 몰의 같은 타이틀을 가진 이전 기록들 필터링
-            history = [h for h in records if h.get("mall_name") == mall and h.get("title") == title and h["collected_at"] < r["collected_at"]]
+            # 같은 몰의 같은 ID(없으면 이름)를 가진 이전 기록들 필터링
+            if p_id:
+                history = [h for h in records if h.get("mall_name") == mall and str(h.get("product_id")) == p_id and h["collected_at"] < r["collected_at"]]
+            else:
+                history = [h for h in records if h.get("mall_name") == mall and h.get("title") == title and h["collected_at"] < r["collected_at"]]
+                
             if history:
                 latest_h = sorted(history, key=lambda x: x["collected_at"], reverse=True)[0]
                 prev_price = latest_h.get("price") or 0
