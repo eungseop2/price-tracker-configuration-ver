@@ -218,30 +218,43 @@ class GoogleSheetStore:
         
         # 카테고리/몰별 그룹화 및 필터링
         report = {}
-        from .util import format_price
+        from .util import format_price, normalize_for_match
+        
+        # 필터링 및 정규화용 셋 준비
+        m_sellers_norm = {normalize_for_match(s) for s in (monitored_sellers or [])}
         
         for r in latest_records:
-            mall = r.get("mall_name")
-            if not mall: continue
+            raw_mall = r.get("mall_name", "")
+            if not raw_mall: continue
+            
+            # 몰 이름 정규화 (필터링 및 그룹화 목적)
+            norm_mall = normalize_for_match(raw_mall)
+            if norm_mall == "디엠에이씨": 
+                norm_mall = "dmac"
             
             # 필터링 로직 (monitored_sellers가 지정된 경우)
             if monitored_sellers:
-                is_monitored = False
-                for m in monitored_sellers:
-                    if m in mall:
-                        is_monitored = True
-                        break
-                if not is_monitored:
-                    continue
+                if norm_mall not in m_sellers_norm:
+                    # 원본 이름에 포함되는지 한 번 더 확인 (예: "dmac 네이버 스마트스토어" 등 대응)
+                    is_contained = any(s in norm_mall for s in m_sellers_norm)
+                    if not is_contained:
+                        continue
 
             cat = r.get("category") or "기타"
+            # 대시보드 표시용 이름 (최초 발견 시의 정규화된 이름을 키로 사용하되, 
+            # dmac/디엠에이씨는 'dmac'으로 통일)
+            display_mall = norm_mall
+            
             if cat not in report: report[cat] = {}
-            if mall not in report[cat]: 
-                report[cat][mall] = {
+            if display_mall not in report[cat]: 
+                report[cat][display_mall] = {
                     "total_products": 0,
                     "price_decreased_count": 0,
                     "products": []
                 }
+            
+            # 이하 데이터 구성 시 mall 대신 display_mall 사용
+            mall = display_mall
             
             # 이전 가격 찾기 (같은 몰의 같은 상품 ID 중 직전 수집 시점)
             title = r.get("title", "")
