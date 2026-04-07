@@ -104,7 +104,7 @@ def _normalized_item(item: dict[str, Any]) -> dict[str, Any]:
 
 
 
-def collect_lowest_offer_via_api(client: NaverShoppingSearchClient, app_config: AppConfig, target: TargetConfig) -> dict[str, Any]:
+def collect_lowest_offer_via_api(client: NaverShoppingSearchClient, app_config: AppConfig, target: TargetConfig) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     if not target.query:
         raise ValueError(f"target '{target.name}' 에 query 가 없습니다.")
 
@@ -158,7 +158,7 @@ def collect_lowest_offer_via_api(client: NaverShoppingSearchClient, app_config: 
                 "items_examined": len(items),
             },
             "error_message": "조건에 맞는 상품을 찾지 못했습니다.",
-        }
+        }, items
 
     # 가격과 판매처 이름을 기준으로 정렬하여 최우선 상품 선택
     best = min(candidates, key=lambda x: (x["price"], x["seller_name"] or "zzzz"))
@@ -169,7 +169,7 @@ def collect_lowest_offer_via_api(client: NaverShoppingSearchClient, app_config: 
         "status": "OK",
         **best,
         "error_message": None,
-    }
+    }, items
 
 def collect_mall_inventory(client: NaverShoppingSearchClient, app_config: AppConfig, target: MallTargetConfig) -> list[dict[str, Any]]:
     if not target.query:

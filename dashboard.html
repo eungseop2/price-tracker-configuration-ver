@@ -69,6 +69,17 @@
             flex-direction: column;
             height: 100vh;
             z-index: 100;
+            overflow-y: auto;
+            scrollbar-width: thin;
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 10px;
         }
 
         .logo-container {
@@ -1517,6 +1528,12 @@
         const itemsPerPageNormal = 10;
         let currentFilteredHistory = [];
         let selectedMallProductIndex = 0;
+ 
+        function formatSellerName(name) {
+            if (!name) return name;
+            if (name === '디엠에이씨') return 'DMAC';
+            return name;
+        }
 
         function switchView(viewName) {
             // 메인 탭 전환
@@ -1596,7 +1613,7 @@
                         dateStr,
                         timeStr,
                         h.p,
-                        p.seller || "네이버"
+                        formatSellerName(p.seller) || "네이버"
                     ]);
                 });
             });
@@ -1738,7 +1755,7 @@
 
             const rankHtml = product.search_rank ? ` <span style="margin:0 8px; color:var(--glass-border);">|</span> <span style="color:var(--toss-blue); font-weight:700;">네이버랭킹 ${product.search_rank}위</span>` : '';
             const keywordHtml = ` <span style="margin:0 8px; color:var(--glass-border);">|</span> <span style="font-size:12px; color:var(--text-muted);">키워드: "${product.rank_query || product.name}"</span>`;
-            document.getElementById('sellerInfo').innerHTML = `<span class="seller-tag">${product.seller}</span> 수집 중${rankHtml}${keywordHtml}`;
+            document.getElementById('sellerInfo').innerHTML = `<span class="seller-tag">${formatSellerName(product.seller)}</span> 수집 중${rankHtml}${keywordHtml}`;
             
             document.getElementById('currentPriceStat').innerText = formatPrice(product.current_price);
             document.getElementById('allTimeLow').innerText = formatPrice(product.all_time_low);
@@ -1805,7 +1822,7 @@
             if (!tbody) return;
             const start = (currentPage - 1) * itemsPerPageNormal;
             const pageData = currentFilteredHistory.slice(start, start + itemsPerPageNormal);
-            tbody.innerHTML = pageData.map(h => `<tr><td>${new Date(h.t).toLocaleString()}</td><td style="font-weight:700">${formatPrice(h.p)}</td><td>${formatPrice(h.p)}</td><td>${dashboardData.products[selectedProductIndex].seller}</td><td>정상</td></tr>`).join('');
+            tbody.innerHTML = pageData.map(h => `<tr><td>${new Date(h.t).toLocaleString()}</td><td style="font-weight:700">${formatPrice(h.p)}</td><td>${formatPrice(h.p)}</td><td>${formatSellerName(dashboardData.products[selectedProductIndex].seller)}</td><td>정상</td></tr>`).join('');
             renderPagination();
         }
 
@@ -1863,7 +1880,7 @@
                 }
                 
                 return `<div>
-                    <div class="mall-tab ${isActive ? 'active' : ''}" onclick="selectMall('${m}')">${m}</div>
+                    <div class="mall-tab ${isActive ? 'active' : ''}" onclick="selectMall('${m}')">${formatSellerName(m)}</div>
                     ${subMenu}
                 </div>`;
             }).join('');
@@ -1881,7 +1898,7 @@
         function renderMallDashboard(m) {
             const data = dashboardData.mall_reports.categories[currentMallCategory][m];
             if (!data) return;
-            document.getElementById('currentMallTitle').textContent = `[${currentMallCategory}] ${m}`;
+            document.getElementById('currentMallTitle').textContent = `[${currentMallCategory}] ${formatSellerName(m)}`;
             document.getElementById('mallStatTotal').innerText = data.total_products || 0;
             document.getElementById('mallStatDecreased').innerText = data.price_decreased_count || 0;
             if (data.products && data.products.length > 0) {

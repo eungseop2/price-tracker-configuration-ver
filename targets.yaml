@@ -7,7 +7,7 @@ common:
     - "제이유"
     - "포디아이"
     - "엠디텍"
-    - "DMAC"
+    - "디엠에이씨"
     - "올인포"
     - "쇼마젠시"
 
@@ -326,9 +326,9 @@ mall_targets:
     category: "버즈"
     request:
       pages: 10
-  - name: "DMAC 갤럭시 워치"
+  - name: "디엠에이씨 갤럭시 워치"
     query: "갤럭시 워치"
-    mall_name: "DMAC"
+    mall_name: "디엠에이씨"
     category: "워치"
     request:
       pages: 10

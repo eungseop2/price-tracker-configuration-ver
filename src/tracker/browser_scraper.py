@@ -114,12 +114,12 @@ async def _extract_from_dom(page, target: TargetConfig) -> list[dict[str, Any]]:
     return offers
 
 
-async def collect_lowest_offer_via_browser(target: TargetConfig, artifacts_dir: str = "./artifacts") -> dict[str, Any]:
+async def collect_lowest_offer_via_browser(target: TargetConfig, artifacts_dir: str = "./artifacts") -> tuple[dict[str, Any], list[dict[str, Any]]]:
     """브라우저를 이용해 최저가를 수집합니다. (collect_current_offer_via_browser와 동일)"""
     return await collect_current_offer_via_browser(target, artifacts_dir)
 
 
-async def collect_current_offer_via_browser(target: TargetConfig, artifacts_dir: str = "./artifacts") -> dict[str, Any]:
+async def collect_current_offer_via_browser(target: TargetConfig, artifacts_dir: str = "./artifacts") -> tuple[dict[str, Any], list[dict[str, Any]]]:
     if not target.url:
         raise ValueError(f"target '{target.name}' 에 url 이 없습니다.")
 
@@ -181,6 +181,6 @@ async def collect_current_offer_via_browser(target: TargetConfig, artifacts_dir:
                     "offers_found": offers,
                 },
                 "error_message": None,
-            }
+            }, offers
         finally:
             await browser.close()
