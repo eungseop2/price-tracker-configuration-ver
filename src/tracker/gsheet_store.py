@@ -262,14 +262,22 @@ class GoogleSheetStore:
             curr_price = r.get("price") or 0
             prev_price = 0
             
-            # 같은 몰의 같은 ID(없으면 이름)를 가진 이전 기록들 필터링
+            # 같은 몰의 같은 ID(없으면 이름)를 가진 이전 기록들 필터링 (동의어 및 대소문자 무시 매칭 적용)
+            def is_same_mall(m1, m2):
+                if not m1 or not m2: return False
+                n1 = normalize_for_match(m1)
+                n2 = normalize_for_match(m2)
+                if n1 == "디엠에이씨": n1 = "dmac"
+                if n2 == "디엠에이씨": n2 = "dmac"
+                return n1 == n2
+            
             if p_id:
-                history = [h for h in records if h.get("mall_name") == mall and str(h.get("product_id")) == p_id and h["collected_at"] < r["collected_at"]]
+                history = [h for h in records if is_same_mall(h.get("mall_name"), mall) and str(h.get("product_id")) == p_id and h["collected_at"] < r["collected_at"]]
             else:
-                history = [h for h in records if h.get("mall_name") == mall and h.get("title") == title and h["collected_at"] < r["collected_at"]]
+                history = [h for h in records if is_same_mall(h.get("mall_name"), mall) and h.get("title") == title and h["collected_at"] < r["collected_at"]]
                 
             if history:
-                latest_h = sorted(history, key=lambda x: x["collected_at"], reverse=True)[0]
+                latest_h = sorted(history, key=lambda x: str(x["collected_at"]), reverse=True)[0]
                 prev_price = latest_h.get("price") or 0
             
             delta = curr_price - prev_price if prev_price > 0 else 0
@@ -281,7 +289,7 @@ class GoogleSheetStore:
                 delta_str = f"+{format_price(delta)}"
             
             # 히스토리 데이터 구성 (그래프용 최근 50개 포인트)
-            all_history = sorted(history + [r], key=lambda x: x["collected_at"])
+            all_history = sorted(history + [r], key=lambda x: str(x["collected_at"]))
             chart_history = []
             for h in all_history[-50:]:
                 chart_history.append({

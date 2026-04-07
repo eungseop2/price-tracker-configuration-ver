@@ -108,7 +108,7 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
             # 수집된 모든 상품을 통합 분석 풀에 저장 (몰 리포트용)
             if items:
                 for itm in items:
-                    # itm은 이제 naver_api.py에서 정규화되어 반환됨 (_normalized_item 형태)
+                    # itm은 이제 naver_api.py에서 반환된 정규화된 전체 데이터 리스트임
                     itm["category"] = target.category
                     all_peeked_items.append(itm)
                 

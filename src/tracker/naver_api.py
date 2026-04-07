@@ -169,7 +169,7 @@ def collect_lowest_offer_via_api(client: NaverShoppingSearchClient, app_config: 
         "status": "OK",
         **best,
         "error_message": None,
-    }, candidates
+    }, [_normalized_item(item) for item in items]
 
 def collect_mall_inventory(client: NaverShoppingSearchClient, app_config: AppConfig, target: MallTargetConfig) -> list[dict[str, Any]]:
     if not target.query:
