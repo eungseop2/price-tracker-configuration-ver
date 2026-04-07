@@ -27,7 +27,10 @@ from .naver_api import (
 )
 from .notifier import send_price_alert
 from .report import send_daily_report
-from .util import calc_change_metrics, clean_text, dump_json, utc_now_iso, is_night_time_kst
+from .util import (
+    calc_change_metrics, clean_text, dump_json, utc_now_iso, 
+    is_night_time_kst, normalize_for_match
+)
 
 logger = logging.getLogger("naver_price_tracker")
 
@@ -187,14 +190,14 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
         combined_collected_at = utc_now_iso()
         
         for m_target in app_config.mall_targets:
-            target_mall_name = clean_text(m_target.mall_name)
+            target_mall_search_term = normalize_for_match(m_target.mall_name)
             candidates = []
             seen_urls = set()
             
             for itm in all_peeked_items:
                 # 카테고리가 일치하거나 쿼리 키워드가 포함된 경우 필터링
                 if itm.get("category") == m_target.category or m_target.query in itm.get("title", ""):
-                    if target_mall_name in clean_text(itm.get("seller_name", "")):
+                    if target_mall_search_term in normalize_for_match(itm.get("seller_name", "")):
                         url = itm.get("product_url")
                         if url not in seen_urls:
                             itm["collected_at"] = combined_collected_at
