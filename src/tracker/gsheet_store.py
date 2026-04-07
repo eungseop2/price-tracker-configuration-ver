@@ -325,8 +325,8 @@ class GoogleSheetStore:
             if not p_history:
                 continue
             
-            # 시간순 정렬
-            p_history_sorted = sorted(p_history, key=lambda x: x.get("collected_at", ""))
+            # 시간순 정렬 (ISO 날짜 문자열 정렬)
+            p_history_sorted = sorted(p_history, key=lambda x: str(x.get("collected_at", "")))
             latest = p_history_sorted[-1]
             prices = [int(r["price"]) for r in p_history_sorted if r.get("price")]
             
