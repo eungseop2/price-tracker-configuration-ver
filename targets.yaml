@@ -1,135 +1,346 @@
-# [도움말] 정확한 최저가 트래킹을 위해서는 'product_id'가 필요합니다.
-# 1. 네이버 쇼핑에서 상품 검색 후 카탈로그 페이지 접속
-# 2. 주소창의 'https://search.shopping.naver.com/catalog/123456789' 에서 숫자 부분 복사
-# 3. 아래 product_id 필드에 숫자만 입력 (예: product_id: '123456789')
-# 4. ID가 없거나 '[대괄호]' 패턴이면 이름/키워드로 자동 검색하여 가장 싼 상품을 찾습니다.
-
 common:
   exclude: used:cbshop
   display: 50
   timeout_seconds: 20
   ranking_limit: 100
   monitored_sellers:
-    - 삼성공식파트너 위드모바일
-    - 삼성전자공식파트너 쇼마젠시
-    - 삼성모바일파트너 코잇
-    - 삼성인증파트너 케이원정보
+    - "제이유"
+    - "포디아이"
+    - "엠디텍"
+    - "DMAC"
+    - "올인포"
+    - "쇼마젠시"
 
 targets:
-- name: S26 울트라 티타늄 화이트 512GB
+- name: 갤럭시 버즈3 화이트
   mode: api_query
-  query: '갤럭시 S26 울트라 티타늄 화이트 512GB'
-  rank_query: '갤럭시 S26 울트라'
-  category: S26
+  query: '갤럭시 버즈3 화이트'
+  rank_query: '갤럭시 버즈3'
+  category: 버즈
   request:
     pages: 1
     sort: sim
-    filter: null
   match:
-    required_keywords: ["S26", "울트라", "화이트"]
-    exclude_keywords: ["중고", "리퍼", "케이스", "커버", "필름"]
-    product_id: '59045494153'
+    required_keywords: [버즈3]
+    exclude_keywords: [중고, 리퍼, 케이스, 커버, 필름, 스킨, 스티커, 프로]
+    product_id: '53507707536'
     allowed_product_types: [1, 3]
-  url: https://search.shopping.naver.com/catalog/59045494153
-  browser:
-    wait_until: domcontentloaded
-    click_selectors: []
-    price_selector: "[class^='style_price_num']"
-    seller_selector: "[class^='style_mall_name']"
-    offer_row_selector: "li[class^='style_seller_item']"
+  url: https://search.shopping.naver.com/catalog/53507707536
+- name: 갤럭시 버즈3 실버
+  mode: api_query
+  query: '갤럭시 버즈3 실버'
+  rank_query: '갤럭시 버즈3'
+  category: 버즈
+  request:
+    pages: 1
+    sort: sim
+  match:
+    required_keywords: [버즈3]
+    exclude_keywords: [중고, 리퍼, 케이스, 커버, 필름, 스킨, 스티커, 프로]
+    product_id: '53507707537'
+    allowed_product_types: [1, 3]
+  url: https://search.shopping.naver.com/catalog/53507707537
+- name: 갤럭시 버즈3프로 화이트
+  mode: api_query
+  query: '갤럭시 버즈3프로 화이트'
+  rank_query: '갤럭시 버즈3프로'
+  category: 버즈
+  request:
+    pages: 1
+    sort: sim
+  match:
+    required_keywords: [버즈3, 프로]
+    exclude_keywords: [중고, 리퍼, 케이스, 커버, 필름, 스킨, 스티커]
+    product_id: '53508451504'
+    allowed_product_types: [1, 3]
+  url: https://search.shopping.naver.com/catalog/53508451504
+- name: 갤럭시 버즈3프로 실버
+  mode: api_query
+  query: '갤럭시 버즈3프로 실버'
+  rank_query: '갤럭시 버즈3프로'
+  category: 버즈
+  request:
+    pages: 1
+    sort: sim
+  match:
+    required_keywords: [버즈3, 프로]
+    exclude_keywords: [중고, 리퍼, 케이스, 커버, 필름, 스킨, 스티커]
+    product_id: '53508451505'
+    allowed_product_types: [1, 3]
+  url: https://search.shopping.naver.com/catalog/53508451505
+- name: 갤럭시 버즈4프로 블랙
+  mode: api_query
+  query: '갤럭시 버즈4프로 블랙'
+  rank_query: '갤럭시 버즈4프로'
+  category: 버즈
+  request:
+    pages: 1
+    sort: sim
+  match:
+    required_keywords: [버즈4, 프로]
+    exclude_keywords: [중고, 리퍼, 케이스, 커버, 필름, 스킨, 스티커]
+    product_id: '59061283797'
+    allowed_product_types: [1, 3]
+  url: https://search.shopping.naver.com/catalog/59061283797
+- name: 갤럭시 버즈4프로 화이트
+  mode: api_query
+  query: '갤럭시 버즈4프로 화이트'
+  rank_query: '갤럭시 버즈4프로'
+  category: 버즈
+  request:
+    pages: 1
+    sort: sim
+  match:
+    required_keywords: [버즈4, 프로]
+    exclude_keywords: [중고, 리퍼, 케이스, 커버, 필름, 스킨, 스티커]
+    product_id: '59061283798'
+    allowed_product_types: [1, 3]
+  url: https://search.shopping.naver.com/catalog/59061283798
+- name: 갤럭시 버즈4 블랙
+  mode: api_query
+  query: '갤럭시 버즈4 블랙'
+  rank_query: '갤럭시 버즈4'
+  category: 버즈
+  request:
+    pages: 1
+    sort: sim
+  match:
+    required_keywords: [버즈4]
+    exclude_keywords: [중고, 리퍼, 케이스, 커버, 필름, 스킨, 스티커]
+    product_id: '59061250873'
+    allowed_product_types: [1, 3]
+  url: https://search.shopping.naver.com/catalog/59061250873
+- name: 갤럭시 버즈4 화이트
+  mode: api_query
+  query: '갤럭시 버즈4 화이트'
+  rank_query: '갤럭시 버즈4'
+  category: 버즈
+  request:
+    pages: 1
+    sort: sim
+  match:
+    required_keywords: [버즈4]
+    exclude_keywords: [중고, 리퍼, 케이스, 커버, 필름, 스킨, 스티커]
+    product_id: '59061250874'
+    allowed_product_types: [1, 3]
+  url: https://search.shopping.naver.com/catalog/59061250874
+- name: 갤럭시 워치8 40mm 실버
+  mode: api_query
+  query: '갤럭시워치8 40mm 실버'
+  rank_query: '갤럭시 워치8'
+  category: 워치
+  request:
+    pages: 1
+    sort: sim
+  match:
+    required_keywords: [워치8, 40mm]
+    exclude_keywords: [중고, 리퍼, 스트랩, 필름, 케이스]
+    product_id: '55668557960'
+    allowed_product_types: [1, 3]
+  url: https://search.shopping.naver.com/catalog/55668557960
+- name: 갤럭시 워치8 40mm 그라파이트
+  mode: api_query
+  query: '갤럭시워치8 40mm 그라파이트'
+  rank_query: '갤럭시 워치8'
+  category: 워치
+  request:
+    pages: 1
+    sort: sim
+  match:
+    required_keywords: [워치8, 40mm]
+    exclude_keywords: [중고, 리퍼, 스트랩, 필름, 케이스]
+    product_id: '55727496882'
+    allowed_product_types: [1, 3]
+  url: https://search.shopping.naver.com/catalog/55727496882
+- name: 갤럭시 워치8 44mm 실버
+  mode: api_query
+  query: '갤럭시워치8 44mm 실버'
+  rank_query: '갤럭시 워치8'
+  category: 워치
+  request:
+    pages: 1
+    sort: sim
+  match:
+    required_keywords: [워치8, 44mm]
+    exclude_keywords: [중고, 리퍼, 스트랩, 필름, 케이스]
+    product_id: '55668557962'
+    allowed_product_types: [1, 3]
+  url: https://search.shopping.naver.com/catalog/55668557962
+- name: 갤럭시 워치8 44mm 그라파이트
+  mode: api_query
+  query: '갤럭시워치8 44mm 그라파이트'
+  rank_query: '갤럭시 워치8'
+  category: 워치
+  request:
+    pages: 1
+    sort: sim
+  match:
+    required_keywords: [워치8, 44mm]
+    exclude_keywords: [중고, 리퍼, 스트랩, 필름, 케이스]
+    product_id: '55727496884'
+    allowed_product_types: [1, 3]
+  url: https://search.shopping.naver.com/catalog/55727496884
+- name: 갤럭시 워치8 클래식 블랙
+  mode: api_query
+  query: '갤럭시워치8 클래식 블랙'
+  rank_query: '갤럭시 워치8 클래식'
+  category: 워치
+  request:
+    pages: 1
+    sort: sim
+  match:
+    required_keywords: [워치8, 클래식]
+    exclude_keywords: [중고, 리퍼, 스트랩, 필름, 케이스]
+    product_id: '55727507152'
+    allowed_product_types: [1, 3]
+  url: https://search.shopping.naver.com/catalog/55727507152
+- name: 갤럭시 워치8 클래식 화이트
+  mode: api_query
+  query: '갤럭시워치8 클래식 화이트'
+  rank_query: '갤럭시 워치8 클래식'
+  category: 워치
+  request:
+    pages: 1
+    sort: sim
+  match:
+    required_keywords: [워치8, 클래식]
+    exclude_keywords: [중고, 리퍼, 스트랩, 필름, 케이스]
+    product_id: '55668573794'
+    allowed_product_types: [1, 3]
+  url: https://search.shopping.naver.com/catalog/55668573794
+- name: 갤럭시 핏3
+  mode: api_query
+  query: '갤럭시 핏3'
+  rank_query: '갤럭시 핏3'
+  category: 핏
+  request:
+    pages: 1
+    sort: sim
+  match:
+    required_keywords: [핏3]
+    exclude_keywords: [중고, 리퍼, 스트랩, 필름, 케이스]
+    product_id: '55900277515'
+    allowed_product_types: [1, 3]
+  url: https://search.shopping.naver.com/catalog/55900277515
+- name: 갤럭시 버즈3FE 그레이
+  mode: api_query
+  query: '갤럭시 버즈3FE 그레이'
+  rank_query: '갤럭시 버즈3FE'
+  category: 버즈
+  request:
+    pages: 1
+    sort: sim
+  match:
+    required_keywords: [버즈3, FE]
+    exclude_keywords: [중고, 리퍼, 케이스, 커버, 필름, 스킨, 스티커]
+    product_id: '56796984706'
+    allowed_product_types: [1, 3]
+  url: https://search.shopping.naver.com/catalog/56796984706
+- name: 갤럭시 버즈3FE 블랙
+  mode: api_query
+  query: '갤럭시 버즈3FE 블랙'
+  rank_query: '갤럭시 버즈3FE'
+  category: 버즈
+  request:
+    pages: 1
+    sort: sim
+  match:
+    required_keywords: [버즈3, FE]
+    exclude_keywords: [중고, 리퍼, 케이스, 커버, 필름, 스킨, 스티커]
+    product_id: '56796983823'
+    allowed_product_types: [1, 3]
+  url: https://search.shopping.naver.com/catalog/56796983823
+- name: 갤럭시 워치 울트라 티타늄 실버
+  mode: api_query
+  query: '갤럭시워치 울트라 티타늄 실버'
+  rank_query: '갤럭시 워치 울트라'
+  category: 워치
+  request:
+    pages: 1
+    sort: sim
+  match:
+    required_keywords: [워치, 울트라]
+    exclude_keywords: [중고, 리퍼, 스트랩, 필름, 케이스]
+    product_id: '55727792362'
+    allowed_product_types: [1, 3]
+  url: https://search.shopping.naver.com/catalog/55727792362
+- name: 갤럭시 워치 울트라 티타늄 그레이
+  mode: api_query
+  query: '갤럭시워치 울트라 티타늄 그레이'
+  rank_query: '갤럭시 워치 울트라'
+  category: 워치
+  request:
+    pages: 1
+    sort: sim
+  match:
+    required_keywords: [워치, 울트라]
+    exclude_keywords: [중고, 리퍼, 스트랩, 필름, 케이스]
+    product_id: '55727789525'
+    allowed_product_types: [1, 3]
+  url: https://search.shopping.naver.com/catalog/55727789525
+- name: 갤럭시 워치 울트라 티타늄 블루
+  mode: api_query
+  query: '갤럭시워치 울트라 티타늄 블루'
+  rank_query: '갤럭시 워치 울트라'
+  category: 워치
+  request:
+    pages: 1
+    sort: sim
+  match:
+    required_keywords: [워치, 울트라]
+    exclude_keywords: [중고, 리퍼, 스트랩, 필름, 케이스]
+    product_id: '55727555801'
+    allowed_product_types: [1, 3]
+  url: https://search.shopping.naver.com/catalog/55727555801
+- name: 갤럭시 워치 울트라 티타늄 화이트
+  mode: api_query
+  query: '갤럭시워치 울트라 티타늄 화이트'
+  rank_query: '갤럭시 워치 울트라'
+  category: 워치
+  request:
+    pages: 1
+    sort: sim
+  match:
+    required_keywords: [워치, 울트라]
+    exclude_keywords: [중고, 리퍼, 스트랩, 필름, 케이스]
+    product_id: '55727792338'
+    allowed_product_types: [1, 3]
+  url: https://search.shopping.naver.com/catalog/55727792338
 
-- name: S26 울트라 코발트 바이올렛 512GB
-  mode: api_query
-  query: '갤럭시 S26 울트라 코발트 바이올렛 512GB'
-  rank_query: '갤럭시 S26 울트라'
-  category: S26
-  request:
-    pages: 1
-    sort: sim
-    filter: null
-  match:
-    required_keywords: ["S26", "울트라", "바이올렛"]
-    exclude_keywords: ["중고", "리퍼", "케이스", "커버", "필름"]
-    product_id: '59045494155'
-    allowed_product_types: [1, 3]
-  url: https://search.shopping.naver.com/catalog/59045494155
-  browser:
-    wait_until: domcontentloaded
-    click_selectors: []
-    price_selector: "[class^='style_price_num']"
-    seller_selector: "[class^='style_mall_name']"
-    offer_row_selector: "li[class^='style_seller_item']"
-
-- name: S26 울트라 스카이 블루 512GB
-  mode: api_query
-  query: '갤럭시 S26 울트라 스카이 블루 512GB'
-  rank_query: '갤럭시 S26 울트라'
-  category: S26
-  request:
-    pages: 1
-    sort: sim
-    filter: null
-  match:
-    required_keywords: ["S26", "울트라", "블루"]
-    exclude_keywords: ["중고", "리퍼", "케이스", "커버", "필름"]
-    product_id: '59045494154'
-    allowed_product_types: [1, 3]
-  url: https://search.shopping.naver.com/catalog/59045494154
-  browser:
-    wait_until: domcontentloaded
-    click_selectors: []
-    price_selector: "[class^='style_price_num']"
-    seller_selector: "[class^='style_mall_name']"
-    offer_row_selector: "li[class^='style_seller_item']"
-
-- name: S26 울트라 블랙 512GB
-  mode: api_query
-  query: '갤럭시 S26 울트라 블랙 512GB'
-  rank_query: '갤럭시 S26 울트라'
-  category: S26
-  request:
-    pages: 1
-    sort: sim
-    filter: null
-  match:
-    required_keywords: ["S26", "울트라", "블랙"]
-    exclude_keywords: ["중고", "리퍼", "케이스", "커버", "필름"]
-    product_id: '59045494152'
-    allowed_product_types: [1, 3]
-  url: https://search.shopping.naver.com/catalog/59045494152
-  browser:
-    wait_until: domcontentloaded
-    click_selectors: []
-    price_selector: "[class^='style_price_num']"
-    seller_selector: "[class^='style_mall_name']"
-    offer_row_selector: "li[class^='style_seller_item']"
-# 대상 쇼핑몰(Mall) 별 개별 추적 설정
-# 여기에 등록된 쇼핑몰은 지정된 쿼리 결과 내에서 해당 몰의 상품만 골라 mall_observations 시트에 저장됩니다.
 mall_targets:
-  - name: "위드모바일 - S26 울트라"
-    query: "갤럭시 S26 울트라"
-    mall_name: "삼성공식파트너 위드모바일"
-    category: "S26"
-    request:
-      pages: 10 # 랭킹 100위까지 탐색 (50개*2페이지)
-
-  - name: "쇼마젠시 - S26 울트라"
-    query: "갤럭시 S26 울트라"
-    mall_name: "삼성전자공식파트너 쇼마젠시"
-    category: "S26"
+  - name: "제이유 갤럭시 버즈"
+    query: "갤럭시 버즈"
+    mall_name: "제이유"
+    category: "버즈"
     request:
       pages: 10
-
-  - name: "코잇 - S26 울트라"
-    query: "갤럭시 S26 울트라"
-    mall_name: "삼성모바일파트너 코잇"
-    category: "S26"
+  - name: "포디아이 갤럭시 버즈"
+    query: "갤럭시 버즈"
+    mall_name: "포디아이"
+    category: "버즈"
     request:
       pages: 10
-
-  - name: "케이원정보 - S26 울트라"
-    query: "갤럭시 S26 울트라"
-    mall_name: "삼성인증파트너 케이원정보"
-    category: "S26"
+  - name: "엠디텍 갤럭시 버즈"
+    query: "갤럭시 버즈"
+    mall_name: "엠디텍"
+    category: "버즈"
+    request:
+      pages: 10
+  - name: "DMAC 갤럭시 워치"
+    query: "갤럭시 워치"
+    mall_name: "DMAC"
+    category: "워치"
+    request:
+      pages: 10
+  - name: "올인포 갤럭시 워치"
+    query: "갤럭시 워치"
+    mall_name: "올인포"
+    category: "워치"
+    request:
+      pages: 10
+  - name: "쇼마젠시 갤럭시 워치"
+    query: "갤럭시 워치"
+    mall_name: "쇼마젠시"
+    category: "워치"
     request:
       pages: 10
