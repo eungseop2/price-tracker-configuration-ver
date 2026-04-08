@@ -763,12 +763,6 @@
             margin-bottom: 24px;
         }
 
-        .chart-filters {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
         .filter-pill {
             white-space: nowrap;
         }
@@ -1480,9 +1474,12 @@
                 
                 <!-- Mall Content -->
                 <div class="mall-main-content">
-                    <div class="mall-header">
-                        <h2 id="currentMallTitle" class="mall-title">셀러를 선택하세요</h2>
-                        <div id="mallUpdateTime" class="mall-update-time"></div>
+                    <div class="header-left">
+                        <h2 id="selectedTitle">상품을 선택하세요</h2>
+                        <div id="sellerInfo" class="seller-info"></div>
+                    </div>
+                    <div class="header-right" id="catalogBtnContainer" style="display: none;">
+                        <a id="catalogLink" href="#" target="_blank" class="catalog-btn">카탈로그 바로가기 ↗</a>
                     </div>
                     
                     <div class="mall-stats-grid">
@@ -1809,6 +1806,17 @@
             }
 
             renderRankingView(product.rank_query || product.name);
+            
+            // 카탈로그 링크 업데이트
+            const catalogBtn = document.getElementById('catalogBtn');
+            if (product.product_url) {
+                catalogBtn.href = product.product_url;
+                catalogBtn.style.display = 'inline-flex';
+                catalogBtn.innerHTML = '카탈로그 바로가기 ↗';
+            } else {
+                catalogBtn.style.display = 'none';
+            }
+
             currentPage = 1;
             refreshChartView();
         }

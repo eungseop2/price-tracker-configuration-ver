@@ -385,6 +385,7 @@ class GoogleSheetStore:
                 "change_pct": latest.get("price_delta_pct"),
                 "product_id": latest.get("product_id"),
                 "product_type": latest.get("product_type"),
+                "product_url": latest.get("product_url"),
                 "image_url": latest.get("image_url"),
                 "search_rank": latest.get("search_rank"),
                 "rank_query": getattr(t_config, "rank_query", None) or name,
