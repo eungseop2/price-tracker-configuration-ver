@@ -301,28 +301,25 @@ def main() -> None:
             mall_reports = {"categories": mall_raw}
             
             # [사용자 요청] 카탈로그 최저가와 쇼핑몰 리포트 매칭 (Product Type 1 기반 강화)
-            logger.info(">>> 카탈로그 최저가 - 추적 셀러 데이터 정밀 매칭 시작")
+            logger.info(f">>> 카탈로그 정밀 매칭 시작 (분석 대상: {len(dashboard_raw['products'])}개 상품)")
             
             # 카테고리명 정규화를 위한 준비
             normalized_mall_raw = {str(k).strip(): v for k, v in mall_raw.items()}
 
+            match_count = 0
             for p in dashboard_raw["products"]:
                 price = p.get("current_price")
                 cat = str(p.get("category") or "").strip()
                 p_id = p.get("product_id")
-                p_type = str(p.get("product_type") or "")
                 
-                # 1. 매칭 대상 선정: Type 1(가격비교)이거나, product_id가 존재하는 경우
-                is_catalog = (p_type == "1" or (p_id and p_type == "3"))
-                
-                if is_catalog and price:
+                # 1. 매칭 대상 선정: product_id가 존재하는 모든 카탈로그 상품 (과거 데이터 소급 적용)
+                if p_id and price:
                     found_mall = None
                     if cat in normalized_mall_raw:
                         # 해당 카테고리의 모든 셀러 상품 검색
                         for mall_name, mall_data in normalized_mall_raw[cat].items():
                             for mp in mall_data.get("products", []):
                                 try:
-                                    # 가격 정수형 강제 변환 후 비교
                                     m_price = int(mp.get("price") or 0)
                                     target_price = int(price)
                                     
@@ -333,19 +330,16 @@ def main() -> None:
                                     continue
                             if found_mall: break
                     
-                    # 특정 상품(버즈4프로 화이트)에 대한 디버깅 로그 강화
-                    if "버즈" in p['name'] and "화이트" in p['name']:
-                        logger.info(f"  [Match Check] 상품: {p['name']}, 가격: {price}, 몰 매칭 여부: {found_mall or '실패'}")
-                        if not found_mall and cat in normalized_mall_raw:
-                            available_malls = list(normalized_mall_raw[cat].keys())
-                            logger.debug(f"    └─ 카테고리 '{cat}' 내 검색 가능 몰: {available_malls}")
-
                     if found_mall:
-                        logger.info(f"  [Match Success] {p['name']} -> {found_mall} (Price: {price})")
+                        logger.info(f"  [MATCH FOUND] {p['name']} -> {found_mall} (Price: {price})")
                         p["seller"] = found_mall
                         p["mall_link"] = {"category": cat, "mall": found_mall}
+                        match_count += 1
+
+            logger.info(f">>> 매칭 완료: 총 {match_count}개 상품 연결됨")
 
             data = {
+
 
 
                 "products": dashboard_raw["products"],
