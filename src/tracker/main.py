@@ -290,31 +290,46 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
 
     # ---------- [셀러 트래킹: 최저가 데이터 재활용] ----------
     if app_config.mall_targets:
-        logger.info("최저가 수집 데이터를 활용한 셀러 필터링 시작 (%d개 몰 타겟, %d개 수집 상품 분석)", 
-                    len(app_config.mall_targets), len(all_peeked_items))
+        logger.info(f"최저가 수집 데이터를 활용한 셀러 필터링 시작 ({len(app_config.mall_targets)}개 몰 타겟, {len(all_peeked_items)}개 수집 상품 분석)")
         
-        combined_collected_at = utc_now_iso()
+        # 중복 저장 방지를 위한 배치 구성
+        batch_payloads = []
+        from .util import normalize_for_match
         
+        # 상품별 중복 방지를 위한 셋 (한 회차 내에서 동일 몰의 동일 상품은 한 번만 저장)
+        global_seen = set()
+
         for m_target in app_config.mall_targets:
-            target_mall_search_term = normalize_for_match(m_target.mall_name)
+            target_mall_norm = normalize_for_match(m_target.mall_name)
             candidates = []
-            seen_urls = set()
             
             for itm in all_peeked_items:
                 # 카테고리가 일치하거나 쿼리 키워드가 포함된 경우 필터링
                 if itm.get("category") == m_target.category or m_target.query in itm.get("title", ""):
-                    if target_mall_search_term in normalize_for_match(itm.get("seller_name", "")):
-                        url = itm.get("product_url")
-                        if url not in seen_urls:
-                            itm["collected_at"] = combined_collected_at
+                    curr_itm_mall_norm = normalize_for_match(itm.get("seller_name", ""))
+                    
+                    if curr_itm_mall_norm == target_mall_norm:
+                        p_id = str(itm.get("product_id") or itm.get("product_url", ""))
+                        dup_key = f"{target_mall_norm}|{p_id}"
+                        
+                        if dup_key not in global_seen:
                             candidates.append(itm)
-                            seen_urls.add(url)
+                            global_seen.add(dup_key)
             
             if candidates:
-                store.insert_mall_records(m_target.name, m_target.query, m_target.mall_name, m_target.category, candidates)
-                logger.info(f"  └─ [{m_target.name}] 필터링 완료: {len(candidates)}개 상품 저장 (재활용)")
+                batch_payloads.append({
+                    "target_name": m_target.name,
+                    "query": m_target.query,
+                    "mall_name": m_target.mall_name,
+                    "category": m_target.category,
+                    "items": candidates
+                })
+                logger.info(f"  └─ [{m_target.name}] 필터링 완료: {len(candidates)}개 상품 저장 대기")
             else:
                 logger.warning(f"  └─ [{m_target.name}] 해당 셀러 상품을 찾을 수 없음 (카탈로그 결과 내)")
+
+        if batch_payloads:
+            store.insert_mall_records_batch(batch_payloads)
 
     store.close()
 

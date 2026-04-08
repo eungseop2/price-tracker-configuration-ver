@@ -79,6 +79,13 @@ class GoogleSheetStore:
             self._gc = gspread.authorize(credentials)
             self._sh = self._gc.open_by_key(self.spreadsheet_id)
             logger.info(f"구글 스프레드시트 연결 성공: {self._sh.title}")
+            
+            # 연결 시점에 주기적으로 자동 정리 실행 (매번 할 필요는 없으므로 확률적으로나 날짜 체크 가능)
+            # 여기서는 안전하게 주기적 정리를 수행하도록 유도
+            self.cleanup_old_records("mall_observations", days=7)
+            self.cleanup_old_records("observations", days=30)
+            self.cleanup_old_records("ranking_history", days=30)
+            
         except json.JSONDecodeError as e:
             logger.error(f"구글 서비스 계정 키 JSON 파싱 실패: {e}. 키의 형식을 확인하세요.")
             raise
@@ -124,7 +131,70 @@ class GoogleSheetStore:
                 self._headers_cache = {}
             self._headers_cache[name] = cols
             
+        # 작업 시트 로드 시 자동으로 하단 빈 행 정리 (셀 제한 방지)
+        self.resize_to_content(name)
         return ws
+
+    def resize_to_content(self, name: str):
+        """시트의 하단 빈 행을 삭제하여 셀 사용량을 최적화합니다."""
+        try:
+            ws = self._sh.worksheet(name)
+            # 데이터가 있는 마지막 행 찾기
+            all_values = ws.get_all_values()
+            last_row = len(all_values)
+            
+            # 최소 10행은 유지 (헤더 포함)
+            last_row = max(last_row, 10)
+            
+            # 현재 행 수와 비교하여 차이가 크면 축소 (자주 할 필요는 없음)
+            if ws.row_count > last_row + 100:
+                ws.resize(rows=last_row + 10)
+                logger.info(f"시트 '{name}' 크기 축소 완료: {ws.row_count} -> {last_row + 10} 행")
+        except Exception as e:
+            logger.warning(f"시트 '{name}' 크기 축소 중 오류: {e}")
+
+    def cleanup_old_records(self, name: str, days: int = 7):
+        """지정된 일수보다 오래된 데이터를 삭제하여 용량을 관리합니다."""
+        try:
+            ws = self._get_worksheet(name)
+            all_values = ws.get_all_values()
+            if len(all_values) <= 1:
+                return
+
+            headers = all_values[0]
+            if "collected_at" not in headers:
+                return
+                
+            date_idx = headers.index("collected_at")
+            threshold = datetime.now(timezone.utc) - timedelta(days=days)
+            
+            new_rows = [all_values[0]] # 헤더 유지
+            count = 0
+            for row in all_values[1:]:
+                try:
+                    ts_str = row[date_idx]
+                    if not ts_str:
+                        continue
+                    # ISO 날짜 파싱
+                    ts = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
+                    if ts.tzinfo is None:
+                        ts = ts.replace(tzinfo=timezone.utc)
+                    
+                    if ts >= threshold:
+                        new_rows.append(row)
+                    else:
+                        count += 1
+                except (ValueError, IndexError):
+                    new_rows.append(row) # 파싱 불가 시 유지
+            
+            if count > 0:
+                # 시트 내용 교체
+                ws.clear()
+                ws.update('A1', new_rows)
+                logger.info(f"시트 '{name}' 데이터 정리 완료: {count}건 삭제")
+                self.resize_to_content(name)
+        except Exception as e:
+            logger.error(f"시트 '{name}' 데이터 정리 실패: {e}")
 
     def _get_cached_headers(self, name: str):
         """시트의 헤더 정보를 가져오거나 캐시에서 반환"""
@@ -183,35 +253,55 @@ class GoogleSheetStore:
             logger.error(f"데이터 배치 저장 실패 (observations): {e}")
 
     def insert_mall_records(self, target_name: str, query: str, mall_name: str, category: str, items: list[dict[str, Any]]):
-        """특정 쇼핑몰 수집 기록 저장 (컬럼 순서 독립형)"""
-        if not items:
+        """특정 쇼핑몰 수집 기록 저장 (단일 타겟용 위함, 배치 저장용으로 전환 권장)"""
+        self.insert_mall_records_batch([{
+            "target_name": target_name,
+            "query": query,
+            "mall_name": mall_name,
+            "category": category,
+            "items": items
+        }])
+
+    def insert_mall_records_batch(self, batch_payloads: list[dict[str, Any]]):
+        """여러 타겟의 쇼핑몰 수집 기록을 한 번에 저장하여 시트 용량 및 API 사용량 최적화"""
+        if not batch_payloads:
             return
-        
+            
         ws = self._get_worksheet("mall_observations")
         current_headers = self._get_cached_headers("mall_observations")
-
-        rows = []
-        for itm in items:
-            p = itm.copy()
-            p["target_name"] = target_name
-            p["query"] = query
-            p["mall_name"] = mall_name
-            p["category"] = category
-            
-            row = []
-            for col in current_headers:
-                if not col:
-                    row.append("")
-                    continue
-                val = p.get(col)
-                row.append("" if val is None else val)
-            rows.append(row)
         
+        rows = []
+        for payload in batch_payloads:
+            t_name = payload["target_name"]
+            query = payload["query"]
+            m_name = payload["mall_name"]
+            cat = payload["category"]
+            items = payload["items"]
+            
+            for itm in items:
+                p = itm.copy()
+                p["target_name"] = t_name
+                p["query"] = query
+                p["mall_name"] = m_name
+                p["category"] = cat
+                
+                row = []
+                for col in current_headers:
+                    if not col:
+                        row.append("")
+                        continue
+                    val = p.get(col)
+                    row.append("" if val is None else val)
+                rows.append(row)
+        
+        if not rows:
+            return
+            
         try:
             ws.append_rows(rows, value_input_option='RAW')
-            logger.info(f"쇼핑몰 데이터 저장 성공: {target_name} ({len(rows)}건)")
+            logger.info(f"쇼핑몰 데이터 배치 저장 완료 (mall_observations): {len(rows)}건")
         except Exception as e:
-            logger.error(f"쇼핑몰 데이터 저장 실패 (mall_observations): {e}")
+            logger.error(f"쇼핑몰 데이터 배치 저장 실패 (mall_observations): {e}")
 
     def insert_ranking_batch(self, rows_to_insert: list[dict[str, Any]]):
         """랭킹 히스토리 저장"""
