@@ -123,17 +123,13 @@ class GoogleSheetStore:
             return []
         
         headers = all_values[0]
-        # 유효한 헤더(내용이 있는 것)까지만 사용
-        valid_headers = []
-        for h in headers:
-            if not h: break
-            valid_headers.append(h)
         
         records = []
         for row in all_values[1:]:
             record = {}
-            for i, h in enumerate(valid_headers):
-                record[h] = row[i] if i < len(row) else ""
+            for i, h in enumerate(headers):
+                if h: # 헤더가 비어있지 않은 컬럼만 데이터로 포함
+                    record[h] = row[i] if i < len(row) else ""
             records.append(record)
         return records
 
@@ -142,33 +138,36 @@ class GoogleSheetStore:
         self.insert_batch([payload])
 
     def insert_batch(self, payloads: list[dict[str, Any]]):
-        """여러 상품 수집 기록을 한 번에 저장 (성능 및 신뢰성 최적화)"""
+        """여러 상품 수집 기록을 한 번에 저장 (컬럼 순서에 독립적으로 실제 헤더에 맞춰 매핑)"""
         if not payloads:
             return
 
         ws = self._get_worksheet("observations")
-        cols = HEADERS["observations"]
+        # 실제 시트의 헤더 순서를 읽어와서 매핑 기준으로 삼음 (열 밀림 방지)
+        current_headers = ws.row_values(1)
+        if not current_headers:
+            current_headers = HEADERS["observations"]
+            ws.update('A1', [current_headers])
         
         rows = []
         for p in payloads:
             row = []
-            for col in cols:
-                val = p.get(col)
-                # GSheet 기록 시 None은 빈 문자열로 변환하여 에러 방지
-                if val is None:
+            for col in current_headers:
+                if not col: # 헤더명이 없는 빈 컬럼인 경우 빈값으로 채움
                     row.append("")
-                else:
-                    row.append(val)
+                    continue
+                val = p.get(col)
+                row.append("" if val is None else val)
             rows.append(row)
             
         try:
-            ws.append_rows(rows)
+            ws.append_rows(rows, value_input_option='RAW')
             logger.info(f"데이터 배치 저장 완료 (observations): {len(rows)}건")
         except Exception as e:
             logger.error(f"데이터 배치 저장 실패 (observations): {e}")
 
     def insert_mall_records(self, target_name: str, query: str, mall_name: str, category: str, items: list[dict[str, Any]]):
-        """특정 쇼핑몰 수집 기록 저장"""
+        """특정 쇼핑몰 수집 기록 저장 (컬럼 순서 독립형)"""
         if not items:
             return
         
@@ -202,18 +201,24 @@ class GoogleSheetStore:
             return
             
         ws = self._get_worksheet("ranking_history")
-        cols = HEADERS["ranking_history"]
-        
+        current_headers = ws.row_values(1)
+        if not current_headers:
+            current_headers = HEADERS["ranking_history"]
+            ws.update('A1', [current_headers])
+
         rows = []
         for data in rows_to_insert:
             row = []
-            for col in cols:
+            for col in current_headers:
+                if not col:
+                    row.append("")
+                    continue
                 val = data.get(col)
                 row.append("" if val is None else val)
             rows.append(row)
         
         try:
-            ws.append_rows(rows)
+            ws.append_rows(rows, value_input_option='RAW')
             logger.info(f"랭킹 히스토리 저장 완료: {len(rows)}건")
         except Exception as e:
             logger.error(f"랭킹 히스토리 저장 실패 (ranking_history): {e}")
