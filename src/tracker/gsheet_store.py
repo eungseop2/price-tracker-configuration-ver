@@ -280,7 +280,12 @@ class GoogleSheetStore:
             # 이전 가격 찾기 (같은 몰의 같은 상품 ID 중 직전 수집 시점)
             title = r.get("title", "")
             p_id = str(r.get("product_id") or "")
-            curr_price = r.get("price") or 0
+            
+            try:
+                curr_price = int(r.get("price") or 0)
+            except (ValueError, TypeError):
+                curr_price = 0
+                
             prev_price = 0
             
             # 같은 몰의 같은 ID(없으면 이름)를 가진 이전 기록들 필터링 (동의어 및 대소문자 무시 매칭 적용)
@@ -299,7 +304,10 @@ class GoogleSheetStore:
                 
             if history:
                 latest_h = sorted(history, key=lambda x: str(x["collected_at"]), reverse=True)[0]
-                prev_price = latest_h.get("price") or 0
+                try:
+                    prev_price = int(latest_h.get("price") or 0)
+                except (ValueError, TypeError):
+                    prev_price = 0
             
             delta = curr_price - prev_price if prev_price > 0 else 0
             delta_str = "0"
@@ -313,9 +321,13 @@ class GoogleSheetStore:
             all_history = sorted(history + [r], key=lambda x: str(x["collected_at"]))
             chart_history = []
             for h in all_history[-50:]:
+                try:
+                    h_price = int(h.get("price") or 0)
+                except (ValueError, TypeError):
+                    h_price = 0
                 chart_history.append({
                     "t": h["collected_at"],
-                    "p": h.get("price", 0)
+                    "p": h_price
                 })
             
             report[cat][mall]["total_products"] += 1
@@ -357,7 +369,14 @@ class GoogleSheetStore:
             # 시간순 정렬 (ISO 날짜 문자열 정렬)
             p_history_sorted = sorted(p_history, key=lambda x: str(x.get("collected_at", "")))
             latest = p_history_sorted[-1]
-            prices = [int(r["price"]) for r in p_history_sorted if r.get("price")]
+            
+            prices = []
+            for r in p_history_sorted:
+                try:
+                    p = int(r.get("price") or 0)
+                    if p > 0: prices.append(p)
+                except (ValueError, TypeError):
+                    continue
             
             # 통계 계산
             all_time_low = min(prices) if prices else None
@@ -400,7 +419,7 @@ class GoogleSheetStore:
             product_data = {
                 "name": name,
                 "category": t_config.category,
-                "current_price": latest["price"],
+                "current_price": int(latest.get("price") or 0),
                 "seller": latest.get("seller_name") or "네이버",
                 "status": latest.get("price_change_status"),
                 "change_pct": latest.get("price_delta_pct"),
@@ -417,7 +436,7 @@ class GoogleSheetStore:
                 "avg_7d": avg_7d,
                 "avg_30d": avg_30d,
                 "history": [
-                    {"t": r["collected_at"], "p": r["price"]} for r in p_history_sorted[-1000:]
+                    {"t": r["collected_at"], "p": int(r.get("price") or 0)} for r in p_history_sorted[-1000:]
                 ]
             }
             data["products"].append(product_data)
@@ -431,7 +450,14 @@ class GoogleSheetStore:
         matches = [r for r in records if r.get("target_name") == target_name and r.get("success") == 1]
         if not matches:
             return None
-        return sorted(matches, key=lambda x: x["collected_at"], reverse=True)[0]
+        latest = sorted(matches, key=lambda x: x["collected_at"], reverse=True)[0]
+        # 가격 데이터 정수형 변환 보장
+        if "price" in latest:
+            try:
+                latest["price"] = int(latest["price"] or 0)
+            except (ValueError, TypeError):
+                latest["price"] = 0
+        return latest
 
     def close(self):
         pass
