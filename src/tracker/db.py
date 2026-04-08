@@ -35,7 +35,9 @@ CREATE TABLE IF NOT EXISTS observations (
     price_delta_pct REAL,
     alert_triggered INTEGER DEFAULT 0,
     image_url TEXT,
-    search_rank INTEGER
+    search_rank INTEGER,
+    product_code TEXT,
+    is_unauthorized INTEGER DEFAULT 0
 );
 
 CREATE INDEX IF NOT EXISTS idx_observations_target_time
@@ -53,7 +55,9 @@ CREATE TABLE IF NOT EXISTS ranking_history (
     product_type INTEGER,
     product_url TEXT,
     image_url TEXT,
-    is_ad INTEGER DEFAULT 0
+    is_ad INTEGER DEFAULT 0,
+    product_code TEXT,
+    is_unauthorized INTEGER DEFAULT 0
 );
 
 CREATE INDEX IF NOT EXISTS idx_ranking_query_time
@@ -71,6 +75,8 @@ _MIGRATION_COLUMNS = [
     ("product_id", "TEXT"),
     ("image_url", "TEXT"),
     ("search_rank", "INTEGER"),
+    ("product_code", "TEXT"),
+    ("is_unauthorized", "INTEGER DEFAULT 0"),
 ]
 
 
@@ -103,7 +109,7 @@ class ObservationStore:
             "config_mode", "fallback_used", "title", "price", "seller_name",
             "product_id", "product_type", "product_url", "raw_payload", "error_message",
             "price_change_status", "prev_price", "price_delta", "price_delta_pct",
-            "alert_triggered", "image_url", "search_rank"
+            "alert_triggered", "image_url", "search_rank", "product_code", "is_unauthorized"
         ]
         values = [payload.get(col) for col in columns]
         self.conn.execute(
@@ -172,6 +178,8 @@ class ObservationStore:
                 "avg_7d": calc_avg(7), "avg_30d": calc_avg(30), "avg_90d": calc_avg(90),
                 "all_time_low": stats["min_p"], "all_time_high": stats["max_p"],
                 "image_url": latest["image_url"], "search_rank": latest.get("search_rank"),
+                "product_code": latest.get("product_code"),
+                "is_unauthorized": latest.get("is_unauthorized", 0),
                 "history": [{"t": r["collected_at"], "p": r["price"]} for r in hist_all[-500:]]
             })
 
@@ -225,7 +233,7 @@ class RankingStore:
 
     def insert_ranking_batch(self, rows: list[dict[str, Any]]) -> None:
         if not rows: return
-        cols = ["query", "rank", "collected_at", "title", "price", "seller_name", "product_id", "product_type", "product_url", "image_url", "is_ad"]
+        cols = ["query", "rank", "collected_at", "title", "price", "seller_name", "product_id", "product_type", "product_url", "image_url", "is_ad", "product_code", "is_unauthorized"]
         self.conn.executemany(f"INSERT INTO ranking_history ({','.join(cols)}) VALUES ({','.join(['?']*len(cols))})",
                              [[r.get(c) for c in cols] for r in rows])
         self.conn.commit()

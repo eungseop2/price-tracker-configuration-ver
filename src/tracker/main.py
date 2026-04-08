@@ -32,6 +32,48 @@ from .util import (
     is_night_time_kst, normalize_for_match
 )
 
+def _normalize_seller_name(name: str | None) -> str:
+    """판매처 이름을 비교하기 좋게 소문자화 및 공백 제거합니다."""
+    if not name: return ""
+    return name.lower().replace(" ", "")
+
+def _is_authorized_seller(seller_name: str | None, authorized_sellers: list[str]) -> bool:
+    """해당 판매처가 공식(Authorized) 업체인지 확인합니다."""
+    if not seller_name or not authorized_sellers:
+        return False
+    sn = _normalize_seller_name(seller_name)
+    for auth in authorized_sellers:
+        if _normalize_seller_name(auth) == sn:
+            return True
+    return False
+
+def _extract_image_id(url: str | None) -> str | None:
+    """이미지 URL에서 핵심 식별자(파일명의 상품 번호 등)를 추출합니다."""
+    if not url: return None
+    # 예: https://shopping-phinf.pstatic.net/main_5350770/53507707536.jpg?type=f160
+    path = url.split("?")[0]
+    filename = path.split("/")[-1]
+    return filename.split(".")[0]
+
+def _map_product_code(image_url: str | None, image_map: dict[str, str]) -> str | None:
+    """이미지 URL을 기반으로 사전에 등록된 제품 코드를 반환합니다."""
+    if not image_url or not image_map:
+        return None
+    
+    # 1. 완전 일치 확인
+    if image_url in image_map:
+        return image_map[image_url]
+    
+    img_id = _extract_image_id(image_url)
+    if not img_id: return None
+
+    # 2. 부분 일치 확인 (이미지 ID 포함 여부)
+    for map_url, code in image_map.items():
+        if img_id in map_url or map_url in image_url:
+            return code
+            
+    return None
+
 logger = logging.getLogger("naver_price_tracker")
 
 
@@ -110,10 +152,14 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                 for itm in items:
                     # itm은 이제 naver_api.py에서 반환된 정규화된 전체 데이터 리스트임
                     itm["category"] = target.category
+                    # 낱개 상품들에 대해서도 이미지 매핑 수행
+                    itm["product_code"] = _map_product_code(itm.get("image_url"), app_config.image_map)
                     all_peeked_items.append(itm)
                 
             result["collected_at"] = utc_now_iso()
             result["config_mode"] = target.mode
+            # 최종 선정된 최저가 상품에 대해서도 이미지 매핑 수행
+            result["product_code"] = _map_product_code(result.get("image_url"), app_config.image_map)
 
             current_price = result.get("price")
             if current_price is not None:
@@ -175,6 +221,40 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                 "prev_price": None,
                 "alert_triggered": 0
             })
+
+    # ---------- [도용 감시 로직 추가] ----------
+    # 1. 이번 회차 수집된 모든 상품 중 공식 판매처가 사용한 이미지 ID들 추출
+    official_image_ids = set()
+    for itm in all_peeked_items:
+        if _is_authorized_seller(itm.get("seller_name"), app_config.authorized_sellers):
+            img_id = _extract_image_id(itm.get("image_url"))
+            if img_id:
+                official_image_ids.add(img_id)
+    
+    # 2. 모든 수집 상품에 대해 도용 여부 판단
+    for itm in all_peeked_items:
+        img_id = _extract_image_id(itm.get("image_url"))
+        if img_id in official_image_ids:
+            if not _is_authorized_seller(itm.get("seller_name"), app_config.authorized_sellers):
+                itm["is_unauthorized"] = 1
+                itm["product_code"] = itm.get("product_code") or "IMAGE_MISUSE_DETECTED"
+            else:
+                itm["is_unauthorized"] = 0
+        else:
+            itm["is_unauthorized"] = 0
+
+    # 3. 최저가 수집 결과(collected_payloads)들도 동일하게 도용 여부 플래그 업데이트
+    for payload in collected_payloads:
+        if payload.get("success"):
+            img_id = _extract_image_id(payload.get("image_url"))
+            if img_id in official_image_ids:
+                if not _is_authorized_seller(payload.get("seller_name"), app_config.authorized_sellers):
+                    payload["is_unauthorized"] = 1
+                    payload["product_code"] = payload.get("product_code") or "IMAGE_MISUSE_DETECTED"
+                else:
+                    payload["is_unauthorized"] = 0
+            else:
+                payload["is_unauthorized"] = 0
 
     # 루프 종료 후 한 번에 저장 (Batch Insert)
     if collected_payloads:

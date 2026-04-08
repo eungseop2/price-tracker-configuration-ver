@@ -3,6 +3,13 @@ common:
   display: 50
   timeout_seconds: 20
   ranking_limit: 100
+  authorized_sellers:
+    - "제이유"
+    - "포디아이"
+    - "엠디텍"
+    - "쇼마젠시"
+    - "DMAC"
+    - "올인포"
   monitored_sellers:
     - "제이유"
     - "포디아이"
@@ -22,6 +29,12 @@ common:
     - "신세계몰"
     - "인터커머스"
     - "정품포유"
+  
+  # 이미지 매핑 (회사 이미지 도용 감시용)
+  # 형식 - "이미지URL": "상품코드"
+  image_map:
+    "https://shopping-phinf.pstatic.net/main_5350770/53507707536.jpg": "BUDS3_WHITE_OFFICIAL"
+    "https://shopping-phinf.pstatic.net/main_5350770/53507707537.jpg": "BUDS3_SILVER_OFFICIAL"
 
 
 targets:

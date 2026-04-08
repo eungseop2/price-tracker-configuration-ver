@@ -14,15 +14,15 @@ HEADERS = {
         "target_name", "source_mode", "collected_at", "success", "status", 
         "price", "prev_price", "price_delta", "price_delta_pct", "price_change_status",
         "title", "seller_name", "product_id", "product_url", "image_url", "search_rank",
-        "fallback_used", "alert_triggered", "product_type"
+        "fallback_used", "alert_triggered", "product_type", "product_code", "is_unauthorized"
     ],
     "mall_observations": [
         "target_name", "query", "mall_name", "category", "collected_at", 
-        "title", "price", "product_id", "product_type", "product_url", "image_url", "search_rank"
+        "title", "price", "product_id", "product_type", "product_url", "image_url", "search_rank", "product_code", "is_unauthorized"
     ],
     "ranking_history": [
         "query", "rank", "collected_at", "title", "price", "seller_name", 
-        "product_id", "product_type", "product_url", "image_url", "is_ad"
+        "product_id", "product_type", "product_url", "image_url", "is_ad", "product_code", "is_unauthorized"
     ]
 }
 
@@ -388,6 +388,8 @@ class GoogleSheetStore:
                 "product_url": latest.get("product_url"),
                 "image_url": latest.get("image_url"),
                 "search_rank": latest.get("search_rank"),
+                "product_code": latest.get("product_code"),
+                "is_unauthorized": latest.get("is_unauthorized", 0),
                 "rank_query": getattr(t_config, "rank_query", None) or name,
                 "all_time_low": all_time_low,
                 "all_time_high": all_time_high,
