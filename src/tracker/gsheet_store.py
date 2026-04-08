@@ -102,6 +102,27 @@ class GoogleSheetStore:
         self._worksheets[name] = ws
         return ws
 
+    def _get_all_records_safe(self, ws):
+        """gspread의 get_all_records()가 빈 헤더 중복 시 에러를 내는 문제를 해결한 안전한 버전"""
+        all_values = ws.get_all_values()
+        if not all_values:
+            return []
+        
+        headers = all_values[0]
+        # 유효한 헤더(내용이 있는 것)까지만 사용
+        valid_headers = []
+        for h in headers:
+            if not h: break
+            valid_headers.append(h)
+        
+        records = []
+        for row in all_values[1:]:
+            record = {}
+            for i, h in enumerate(valid_headers):
+                record[h] = row[i] if i < len(row) else ""
+            records.append(record)
+        return records
+
     def insert(self, payload: dict[str, Any]):
         """단일 상품 수집 기록 저장 (내부적으로 insert_batch 활용)"""
         self.insert_batch([payload])
@@ -186,7 +207,7 @@ class GoogleSheetStore:
     def get_latest_rankings(self, query: str) -> list[dict[str, Any]]:
         """특정 쿼리의 가장 최근 랭킹 데이터를 가져옵니다."""
         ws = self._get_worksheet("ranking_history")
-        all_records = ws.get_all_records()
+        all_records = self._get_all_records_safe(ws)
         
         matches = [r for r in all_records if r.get("query") == query]
         if not matches:
@@ -198,7 +219,7 @@ class GoogleSheetStore:
     def get_mall_report_data(self, monitored_sellers: list[str] | None = None) -> dict[str, Any]:
         """쇼핑몰 리포트용 계층 데이터 구성 (대시보드 노출)"""
         ws = self._get_worksheet("mall_observations")
-        records = ws.get_all_records()
+        records = self._get_all_records_safe(ws)
         
         if not records:
             return {}
@@ -315,7 +336,7 @@ class GoogleSheetStore:
     def get_dashboard_data(self, targets: Any) -> dict[str, Any]:
         """대시보드 UI용 데이터 생성"""
         ws = self._get_worksheet("observations")
-        records = ws.get_all_records()
+        records = self._get_all_records_safe(ws)
         
         target_map = {t.name: t for t in targets}
         from .util import utc_now_iso
@@ -406,7 +427,7 @@ class GoogleSheetStore:
     def get_latest_success(self, target_name: str) -> dict[str, Any] | None:
         """특정 상품의 가장 최근 성공 수집 기록 반환"""
         ws = self._get_worksheet("observations")
-        records = ws.get_all_records()
+        records = self._get_all_records_safe(ws)
         matches = [r for r in records if r.get("target_name") == target_name and r.get("success") == 1]
         if not matches:
             return None
