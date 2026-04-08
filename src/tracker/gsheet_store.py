@@ -14,7 +14,7 @@ HEADERS = {
         "target_name", "source_mode", "collected_at", "success", "status", 
         "price", "prev_price", "price_delta", "price_delta_pct", "price_change_status",
         "title", "seller_name", "product_id", "product_url", "image_url", "search_rank",
-        "fallback_used", "alert_triggered"
+        "fallback_used", "alert_triggered", "product_type"
     ],
     "mall_observations": [
         "target_name", "query", "mall_name", "category", "collected_at", 
@@ -384,6 +384,7 @@ class GoogleSheetStore:
                 "status": latest.get("price_change_status"),
                 "change_pct": latest.get("price_delta_pct"),
                 "product_id": latest.get("product_id"),
+                "product_type": latest.get("product_type"),
                 "image_url": latest.get("image_url"),
                 "search_rank": latest.get("search_rank"),
                 "rank_query": getattr(t_config, "rank_query", None) or name,

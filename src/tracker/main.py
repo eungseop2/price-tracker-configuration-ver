@@ -302,8 +302,9 @@ def main() -> None:
             
             # [사용자 요청] 카탈로그 최저가와 쇼핑몰 리포트 매칭 (Product Type 1 기반)
             for p in dashboard_raw["products"]:
-                # product_type 1(가격비교 카탈로그)인 경우에만 정밀 매칭 시도
-                if str(p.get("product_type")) == "1":
+                p_type = p.get("product_type")
+                # product_type 1(가격비교 카탈로그)인 경우에만 정밀 매칭 시도 (숫자/문자열 모두 대응)
+                if str(p_type) == "1":
                     price = p.get("current_price")
                     cat = p.get("category")
                     
@@ -318,11 +319,16 @@ def main() -> None:
                             if found_mall: break
                     
                     if found_mall:
-                        logger.info(f"  └─ 매칭 성공: {p['name']} -> {found_mall} (가격: {price})")
+                        logger.info(f"  [Match Success] {p['name']} -> {found_mall} (Price: {price})")
                         p["seller"] = found_mall
                         p["mall_link"] = {"category": cat, "mall": found_mall}
+                    else:
+                        logger.debug(f"  [Match Skip] {p['name']} (Price: {price}) - No matching mall price found in category {cat}")
+                else:
+                    logger.debug(f"  [Match Skip] {p['name']} (Type: {p_type}) - Not a catalog product (Type 1)")
 
             data = {
+
                 "products": dashboard_raw["products"],
                 "rankings": rankings,
                 "mall_reports": mall_reports,
