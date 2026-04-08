@@ -422,7 +422,7 @@ class GoogleSheetStore:
                 "current_price": int(latest.get("price") or 0),
                 "seller": latest.get("seller_name") or "네이버",
                 "status": latest.get("price_change_status"),
-                "change_pct": latest.get("price_delta_pct"),
+                "change_pct": float(latest.get("price_delta_pct") or 0.0),
                 "product_id": latest.get("product_id"),
                 "product_type": latest.get("product_type"),
                 "product_url": latest.get("product_url"),
