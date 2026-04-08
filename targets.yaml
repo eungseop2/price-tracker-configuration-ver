@@ -350,3 +350,64 @@ mall_targets:
     category: "워치"
     request:
       pages: 10
+  - name: "유피시스템 갤럭시 버즈"
+    query: "갤럭시 버즈"
+    mall_name: "유피시스템"
+    category: "버즈"
+    request:
+      pages: 10
+  - name: "유피시스템 갤럭시 워치"
+    query: "갤럭시 워치"
+    mall_name: "유피시스템"
+    category: "워치"
+    request:
+      pages: 10
+  - name: "갤러리몰 갤럭시 버즈"
+    query: "갤럭시 버즈"
+    mall_name: "갤러리몰"
+    category: "버즈"
+    request:
+      pages: 10
+  - name: "갤러리몰 갤럭시 워치"
+    query: "갤럭시 워치"
+    mall_name: "갤러리몰"
+    category: "워치"
+    request:
+      pages: 10
+  - name: "윤심컴퍼니 갤럭시 버즈"
+    query: "갤럭시 버즈"
+    mall_name: "윤심컴퍼니"
+    category: "버즈"
+    request:
+      pages: 10
+  - name: "윤심컴퍼니 갤럭시 워치"
+    query: "갤럭시 워치"
+    mall_name: "윤심컴퍼니"
+    category: "워치"
+    request:
+      pages: 10
+  - name: "오르므몰 갤럭시 버즈"
+    query: "갤럭시 버즈"
+    mall_name: "오르므몰"
+    category: "버즈"
+    request:
+      pages: 10
+  - name: "오르므몰 갤럭시 워치"
+    query: "갤럭시 워치"
+    mall_name: "오르므몰"
+    category: "워치"
+    request:
+      pages: 10
+  - name: "나노랩 갤럭시 버즈"
+    query: "갤럭시 버즈"
+    mall_name: "나노랩"
+    category: "버즈"
+    request:
+      pages: 10
+  - name: "나노랩 갤럭시 워치"
+    query: "갤럭시 워치"
+    mall_name: "나노랩"
+    category: "워치"
+    request:
+      pages: 10
+
