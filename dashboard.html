@@ -1556,6 +1556,7 @@
                                 <thead>
                                     <tr>
                                         <th>최근 확인일</th>
+                                        <th>상품코드</th>
                                         <th>상품명</th>
                                         <th>현재가</th>
                                         <th>이전가</th>
@@ -2113,6 +2114,7 @@
                         <div class="time-ago">${timeAgo(h.t)}</div>
                         <div class="time-label">${formatKoreanDate(h.t)}</div>
                     </td>
+                    <td><span class="badge-protection" style="background:rgba(49,130,247,0.05); color:var(--toss-blue); border:none; padding:2px 8px; font-size:11px;">${product.product_code || '-'}</span></td>
                     <td>${product.title}</td>
                     <td class="mono" style="font-weight:700; color:var(--text-main)">${formatPrice(h.p)}</td>
                     <td class="mono">-</td>

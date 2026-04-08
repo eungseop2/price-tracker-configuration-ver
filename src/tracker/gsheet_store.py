@@ -367,6 +367,7 @@ class GoogleSheetStore:
             report[cat][mall]["total_products"] += 1
             report[cat][mall]["products"].append({
                 "title": title,
+                "product_code": r.get("product_code", ""),
                 "collected_at": r.get("collected_at", "")[:16],
                 "price": curr_price,
                 "curr_price_fmt": format_price(curr_price),

@@ -153,7 +153,9 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                     # itm은 이제 naver_api.py에서 반환된 정규화된 전체 데이터 리스트임
                     itm["category"] = target.category
                     # 낱개 상품들에 대해서도 이미지 매핑 수행
-                    itm["product_code"] = _map_product_code(itm.get("image_url"), app_config.image_map)
+                    p_code = _map_product_code(itm.get("image_url"), app_config.image_map)
+                    # 이미지 매핑 실패 시, 현재 조회 중인 타겟의 이름을 코드로 활용 (쇼핑몰 추적 식별용)
+                    itm["product_code"] = p_code or target.name
                     all_peeked_items.append(itm)
                 
             result["collected_at"] = utc_now_iso()
