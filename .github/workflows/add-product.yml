@@ -87,8 +87,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add targets.yaml
-          git diff --staged --quiet || git commit -m "Add product: ${{ github.event.inputs.product_name }}"
-          git push origin main
+          if ! git diff --staged --quiet; then
+            git commit -m "Add product: ${{ github.event.inputs.product_name }}"
+            git pull --rebase origin main
+            git push origin main
+          fi
 
       - name: Trigger price collection
         run: |

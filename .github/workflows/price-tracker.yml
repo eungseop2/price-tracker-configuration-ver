@@ -87,10 +87,10 @@ jobs:
           if ! git diff --quiet || ! git diff --staged --quiet; then
             git commit -m "📊 Update dashboard data [skip ci]"
             # 동시성 문제 해결을 위해 push 전 최신 코드 pull(rebase) 수행
-            # Unstaged changes(summary.json 등)가 병합을 방해하지 않도록 stash 처리
+            # 충돌 발생 시 Action이 새로 수집한 데이터를 우선시(-X theirs)
             git stash
-            git pull --rebase origin main
-            git push || (sleep 10 && git pull --rebase origin main && git push)
+            git pull --rebase -X theirs origin main
+            git push || (sleep 10 && git pull --rebase -X theirs origin main && git push)
             git stash pop || echo "Nothing to pop"
           fi
 
