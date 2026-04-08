@@ -362,7 +362,7 @@ class GoogleSheetStore:
         now = datetime.now(timezone.utc)
 
         for name, t_config in target_map.items():
-            p_history = [r for r in records if r.get("target_name") == name and r.get("success") == 1]
+            p_history = [r for r in records if r.get("target_name") == name and str(r.get("success")) == "1"]
             if not p_history:
                 continue
             
@@ -427,9 +427,9 @@ class GoogleSheetStore:
                 "product_type": latest.get("product_type"),
                 "product_url": latest.get("product_url"),
                 "image_url": latest.get("image_url"),
-                "search_rank": latest.get("search_rank"),
+                "search_rank": int(latest.get("search_rank") or 0) if latest.get("search_rank") else None,
                 "product_code": latest.get("product_code"),
-                "is_unauthorized": latest.get("is_unauthorized", 0),
+                "is_unauthorized": int(latest.get("is_unauthorized") or 0),
                 "rank_query": getattr(t_config, "rank_query", None) or name,
                 "all_time_low": all_time_low,
                 "all_time_high": all_time_high,
@@ -447,7 +447,7 @@ class GoogleSheetStore:
         """특정 상품의 가장 최근 성공 수집 기록 반환"""
         ws = self._get_worksheet("observations")
         records = self._get_all_records_safe(ws)
-        matches = [r for r in records if r.get("target_name") == target_name and r.get("success") == 1]
+        matches = [r for r in records if r.get("target_name") == target_name and str(r.get("success")) == "1"]
         if not matches:
             return None
         latest = sorted(matches, key=lambda x: x["collected_at"], reverse=True)[0]
