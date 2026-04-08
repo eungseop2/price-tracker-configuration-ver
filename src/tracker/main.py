@@ -300,34 +300,53 @@ def main() -> None:
             mall_raw = store.get_mall_report_data(monitored_sellers=app_config.monitored_sellers)
             mall_reports = {"categories": mall_raw}
             
-            # [사용자 요청] 카탈로그 최저가와 쇼핑몰 리포트 매칭 (Product Type 1 기반)
+            # [사용자 요청] 카탈로그 최저가와 쇼핑몰 리포트 매칭 (Product Type 1 기반 강화)
+            logger.info(">>> 카탈로그 최저가 - 추적 셀러 데이터 정밀 매칭 시작")
+            
+            # 카테고리명 정규화를 위한 준비
+            normalized_mall_raw = {str(k).strip(): v for k, v in mall_raw.items()}
+
             for p in dashboard_raw["products"]:
-                p_type = p.get("product_type")
-                # product_type 1(가격비교 카탈로그)인 경우에만 정밀 매칭 시도 (숫자/문자열 모두 대응)
-                if str(p_type) == "1":
-                    price = p.get("current_price")
-                    cat = p.get("category")
-                    
+                price = p.get("current_price")
+                cat = str(p.get("category") or "").strip()
+                p_id = p.get("product_id")
+                p_type = str(p.get("product_type") or "")
+                
+                # 1. 매칭 대상 선정: Type 1(가격비교)이거나, product_id가 존재하는 경우
+                is_catalog = (p_type == "1" or (p_id and p_type == "3"))
+                
+                if is_catalog and price:
                     found_mall = None
-                    if cat in mall_raw:
-                        for mall_name, mall_data in mall_raw[cat].items():
-                            # 해당 몰의 최신 수집 상품 중 가격이 일치하는 것이 있는지 확인
+                    if cat in normalized_mall_raw:
+                        # 해당 카테고리의 모든 셀러 상품 검색
+                        for mall_name, mall_data in normalized_mall_raw[cat].items():
                             for mp in mall_data.get("products", []):
-                                if mp.get("price") == price:
-                                    found_mall = mall_name
-                                    break
+                                try:
+                                    # 가격 정수형 강제 변환 후 비교
+                                    m_price = int(mp.get("price") or 0)
+                                    target_price = int(price)
+                                    
+                                    if m_price == target_price and m_price > 0:
+                                        found_mall = mall_name
+                                        break
+                                except (ValueError, TypeError):
+                                    continue
                             if found_mall: break
                     
+                    # 특정 상품(버즈4프로 화이트)에 대한 디버깅 로그 강화
+                    if "버즈" in p['name'] and "화이트" in p['name']:
+                        logger.info(f"  [Match Check] 상품: {p['name']}, 가격: {price}, 몰 매칭 여부: {found_mall or '실패'}")
+                        if not found_mall and cat in normalized_mall_raw:
+                            available_malls = list(normalized_mall_raw[cat].keys())
+                            logger.debug(f"    └─ 카테고리 '{cat}' 내 검색 가능 몰: {available_malls}")
+
                     if found_mall:
                         logger.info(f"  [Match Success] {p['name']} -> {found_mall} (Price: {price})")
                         p["seller"] = found_mall
                         p["mall_link"] = {"category": cat, "mall": found_mall}
-                    else:
-                        logger.debug(f"  [Match Skip] {p['name']} (Price: {price}) - No matching mall price found in category {cat}")
-                else:
-                    logger.debug(f"  [Match Skip] {p['name']} (Type: {p_type}) - Not a catalog product (Type 1)")
 
             data = {
+
 
                 "products": dashboard_raw["products"],
                 "rankings": rankings,
