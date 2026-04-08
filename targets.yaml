@@ -29,6 +29,7 @@ common:
     - "신세계몰"
     - "인터커머스"
     - "정품포유"
+    - "쿠팡"
   
   # 이미지 매핑 (회사 이미지 도용 감시용)
   # 형식 - "이미지URL": "상품코드"
@@ -511,6 +512,18 @@ mall_targets:
   - name: "정품포유 갤럭시 워치"
     query: "갤럭시 워치"
     mall_name: "정품포유"
+    category: "워치"
+    request:
+      pages: 10
+  - name: "쿠팡 갤럭시 버즈"
+    query: "갤럭시 버즈"
+    mall_name: "쿠팡"
+    category: "버즈"
+    request:
+      pages: 10
+  - name: "쿠팡 갤럭시 워치"
+    query: "갤럭시 워치"
+    mall_name: "쿠팡"
     category: "워치"
     request:
       pages: 10
