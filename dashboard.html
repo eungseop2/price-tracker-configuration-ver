@@ -230,6 +230,23 @@
             opacity: 0.6;
         }
 
+        /* 날짜 가독성 개선 스타일 */
+        .time-ago {
+            font-weight: 700;
+            color: var(--toss-blue);
+            font-size: 12px;
+            margin-bottom: 2px;
+        }
+
+        .time-label {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .recent-data {
+            border-left: 3px solid var(--toss-blue);
+        }
+
         /* Mall Sub Tabs (Sidebar Hierarchy) */
         .mall-sub-tabs {
             margin-left: 20px;
@@ -1626,7 +1643,7 @@
                         p.name,
                         dateStr,
                         timeStr,
-                        h.p,
+                        Number(h.p), // 가격을 숫자로 강제하여 엑셀에서 연산 가능하게 함
                         formatSellerName(p.seller) || "네이버"
                     ]);
                 });
@@ -1687,6 +1704,32 @@
         function formatPrice(num) {
             if (!num) return '-';
             return new Intl.NumberFormat('ko-KR').format(num) + '원';
+        }
+
+        // 가독성 개선을 위한 날짜 포맷 함수
+        function formatKoreanDate(dateStr) {
+            if (!dateStr) return '';
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return dateStr;
+            const y = d.getFullYear();
+            const m = d.getMonth() + 1;
+            const day = d.getDate();
+            const hh = d.getHours();
+            const mm = String(d.getMinutes()).padStart(2, '0');
+            return `${y}년 ${m}월 ${day}일 ${hh}시 ${mm}분`;
+        }
+
+        function timeAgo(dateStr) {
+            if (!dateStr) return '';
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return '';
+            const now = new Date();
+            const diff = Math.floor((now - d) / 1000);
+            if (diff < 60) return '방금 전';
+            if (diff < 3600) return Math.floor(diff / 60) + '분 전';
+            if (diff < 86400) return Math.floor(diff / 3600) + '시간 전';
+            if (diff < 86400 * 7) return Math.floor(diff / 86400) + '일 전';
+            return Math.floor(diff / (86400 * 7)) + '주 전';
         }
 
         function toggleSelectAll(el) {
@@ -1853,7 +1896,17 @@
             if (!tbody) return;
             const start = (currentPage - 1) * itemsPerPageNormal;
             const pageData = currentFilteredHistory.slice(start, start + itemsPerPageNormal);
-            tbody.innerHTML = pageData.map(h => `<tr><td>${new Date(h.t).toLocaleString()}</td><td style="font-weight:700">${formatPrice(h.p)}</td><td>${formatPrice(h.p)}</td><td>${formatSellerName(dashboardData.products[selectedProductIndex].seller)}</td><td>정상</td></tr>`).join('');
+            tbody.innerHTML = pageData.map(h => `
+                <tr>
+                    <td>
+                        <div class="time-ago">${timeAgo(h.t)}</div>
+                        <div class="time-label">${formatKoreanDate(h.t)}</div>
+                    </td>
+                    <td style="font-weight:700">${formatPrice(h.p)}</td>
+                    <td>${formatPrice(h.p)}</td>
+                    <td>${formatSellerName(dashboardData.products[selectedProductIndex].seller)}</td>
+                    <td>정상</td>
+                </tr>`).join('');
             renderPagination();
         }
 
@@ -1977,9 +2030,14 @@
                 return;
             }
 
-            tbody.innerHTML = sortedHistory.map(h => `
-                <tr style="cursor:default">
-                    <td class="mono">${h.t}</td>
+            tbody.innerHTML = sortedHistory.map(h => {
+                const isRecent = (new Date() - new Date(h.t)) < 3600000; // 1시간 이내 데이터 강조
+                return `
+                <tr style="cursor:default" class="${isRecent ? 'recent-data' : ''}">
+                    <td class="mono">
+                        <div class="time-ago">${timeAgo(h.t)}</div>
+                        <div class="time-label">${formatKoreanDate(h.t)}</div>
+                    </td>
                     <td>${product.title}</td>
                     <td class="mono" style="font-weight:700; color:var(--text-main)">${formatPrice(h.p)}</td>
                     <td class="mono">-</td>
@@ -1987,7 +2045,8 @@
                     <td style="text-align:right">
                         <a href="${product.url}" target="_blank" class="chart-btn" onclick="event.stopPropagation()">링크</a>
                     </td>
-                </tr>`).join('');
+                </tr>`;
+            }).join('');
         }
 
         function selectMallProduct(idx) {
