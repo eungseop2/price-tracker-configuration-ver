@@ -256,6 +256,29 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
             else:
                 payload["is_unauthorized"] = 0
 
+    # 4. [사용자 요청] 카탈로그 판매처('네이버')를 실판매처로 매칭 (수집 시점 확정)
+    for payload in collected_payloads:
+        if payload.get("success") and payload.get("seller_name") in ["네이버", "Naver", None]:
+            price = payload.get("price")
+            if not price: continue
+            
+            found_mall = None
+            # 같은 회차에 수집된 모든 상품 중 가격이 일치하는 가장 적절한 판매처 검색
+            for itm in all_peeked_items:
+                try:
+                    m_price = int(itm.get("price") or 0)
+                    if m_price == int(price) and m_price > 0:
+                        m_seller = itm.get("seller_name")
+                        if m_seller and m_seller not in ["네이버", "Naver"]:
+                            found_mall = m_seller
+                            break
+                except (ValueError, TypeError):
+                    continue
+            
+            if found_mall:
+                logger.info(f"  [MARKET MATCH] {payload['target_name']} -> {found_mall} (Price: {price})")
+                payload["seller_name"] = found_mall
+
     # 루프 종료 후 한 번에 저장 (Batch Insert)
     if collected_payloads:
         try:
@@ -380,43 +403,7 @@ def main() -> None:
             mall_raw = store.get_mall_report_data(monitored_sellers=app_config.monitored_sellers)
             mall_reports = {"categories": mall_raw}
             
-            # [사용자 요청] 카탈로그 최저가와 쇼핑몰 리포트 매칭 (Product Type 1 기반 강화)
-            logger.info(f">>> 카탈로그 정밀 매칭 시작 (분석 대상: {len(dashboard_raw['products'])}개 상품)")
-            
-            # 카테고리명 정규화를 위한 준비
-            normalized_mall_raw = {str(k).strip(): v for k, v in mall_raw.items()}
-
-            match_count = 0
-            for p in dashboard_raw["products"]:
-                price = p.get("current_price")
-                cat = str(p.get("category") or "").strip()
-                p_id = p.get("product_id")
-                
-                # 1. 매칭 대상 선정: product_id가 존재하는 모든 카탈로그 상품 (과거 데이터 소급 적용)
-                if p_id and price:
-                    found_mall = None
-                    if cat in normalized_mall_raw:
-                        # 해당 카테고리의 모든 셀러 상품 검색
-                        for mall_name, mall_data in normalized_mall_raw[cat].items():
-                            for mp in mall_data.get("products", []):
-                                try:
-                                    m_price = int(mp.get("price") or 0)
-                                    target_price = int(price)
-                                    
-                                    if m_price == target_price and m_price > 0:
-                                        found_mall = mall_name
-                                        break
-                                except (ValueError, TypeError):
-                                    continue
-                            if found_mall: break
-                    
-                    if found_mall:
-                        logger.info(f"  [MATCH FOUND] {p['name']} -> {found_mall} (Price: {price})")
-                        p["seller"] = found_mall
-                        p["mall_link"] = {"category": cat, "mall": found_mall}
-                        match_count += 1
-
-            logger.info(f">>> 매칭 완료: 총 {match_count}개 상품 연결됨")
+            # [카탈로그 매칭 안내] 카탈로그 판매처는 이제 수집 시점(run_once)에 확정되어 저장됩니다.
 
             data = {
 
