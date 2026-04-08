@@ -455,6 +455,19 @@
             white-space: nowrap;
         }
 
+        .seller-tag.clickable {
+            cursor: pointer;
+            text-decoration: underline;
+            text-underline-offset: 4px;
+            transition: var(--transition);
+        }
+
+        .seller-tag.clickable:hover {
+            color: #2b74e0;
+            background: rgba(49, 130, 247, 0.05);
+            border-radius: 4px;
+        }
+
         /* Stats Grid */
         .stats-grid {
             display: grid;
@@ -1759,7 +1772,13 @@
 
             const rankHtml = product.search_rank ? ` <span style="margin:0 8px; color:var(--glass-border);">|</span> <span style="color:var(--toss-blue); font-weight:700;">네이버랭킹 ${product.search_rank}위</span>` : '';
             const keywordHtml = ` <span style="margin:0 8px; color:var(--glass-border);">|</span> <span style="font-size:12px; color:var(--text-muted);">키워드: "${product.rank_query || product.name}"</span>`;
-            document.getElementById('sellerInfo').innerHTML = `<span class="seller-tag">${formatSellerName(product.seller)}</span> 수집 중${rankHtml}${keywordHtml}`;
+            
+            // [사용자 요청] mall_link가 있을 경우 클릭 가능한 링크로 표시
+            let sellerHtml = `<span class="seller-tag">${formatSellerName(product.seller)}</span>`;
+            if (product.mall_link) {
+                sellerHtml = `<span class="seller-tag clickable" title="쇼핑몰 리포트로 이동" onclick="goToMallReport('${product.mall_link.category}', '${product.mall_link.mall}')">${formatSellerName(product.seller)} ↗</span>`;
+            }
+            document.getElementById('sellerInfo').innerHTML = `${sellerHtml} 수집 중${rankHtml}${keywordHtml}`;
             
             document.getElementById('currentPriceStat').innerText = formatPrice(product.current_price);
             document.getElementById('allTimeLow').innerText = formatPrice(product.all_time_low);
@@ -1971,6 +1990,24 @@
             renderMallReportTabs(); // 사이드바 하이라이트 갱신
             renderMallChart(data.products);
             renderMallTable(data.products);
+        }
+
+        // [사용자 요청] 카탈로그 뷰에서 특정 몰 리포트로 이동하는 네비게이션 함수
+        function goToMallReport(category, mall) {
+            console.log(`Navigating to Mall Report: ${category} > ${mall}`);
+            switchView('mallReportView');
+            selectMallCategory(category);
+            selectMall(mall);
+            
+            // 모바일일 경우 사이드바 닫기
+            if (window.innerWidth <= 768) toggleSidebar(false);
+            
+            // 사용자 피드백 (시각적 효과)
+            const targetEl = document.getElementById('currentMallTitle');
+            if (targetEl) {
+                targetEl.style.backgroundColor = 'rgba(49, 130, 247, 0.1)';
+                setTimeout(() => targetEl.style.backgroundColor = 'transparent', 1000);
+            }
         }
 
         function changeChartDays(days, el) {

@@ -300,6 +300,28 @@ def main() -> None:
             mall_raw = store.get_mall_report_data(monitored_sellers=app_config.monitored_sellers)
             mall_reports = {"categories": mall_raw}
             
+            # [사용자 요청] 카탈로그 최저가와 쇼핑몰 리포트 매칭 (Product Type 1 기반)
+            for p in dashboard_raw["products"]:
+                # product_type 1(가격비교 카탈로그)인 경우에만 정밀 매칭 시도
+                if str(p.get("product_type")) == "1":
+                    price = p.get("current_price")
+                    cat = p.get("category")
+                    
+                    found_mall = None
+                    if cat in mall_raw:
+                        for mall_name, mall_data in mall_raw[cat].items():
+                            # 해당 몰의 최신 수집 상품 중 가격이 일치하는 것이 있는지 확인
+                            for mp in mall_data.get("products", []):
+                                if mp.get("price") == price:
+                                    found_mall = mall_name
+                                    break
+                            if found_mall: break
+                    
+                    if found_mall:
+                        logger.info(f"  └─ 매칭 성공: {p['name']} -> {found_mall} (가격: {price})")
+                        p["seller"] = found_mall
+                        p["mall_link"] = {"category": cat, "mall": found_mall}
+
             data = {
                 "products": dashboard_raw["products"],
                 "rankings": rankings,
@@ -308,9 +330,10 @@ def main() -> None:
                 "updated_at": dashboard_raw["generated_at"]
             }
             Path("dashboard_data.json").write_text(dump_json(data), encoding="utf-8")
-            logger.info("UI 데이터 내보내기 완료: dashboard_data.json (Google Sheets 기반)")
+            logger.info("UI 데이터 내보내기 완료: dashboard_data.json (Google Sheets 기반 + 매칭 로직 적용)")
         finally:
             store.close()
+
 
     elif args.command == "sync-from-gcs" or args.command == "sync-to-gcs":
         logger.warning("GCS 연동 기능은 이 브랜치에서 더 이상 사용되지 않습니다 (Google Sheets Only).")
