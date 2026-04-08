@@ -387,13 +387,16 @@ class GoogleSheetStore:
         # 과거 '네이버' 판매처 소급 매칭을 위해 mall_observations 데이터 로드 및 인덱싱
         mws = self._get_worksheet("mall_observations")
         mall_records = self._get_all_records_safe(mws)
+        from .util import parse_int
         m_idx = {}
         for mr in mall_records:
             t_name = mr.get("target_name")
-            t_at = str(mr.get("collected_at") or "")[:16] # 분 단위까지 매칭
-            price = str(mr.get("price") or "")
+            # 시간 동기화 오차 대응: 분 단위까지 인덱싱하되, 전후 1분 정도의 오차를 허용하기 위해 복수 키 등록 (선택적)
+            t_at = str(mr.get("collected_at") or "")[:16] 
+            price = str(parse_int(mr.get("price")))
             if t_name and t_at and price:
                 key = f"{t_name}|{t_at}|{price}"
+                # 같은 시간에 여러 몰이 있을 수 있으나, 보통 최저가 하나이므로 덮어씀
                 m_idx[key] = mr.get("mall_name")
 
         target_map = {t.name: t for t in targets}
@@ -468,8 +471,9 @@ class GoogleSheetStore:
                 s_name = r.get("seller_name")
                 if not s_name or s_name == "네이버":
                     t_at = str(r.get("collected_at") or "")[:16]
-                    price = str(r.get("price") or "")
+                    price = str(parse_int(r.get("price")))
                     key = f"{name}|{t_at}|{price}"
+                    # 매칭 안될 시 전후 1분 오차 대응을 위해 추가 시도 (분 단위 반올림 등은 복잡하므로 단순[:16] 유지하되 util.parse_int 적용)
                     s_name = m_idx.get(key) or "네이버"
                 
                 history_points.append({
@@ -478,11 +482,18 @@ class GoogleSheetStore:
                     "s": s_name
                 })
 
+            # 최신 기록의 판매처명도 '네이버'인 경우 소급 매칭 시도
+            latest_seller = latest.get("seller_name")
+            if not latest_seller or latest_seller == "네이버":
+                t_at_latest = str(latest.get("collected_at") or "")[:16]
+                p_latest = str(parse_int(latest.get("price")))
+                latest_seller = m_idx.get(f"{name}|{t_at_latest}|{p_latest}") or "네이버"
+
             product_data = {
                 "name": name,
                 "category": t_config.category,
                 "current_price": int(latest.get("price") or 0),
-                "seller": latest.get("seller_name") or "네이버",
+                "seller": latest_seller,
                 "status": latest.get("price_change_status"),
                 "change_pct": float(latest.get("price_delta_pct") or 0.0),
                 "product_id": latest.get("product_id"),
