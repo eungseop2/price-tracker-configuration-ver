@@ -93,9 +93,23 @@ class GoogleSheetStore:
         
         try:
             ws = self._sh.worksheet(name)
+            # 마이그레이션: 기존 시트의 헤더가 로컬의 HEADERS와 일치하는지 확인
+            expected_headers = HEADERS.get(name)
+            if expected_headers:
+                # 첫 번째 행 데이터를 가져옴 (헤더)
+                current_headers = ws.row_values(1)
+                # 컬럼 수가 부족하거나 헤더가 비어 있으면 최신화
+                if len(current_headers) < len(expected_headers):
+                    try:
+                        # 첫 번째 행을 전체 HEADERS로 업데이트 (A1 섹션)
+                        ws.update('A1', [expected_headers])
+                        logger.info(f"시트 '{name}'의 헤더를 최신 버전으로 업데이트했습니다. ({len(current_headers)} -> {len(expected_headers)})")
+                    except Exception as e:
+                        logger.warning(f"시트 '{name}' 헤더 자동 업데이트 중 경고: {e}. 수동 확인이 필요할 수 있습니다.")
         except gspread.exceptions.WorksheetNotFound:
             cols = HEADERS.get(name, ["data"])
             ws = self._sh.add_worksheet(title=name, rows=1000, cols=len(cols))
+            # 새 시트인 경우 헤더 추가
             ws.append_row(cols)
             logger.info(f"새 시트 생성됨: {name}")
             
