@@ -384,6 +384,18 @@ class GoogleSheetStore:
         ws = self._get_worksheet("observations")
         records = self._get_all_records_safe(ws)
         
+        # 과거 '네이버' 판매처 소급 매칭을 위해 mall_observations 데이터 로드 및 인덱싱
+        mws = self._get_worksheet("mall_observations")
+        mall_records = self._get_all_records_safe(mws)
+        m_idx = {}
+        for mr in mall_records:
+            t_name = mr.get("target_name")
+            t_at = str(mr.get("collected_at") or "")[:16] # 분 단위까지 매칭
+            price = str(mr.get("price") or "")
+            if t_name and t_at and price:
+                key = f"{t_name}|{t_at}|{price}"
+                m_idx[key] = mr.get("mall_name")
+
         target_map = {t.name: t for t in targets}
         from .util import utc_now_iso
         from datetime import datetime, timedelta, timezone
@@ -450,6 +462,22 @@ class GoogleSheetStore:
                 except Exception:
                     pass
             
+            # 이력 포인트 구성 (판매처 정보 포함 및 소급 매칭 적용)
+            history_points = []
+            for r in p_history_sorted[-1000:]:
+                s_name = r.get("seller_name")
+                if not s_name or s_name == "네이버":
+                    t_at = str(r.get("collected_at") or "")[:16]
+                    price = str(r.get("price") or "")
+                    key = f"{name}|{t_at}|{price}"
+                    s_name = m_idx.get(key) or "네이버"
+                
+                history_points.append({
+                    "t": r["collected_at"],
+                    "p": int(r.get("price") or 0),
+                    "s": s_name
+                })
+
             product_data = {
                 "name": name,
                 "category": t_config.category,
@@ -469,9 +497,7 @@ class GoogleSheetStore:
                 "all_time_high": all_time_high,
                 "avg_7d": avg_7d,
                 "avg_30d": avg_30d,
-                "history": [
-                    {"t": r["collected_at"], "p": int(r.get("price") or 0)} for r in p_history_sorted[-1000:]
-                ]
+                "history": history_points
             }
             data["products"].append(product_data)
             
