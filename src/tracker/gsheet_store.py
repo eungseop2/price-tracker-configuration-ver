@@ -95,26 +95,45 @@ class GoogleSheetStore:
             ws = self._sh.worksheet(name)
             # 마이그레이션: 기존 시트의 헤더가 로컬의 HEADERS와 일치하는지 확인
             expected_headers = HEADERS.get(name)
+            current_headers = ws.row_values(1)
+            
             if expected_headers:
-                # 첫 번째 행 데이터를 가져옴 (헤더)
-                current_headers = ws.row_values(1)
                 # 컬럼 수가 부족하거나 헤더가 비어 있으면 최신화
                 if len(current_headers) < len(expected_headers):
                     try:
                         # 첫 번째 행을 전체 HEADERS로 업데이트 (A1 섹션)
                         ws.update('A1', [expected_headers])
-                        logger.info(f"시트 '{name}'의 헤더를 최신 버전으로 업데이트했습니다. ({len(current_headers)} -> {len(expected_headers)})")
+                        logger.info(f"시트 '{name}'의 헤더를 최신 버전으로 업데이트했습니다.")
+                        current_headers = expected_headers
                     except Exception as e:
-                        logger.warning(f"시트 '{name}' 헤더 자동 업데이트 중 경고: {e}. 수동 확인이 필요할 수 있습니다.")
+                        logger.warning(f"시트 '{name}' 헤더 자동 업데이트 중 경고: {e}")
+            
+            self._worksheets[name] = ws
+            # 헤더 정보 캐싱 (성능 최적화)
+            if not hasattr(self, '_headers_cache'):
+                self._headers_cache = {}
+            self._headers_cache[name] = current_headers
+            
         except gspread.exceptions.WorksheetNotFound:
             cols = HEADERS.get(name, ["data"])
             ws = self._sh.add_worksheet(title=name, rows=1000, cols=len(cols))
-            # 새 시트인 경우 헤더 추가
             ws.append_row(cols)
             logger.info(f"새 시트 생성됨: {name}")
+            self._worksheets[name] = ws
+            if not hasattr(self, '_headers_cache'):
+                self._headers_cache = {}
+            self._headers_cache[name] = cols
             
-        self._worksheets[name] = ws
         return ws
+
+    def _get_cached_headers(self, name: str):
+        """시트의 헤더 정보를 가져오거나 캐시에서 반환"""
+        if hasattr(self, '_headers_cache') and name in self._headers_cache:
+            return self._headers_cache[name]
+        
+        ws = self._get_worksheet(name)
+        # _get_worksheet에서 이미 캐싱을 시도하지만, 안전을 위해 보장
+        return getattr(self, '_headers_cache', {}).get(name, ws.row_values(1))
 
     def _get_all_records_safe(self, ws):
         """gspread의 get_all_records()가 빈 헤더 중복 시 에러를 내는 문제를 해결한 안전한 버전"""
@@ -143,17 +162,14 @@ class GoogleSheetStore:
             return
 
         ws = self._get_worksheet("observations")
-        # 실제 시트의 헤더 순서를 읽어와서 매핑 기준으로 삼음 (열 밀림 방지)
-        current_headers = ws.row_values(1)
-        if not current_headers:
-            current_headers = HEADERS["observations"]
-            ws.update('A1', [current_headers])
+        # 캐싱된 헤더 순서를 읽어와서 매핑 기준으로 삼음 (열 밀림 방지 + 성능 향상)
+        current_headers = self._get_cached_headers("observations")
         
         rows = []
         for p in payloads:
             row = []
             for col in current_headers:
-                if not col: # 헤더명이 없는 빈 컬럼인 경우 빈값으로 채움
+                if not col:
                     row.append("")
                     continue
                 val = p.get(col)
@@ -172,25 +188,27 @@ class GoogleSheetStore:
             return
         
         ws = self._get_worksheet("mall_observations")
-        cols = HEADERS["mall_observations"]
+        current_headers = self._get_cached_headers("mall_observations")
+
         rows = []
         for itm in items:
-            row_data = {
-                "target_name": target_name,
-                "query": query,
-                "mall_name": mall_name,
-                "category": category,
-                **itm
-            }
-            # None 값 처리
+            p = itm.copy()
+            p["target_name"] = target_name
+            p["query"] = query
+            p["mall_name"] = mall_name
+            p["category"] = category
+            
             row = []
-            for col in cols:
-                val = row_data.get(col)
+            for col in current_headers:
+                if not col:
+                    row.append("")
+                    continue
+                val = p.get(col)
                 row.append("" if val is None else val)
             rows.append(row)
         
         try:
-            ws.append_rows(rows)
+            ws.append_rows(rows, value_input_option='RAW')
             logger.info(f"쇼핑몰 데이터 저장 성공: {target_name} ({len(rows)}건)")
         except Exception as e:
             logger.error(f"쇼핑몰 데이터 저장 실패 (mall_observations): {e}")
@@ -201,10 +219,7 @@ class GoogleSheetStore:
             return
             
         ws = self._get_worksheet("ranking_history")
-        current_headers = ws.row_values(1)
-        if not current_headers:
-            current_headers = HEADERS["ranking_history"]
-            ws.update('A1', [current_headers])
+        current_headers = self._get_cached_headers("ranking_history")
 
         rows = []
         for data in rows_to_insert:
