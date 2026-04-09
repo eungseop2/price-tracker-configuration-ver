@@ -280,6 +280,35 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
         except Exception as e:
             logger.error(f"GSheet 배치 저장 최종 실패: {e}")
 
+    # ---------- [랭킹 TOP 10 수집 및 저장 추가] ----------
+    # 각 상품 타겟 별로 정의된 rank_query 기반으로 상위 10개 상품 저장
+    unique_rank_queries = {t.rank_query for t in app_config.targets if t.rank_query}
+    if unique_rank_queries:
+        rank_batch = []
+        now_ts = utc_now_iso()
+        for rq in unique_rank_queries:
+            # 해당 쿼리의 상품들 중 상위 10개 추출 (수집 순서가 원래 검색 순서임)
+            rq_items = [itm for itm in all_peeked_items if itm.get("rank_query") == rq]
+            top_10 = rq_items[:10]
+            
+            for idx, item in enumerate(top_10, 1):
+                rank_batch.append({
+                    "query": rq,
+                    "rank": idx,
+                    "title": item.get("title"),
+                    "price": item.get("price"),
+                    "seller": item.get("seller_name"),
+                    "product_id": item.get("product_id"),
+                    "collected_at": now_ts
+                })
+        
+        if rank_batch:
+            try:
+                store.insert_ranking_batch(rank_batch)
+                logger.info(f"랭킹 히스토리 저장 완료 ({len(unique_rank_queries)}개 키워드, 총 {len(rank_batch)}개 항목)")
+            except Exception as e:
+                logger.error(f"랭킹 히스토리 저장 실패: {e}")
+
     # ---------- [셀러 트래킹: 최저가 데이터 재활용] ----------
     if app_config.mall_targets:
         logger.info(f"최저가 수집 데이터를 활용한 셀러 필터링 시작 ({len(app_config.mall_targets)}개 몰 타겟, {len(all_peeked_items)}개 수집 상품 분석)")
@@ -311,6 +340,7 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                         dup_key = f"{target_mall_norm}|{p_id}"
                         
                         if dup_key not in global_seen:
+                            itm["collected_at"] = utc_now_iso()
                             candidates.append(itm)
                             global_seen.add(dup_key)
             
