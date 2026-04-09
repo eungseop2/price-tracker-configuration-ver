@@ -7,7 +7,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 
 logger = logging.getLogger("tracker.gsheet_store")
-from .util import normalize_for_match, parse_int
+from .util import normalize_for_match, parse_int, utc_now_iso
 
 # 시트별 헤더 정의 (SQLite 스키마와 동일하게 유지)
 HEADERS = {
