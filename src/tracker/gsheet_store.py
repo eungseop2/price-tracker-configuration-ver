@@ -657,12 +657,21 @@ class GoogleSheetStore:
                     "u": r.get("product_url", "") # 개별 판매처 URL 추가
                 })
 
-            # 최신 기록의 판매처명도 '네이버'인 경우 소급 매칭 시도
             latest_seller = latest.get("seller_name")
             if not latest_seller or latest_seller == "네이버":
                 t_at_latest = str(latest.get("collected_at") or "")[:16]
                 p_latest = str(parse_int(latest.get("price")))
                 latest_seller = m_idx.get(f"{name}|{t_at_latest}|{p_latest}") or "네이버"
+
+            # [공통] 몰 리포트 이동을 위한 mall_link 구성
+            mall_link = None
+            if latest_seller and latest_seller != "네이버":
+                norm_seller = normalize_for_match(latest_seller)
+                if norm_seller == "디엠에이씨": norm_seller = "dmac"
+                
+                # 상품의 카테고리를 기반으로 해당 몰의 리포트가 존재할 가능성이 높을 때 생성
+                cat = t_config.category
+                mall_link = {"category": cat, "mall": norm_seller}
 
             product_data = {
                 "name": name,
@@ -679,6 +688,7 @@ class GoogleSheetStore:
                 "product_code": latest.get("product_code"),
                 "is_unauthorized": int(latest.get("is_unauthorized") or 0),
                 "rank_query": getattr(t_config, "rank_query", None) or name,
+                "mall_link": mall_link, # 복구된 mall_link 정보
                 "all_time_low": all_time_low,
                 "all_time_high": all_time_high,
                 "avg_7d": avg_7d,

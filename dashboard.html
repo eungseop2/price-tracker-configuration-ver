@@ -1943,6 +1943,9 @@
         function renderTable() {
             const tbody = document.querySelector('#historyTable tbody');
             if (!tbody) return;
+            const product = dashboardData.products[selectedProductIndex];
+            if (!product) return;
+            
             const start = (currentPage - 1) * itemsPerPageNormal;
             const pageData = currentFilteredHistory.slice(start, start + itemsPerPageNormal);
             tbody.innerHTML = pageData.map(h => `
