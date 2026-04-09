@@ -14,15 +14,15 @@ HEADERS = {
         "target_name", "collected_at", "success", "status", 
         "price", "prev_price", "price_delta", "price_delta_pct", "price_change_status",
         "title", "seller_name", "product_id", "product_url", "search_rank",
-        "fallback_used", "alert_triggered", "product_type", "is_unauthorized"
+        "image_url", "fallback_used", "alert_triggered", "product_type", "is_unauthorized"
     ],
     "mall_observations": [
         "target_name", "mall_name", "category", "collected_at", 
-        "title", "price", "product_id", "product_url", "search_rank"
+        "title", "price", "product_id", "product_url", "image_url", "search_rank"
     ],
     "ranking_history": [
         "query", "rank", "collected_at", "title", "price", "seller_name", 
-        "product_id", "product_url", "is_ad"
+        "product_id", "product_url", "image_url", "is_ad"
     ]
 }
 
@@ -405,11 +405,13 @@ class GoogleSheetStore:
         ws = self._get_worksheet("ranking_history")
         all_records = self._get_all_records_safe(ws)
         
-        matches = [r for r in all_records if r.get("query") == query]
+        matches = [r for r in all_records if str(r.get("query")).strip() == str(query).strip()]
         if not matches:
+            logger.warning(f"  └─ '{query}' 에 대한 최신 랭킹 데이터를 찾을 수 없음 (전체 {len(all_records)}건 중)")
             return []
             
         latest_time = max(m["collected_at"] for m in matches)
+        # UI에서 기대하는 필드명(image_url 등)이 포함되도록 반환
         return [m for m in matches if m["collected_at"] == latest_time]
 
     def get_mall_report_data(self, monitored_sellers: list[str] | None = None) -> dict[str, Any]:
@@ -467,8 +469,13 @@ class GoogleSheetStore:
                 report[cat][display_mall] = {
                     "total_products": 0,
                     "price_decreased_count": 0,
+                    "last_updated": r.get("collected_at"), # 최근 확인일 추가
                     "products": []
                 }
+            
+            # 더 최신 정보가 있다면 업데이트
+            if r.get("collected_at", "") > report[cat][display_mall].get("last_updated", ""):
+                report[cat][display_mall]["last_updated"] = r.get("collected_at")
             
             # 이하 데이터 구성 시 mall 대신 display_mall 사용
             mall = display_mall

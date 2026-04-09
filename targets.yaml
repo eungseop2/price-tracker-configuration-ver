@@ -26,7 +26,7 @@ common:
     - "웰디"
     - "프렌드 모바일"
     - "제이플러스시스템"
-    - "신세계몰"
+    - "인터커머스"
     - "인터커머스"
     - "정품포유"
     - "쿠팡"
@@ -472,18 +472,6 @@ mall_targets:
     category: "워치"
     request:
       pages: 1
-  - name: "신세계몰 갤럭시 버즈"
-    query: "갤럭시 버즈"
-    mall_name: "신세계몰"
-    category: "버즈"
-    request:
-      pages: 1
-  - name: "신세계몰 갤럭시 워치"
-    query: "갤럭시 워치"
-    mall_name: "신세계몰"
-    category: "워치"
-    request:
-      pages: 1
   - name: "인터커머스 갤럭시 버즈"
     query: "갤럭시 버즈"
     mall_name: "인터커머스"
@@ -512,12 +500,14 @@ mall_targets:
     query: "갤럭시 버즈"
     mall_name: "쿠팡"
     category: "버즈"
+    exclude_keywords: ["실리콘", "케이스", "본체", "단품"]
     request:
       pages: 1
   - name: "쿠팡 갤럭시 워치"
     query: "갤럭시 워치"
     mall_name: "쿠팡"
     category: "워치"
+    exclude_keywords: ["실리콘", "케이스", "본체", "단품"]
     request:
       pages: 10
 
