@@ -47,32 +47,11 @@ def _is_authorized_seller(seller_name: str | None, authorized_sellers: list[str]
             return True
     return False
 
-def _extract_image_id(url: str | None) -> str | None:
-    """이미지 URL에서 핵심 식별자(파일명의 상품 번호 등)를 추출합니다."""
-    if not url: return None
-    # 예: https://shopping-phinf.pstatic.net/main_5350770/53507707536.jpg?type=f160
-    path = url.split("?")[0]
+def _extract_image_id(path: str) -> str:
+    """이미지 URL에서 확장자를 제외한 파일명(ID)을 추출합니다."""
+    # https://.../main_12345/12345.jpg -> 12345
     filename = path.split("/")[-1]
     return filename.split(".")[0]
-
-def _map_product_code(image_url: str | None, image_map: dict[str, str]) -> str | None:
-    """이미지 URL을 기반으로 사전에 등록된 제품 코드를 반환합니다."""
-    if not image_url or not image_map:
-        return None
-    
-    # 1. 완전 일치 확인
-    if image_url in image_map:
-        return image_map[image_url]
-    
-    img_id = _extract_image_id(image_url)
-    if not img_id: return None
-
-    # 2. 부분 일치 확인 (이미지 ID 포함 여부)
-    for map_url, code in image_map.items():
-        if img_id in map_url or map_url in image_url:
-            return code
-            
-    return None
 
 logger = logging.getLogger("naver_price_tracker")
 
@@ -147,21 +126,34 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
 
             result, items = await _collect_one(client, target, app_config, artifacts_dir)
             
-            # 수집된 모든 상품을 통합 분석 풀에 저장 (몰 리포트용)
+            # 수집된 모든 상품 중 유용한 것만 선별하여 저장 (데이터 폭발 방지)
             if items:
+                # 필터링 기준: monitored + authorized 셀러 목록
+                tracked_sellers_norm = {normalize_for_match(s) for s in 
+                    (app_config.monitored_sellers or []) + (app_config.authorized_sellers or [])}
+                
                 for itm in items:
-                    # itm은 이제 naver_api.py에서 반환된 정규화된 전체 데이터 리스트임
-                    itm["category"] = target.category
-                    # 낱개 상품들에 대해서도 이미지 매핑 수행
-                    p_code = _map_product_code(itm.get("image_url"), app_config.image_map)
-                    # 이미지 매핑 실패 시, 현재 조회 중인 타겟의 이름을 코드로 활용 (쇼핑몰 추적 식별용)
-                    itm["product_code"] = p_code or target.name
-                    all_peeked_items.append(itm)
+                    # itm은 이제 naver_api.py에서 반환된 정규화된 데이터 리스트임
+                    seller_norm = normalize_for_match(itm.get("seller_name", ""))
+                    rank = itm.get("search_rank") or 999
+                    
+                    # 선별 조건:
+                    # 1. 이번 회차 최저가로 선정된 상품
+                    # 2. 검색 순위가 10위 이내인 인기 상품
+                    # 3. 우리가 직접 모니터링 대상으로 지정한 셀러의 상품
+                    is_best = (result.get("success") and str(itm.get("product_id")) == str(result.get("product_id")))
+                    is_top_rank = rank <= 10
+                    is_tracked_seller = seller_norm in tracked_sellers_norm
+                    
+                    if is_best or is_top_rank or is_tracked_seller:
+                        itm["category"] = target.category
+                        itm["product_code"] = target.name
+                        all_peeked_items.append(itm)
                 
             result["collected_at"] = utc_now_iso()
             result["config_mode"] = target.mode
-            # 최종 선정된 최저가 상품에 대해서도 이미지 매핑 수행
-            result["product_code"] = _map_product_code(result.get("image_url"), app_config.image_map)
+            # 최종 선정된 상품의 product_code 역시 타겟명으로 대체
+            result["product_code"] = target.name
 
             current_price = result.get("price")
             if current_price is not None:

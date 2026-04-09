@@ -97,9 +97,8 @@ def _normalized_item(item: dict[str, Any]) -> dict[str, Any]:
         "product_id": str(item.get("productId", "") or "") or None,
         "product_type": int(item.get("productType", 0) or 0),
         "product_url": item.get("link"),
-        "image_url": item.get("image"),
         "search_rank": item.get("_search_rank"),
-        "raw_payload": item,
+        "image_url": item.get("image"),  # 도용 감시용
     }
 
 
@@ -110,14 +109,15 @@ def collect_lowest_offer_via_api(client: NaverShoppingSearchClient, app_config: 
 
     # 만약 product_id가 지정되어 있다면, 정확한 카탈로그를 찾기 위해 정렬을 'sim'으로 강제하고 검색 범위를 넓힘
     search_sort = target.request.sort
-    display_limit = app_config.display
+    display_limit = app_config.display or 30
     pages = max(1, target.request.pages)
     
     if target.match.product_id:
         search_sort = "sim"
-        display_limit = 100 # 최대치로 확장
-        pages = max(2, pages) # ID 검색 시에는 최소 2페이지(200건)까지 뒤지도록 보강
-        logger.info(f"  └─ [{target.name}] ID 기반 매칭 모드: 정렬=sim, 검색범위={display_limit*pages}건 확대")
+        # ID 조회 시에도 무분별한 100건 수집 대신 display_limit(30)을 유지하거나 약간만 확장
+        display_limit = min(app_config.display * 2, 60) if app_config.display else 30
+        pages = 1 # ID 검색 시에는 1페이지면 충분함
+        logger.info(f"  └─ [{target.name}] ID 기반 매칭 모드: 정렬=sim, 검색범위={display_limit*pages}건 최적화")
 
     items: list[dict[str, Any]] = []
 
@@ -151,13 +151,7 @@ def collect_lowest_offer_via_api(client: NaverShoppingSearchClient, app_config: 
             "product_id": target.match.product_id,
             "product_type": None,
             "product_url": None,
-            "raw_payload": {
-                "query": target.query,
-                "request": asdict(target.request),
-                "match": asdict(target.match),
-                "items_examined": len(items),
-            },
-            "error_message": "조건에 맞는 상품을 찾지 못했습니다.",
+            "error_message": f"조건에 맞는 상품을 찾지 못했습니다. (검색: {len(items)}건)",
         }, items
 
     # 가격과 판매처 이름을 기준으로 정렬하여 최우선 상품 선택

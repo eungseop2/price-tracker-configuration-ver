@@ -70,7 +70,7 @@ class MallTargetConfig:
 
 @dataclass
 class AppConfig:
-    display: int = 50
+    display: int = 30
     exclude: str = "used:cbshop"
     timeout_seconds: int = 10
     ranking_limit: int = 50
@@ -81,7 +81,6 @@ class AppConfig:
     targets: list[TargetConfig] = field(default_factory=list)
     monitored_sellers: list[str] = field(default_factory=list)
     mall_targets: list[MallTargetConfig] = field(default_factory=list)
-    image_map: dict[str, str] = field(default_factory=dict)
     authorized_sellers: list[str] = field(default_factory=list)
 
 
@@ -246,7 +245,6 @@ def load_config(path: str | Path) -> AppConfig:
         gsheet_id=gsheet_id,
         targets=[],
         monitored_sellers=list(common.get("monitored_sellers", []) or []),
-        image_map=common.get("image_map", {}),
         authorized_sellers=common.get("authorized_sellers", [])
     )
 

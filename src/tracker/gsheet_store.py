@@ -11,18 +11,18 @@ logger = logging.getLogger("tracker.gsheet_store")
 # 시트별 헤더 정의 (SQLite 스키마와 동일하게 유지)
 HEADERS = {
     "observations": [
-        "target_name", "source_mode", "collected_at", "success", "status", 
+        "target_name", "collected_at", "success", "status", 
         "price", "prev_price", "price_delta", "price_delta_pct", "price_change_status",
-        "title", "seller_name", "product_id", "product_url", "image_url", "search_rank",
-        "fallback_used", "alert_triggered", "product_type", "product_code", "is_unauthorized"
+        "title", "seller_name", "product_id", "product_url", "search_rank",
+        "fallback_used", "alert_triggered", "product_type", "is_unauthorized"
     ],
     "mall_observations": [
-        "target_name", "query", "mall_name", "category", "collected_at", 
-        "title", "price", "product_id", "product_type", "product_url", "image_url", "search_rank", "product_code", "is_unauthorized"
+        "target_name", "mall_name", "category", "collected_at", 
+        "title", "price", "product_id", "product_url", "search_rank"
     ],
     "ranking_history": [
         "query", "rank", "collected_at", "title", "price", "seller_name", 
-        "product_id", "product_type", "product_url", "image_url", "is_ad", "product_code", "is_unauthorized"
+        "product_id", "product_url", "is_ad"
     ]
 }
 
@@ -79,12 +79,6 @@ class GoogleSheetStore:
             self._gc = gspread.authorize(credentials)
             self._sh = self._gc.open_by_key(self.spreadsheet_id)
             logger.info(f"구글 스프레드시트 연결 성공: {self._sh.title}")
-            
-            # 연결 시점에 주기적으로 자동 정리 실행 (매번 할 필요는 없으므로 확률적으로나 날짜 체크 가능)
-            # 여기서는 안전하게 주기적 정리를 수행하도록 유도
-            self.cleanup_old_records("mall_observations", days=7)
-            self.cleanup_old_records("observations", days=30)
-            self.cleanup_old_records("ranking_history", days=30)
             
         except json.JSONDecodeError as e:
             logger.error(f"구글 서비스 계정 키 JSON 파싱 실패: {e}. 키의 형식을 확인하세요.")
@@ -153,8 +147,8 @@ class GoogleSheetStore:
         except Exception as e:
             logger.warning(f"시트 '{name}' 크기 축소 중 오류: {e}")
 
-    def cleanup_old_records(self, name: str, days: int = 7):
-        """지정된 일수보다 오래된 데이터를 삭제하여 용량을 관리합니다."""
+    def cleanup_old_records(self, name: str, days: int = 14):
+        """지정된 일수보다 오래된 데이터를 삭제하거나 통합하여 용량을 관리합니다."""
         try:
             ws = self._get_worksheet(name)
             all_values = ws.get_all_values()
@@ -166,33 +160,92 @@ class GoogleSheetStore:
                 return
                 
             date_idx = headers.index("collected_at")
-            threshold = datetime.now(timezone.utc) - timedelta(days=days)
+            target_idx = headers.index("target_name") if "target_name" in headers else (headers.index("query") if "query" in headers else -1)
+            price_idx = headers.index("price") if "price" in headers else -1
+            seller_idx = headers.index("seller_name") if "seller_name" in headers else -1
             
-            new_rows = [all_values[0]] # 헤더 유지
-            count = 0
+            now = datetime.now(timezone.utc)
+            history_threshold = now - timedelta(days=days)
+            recent_threshold = now - timedelta(days=3) # 최근 3일은 모든 데이터 유지
+            
+            # mall_observations는 용량이 너무 커서 단순 날짜 삭제만 수행
+            if name == "mall_observations":
+                new_rows = [headers]
+                count = 0
+                for row in all_values[1:]:
+                    try:
+                        ts = datetime.fromisoformat(row[date_idx].replace("Z", "+00:00"))
+                        if ts.tzinfo is None: ts = ts.replace(tzinfo=timezone.utc)
+                        if ts >= history_threshold: new_rows.append(row)
+                        else: count += 1
+                    except: new_rows.append(row)
+                if count > 0:
+                    ws.clear()
+                    ws.update('A1', new_rows)
+                    logger.info(f"시트 '{name}' 단순 정리 완료: {count}건 삭제")
+                return
+
+            # observations, ranking_history 등을 위한 지능형 통합 로직
+            # 1. 타겟별 그룹화
+            groups = {}
             for row in all_values[1:]:
-                try:
-                    ts_str = row[date_idx]
-                    if not ts_str:
-                        continue
-                    # ISO 날짜 파싱
-                    ts = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
-                    if ts.tzinfo is None:
-                        ts = ts.replace(tzinfo=timezone.utc)
-                    
-                    if ts >= threshold:
-                        new_rows.append(row)
-                    else:
-                        count += 1
-                except (ValueError, IndexError):
-                    new_rows.append(row) # 파싱 불가 시 유지
+                key = row[target_idx] if target_idx != -1 else "default"
+                if key not in groups: groups[key] = []
+                groups[key].append(row)
             
-            if count > 0:
-                # 시트 내용 교체
+            new_rows = [headers]
+            total_deleted = 0
+            
+            for key, rows in groups.items():
+                # 시간순 정렬
+                rows.sort(key=lambda x: x[date_idx])
+                
+                last_kept_price = None
+                last_kept_seller = None
+                last_kept_date = None
+                
+                for row in rows:
+                    try:
+                        ts_str = row[date_idx]
+                        ts = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
+                        if ts.tzinfo is None: ts = ts.replace(tzinfo=timezone.utc)
+                        
+                        # 1. 보관 기간 만료
+                        if ts < history_threshold:
+                            total_deleted += 1
+                            continue
+                            
+                        # 2. 최근 3일 데이터는 무조건 보관
+                        if ts >= recent_threshold:
+                            new_rows.append(row)
+                            continue
+                            
+                        # 3. 과거 데이터 지능형 필터링
+                        curr_price = row[price_idx] if price_idx != -1 else ""
+                        curr_seller = row[seller_idx] if seller_idx != -1 else ""
+                        curr_date = ts.date()
+                        
+                        is_change = (curr_price != last_kept_price or curr_seller != last_kept_seller)
+                        is_first_of_day = (curr_date != last_kept_date)
+                        
+                        if is_change or is_first_of_day:
+                            new_rows.append(row)
+                            last_kept_price = curr_price
+                            last_kept_seller = curr_seller
+                            last_kept_date = curr_date
+                        else:
+                            total_deleted += 1
+                            
+                    except (ValueError, IndexError):
+                        new_rows.append(row)
+            
+            if total_deleted > 0:
                 ws.clear()
+                # 헤더와 데이터 분리 저장 (대량 데이터 대응)
                 ws.update('A1', new_rows)
-                logger.info(f"시트 '{name}' 데이터 정리 완료: {count}건 삭제")
+                logger.info(f"시트 '{name}' 지능형 최적화 완료: {total_deleted}건 정리됨 (현재 {len(new_rows)}행)")
                 self.resize_to_content(name)
+                
         except Exception as e:
             logger.error(f"시트 '{name}' 데이터 정리 실패: {e}")
 
@@ -222,6 +275,19 @@ class GoogleSheetStore:
             records.append(record)
         return records
 
+    def _maybe_cleanup(self):
+        """하루 1회만 구글 시트 데이터 정리를 실행하여 셀 사용량을 관리합니다."""
+        today = datetime.now(timezone.utc).date()
+        if hasattr(self, "_last_cleanup_date") and self._last_cleanup_date == today:
+            return
+            
+        logger.info("일일 시트 데이터 정리 작업을 시작합니다 (지능형 최적화 및 보관 주기 연장)...")
+        # 보관 기간을 대폭 늘려도 지능형 필터링 덕분에 셀 사용량이 매우 적게 유지됩니다.
+        self.cleanup_old_records("mall_observations", days=5) 
+        self.cleanup_old_records("observations", days=60)    
+        self.cleanup_old_records("ranking_history", days=60) 
+        self._last_cleanup_date = today
+
     def insert(self, payload: dict[str, Any]):
         """단일 상품 수집 기록 저장 (내부적으로 insert_batch 활용)"""
         self.insert_batch([payload])
@@ -249,6 +315,8 @@ class GoogleSheetStore:
         try:
             ws.append_rows(rows, value_input_option='RAW')
             logger.info(f"데이터 배치 저장 완료 (observations): {len(rows)}건")
+            # 저장 후 일일 정리 체크
+            self._maybe_cleanup()
         except Exception as e:
             logger.error(f"데이터 배치 저장 실패 (observations): {e}")
 
@@ -300,6 +368,8 @@ class GoogleSheetStore:
         try:
             ws.append_rows(rows, value_input_option='RAW')
             logger.info(f"쇼핑몰 데이터 배치 저장 완료 (mall_observations): {len(rows)}건")
+            # 저장 후 일일 정리 체크
+            self._maybe_cleanup()
         except Exception as e:
             logger.error(f"쇼핑몰 데이터 배치 저장 실패 (mall_observations): {e}")
 
@@ -325,6 +395,8 @@ class GoogleSheetStore:
         try:
             ws.append_rows(rows, value_input_option='RAW')
             logger.info(f"랭킹 히스토리 저장 완료: {len(rows)}건")
+            # 저장 후 일일 정리 체크
+            self._maybe_cleanup()
         except Exception as e:
             logger.error(f"랭킹 히스토리 저장 실패 (ranking_history): {e}")
 
@@ -457,7 +529,7 @@ class GoogleSheetStore:
             report[cat][mall]["total_products"] += 1
             report[cat][mall]["products"].append({
                 "title": title,
-                "product_code": r.get("product_code", ""),
+                "product_code": r.get("target_name", ""), # product_code 대신 target_name 사용 (GSheet 최적화)
                 "collected_at": r.get("collected_at", "")[:16],
                 "price": curr_price,
                 "curr_price_fmt": format_price(curr_price),

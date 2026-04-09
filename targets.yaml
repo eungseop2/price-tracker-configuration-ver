@@ -1,6 +1,6 @@
 common:
   exclude: used:cbshop
-  display: 50
+  display: 30
   timeout_seconds: 20
   ranking_limit: 100
   authorized_sellers:
@@ -31,13 +31,6 @@ common:
     - "정품포유"
     - "쿠팡"
   
-  # 이미지 매핑 (회사 이미지 도용 감시용)
-  # 형식 - "이미지URL": "상품코드"
-  image_map:
-    "https://shopping-phinf.pstatic.net/main_5350770/53507707536.jpg": "BUDS3_WHITE_OFFICIAL"
-    "https://shopping-phinf.pstatic.net/main_5350770/53507707537.jpg": "BUDS3_SILVER_OFFICIAL"
-
-
 targets:
 - name: 갤럭시 버즈3 화이트
   mode: api_query
@@ -406,7 +399,7 @@ mall_targets:
     mall_name: "윤심컴퍼니"
     category: "워치"
     request:
-      pages: 10
+      pages: 1
   - name: "오르므몰 갤럭시 버즈"
     query: "갤럭시 버즈"
     mall_name: "오르므몰"
@@ -418,109 +411,109 @@ mall_targets:
     mall_name: "오르므몰"
     category: "워치"
     request:
-      pages: 10
+      pages: 1
   - name: "나노랩 갤럭시 버즈"
     query: "갤럭시 버즈"
     mall_name: "나노랩"
     category: "버즈"
     request:
-      pages: 10
+      pages: 1
   - name: "나노랩 갤럭시 워치"
     query: "갤럭시 워치"
     mall_name: "나노랩"
     category: "워치"
     request:
-      pages: 10
+      pages: 1
   - name: "맥앤브랜디 갤럭시 버즈"
     query: "갤럭시 버즈"
     mall_name: "맥앤브랜디"
     category: "버즈"
     request:
-      pages: 10
+      pages: 1
   - name: "맥앤브랜디 갤럭시 워치"
     query: "갤럭시 워치"
     mall_name: "맥앤브랜디"
     category: "워치"
     request:
-      pages: 10
+      pages: 1
   - name: "웰디 갤럭시 버즈"
     query: "갤럭시 버즈"
     mall_name: "웰디"
     category: "버즈"
     request:
-      pages: 10
+      pages: 1
   - name: "웰디 갤럭시 워치"
     query: "갤럭시 워치"
     mall_name: "웰디"
     category: "워치"
     request:
-      pages: 10
+      pages: 1
   - name: "프렌드 모바일 갤럭시 버즈"
     query: "갤럭시 버즈"
     mall_name: "프렌드 모바일"
     category: "버즈"
     request:
-      pages: 10
+      pages: 1
   - name: "프렌드 모바일 갤럭시 워치"
     query: "갤럭시 워치"
     mall_name: "프렌드 모바일"
     category: "워치"
     request:
-      pages: 10
+      pages: 1
   - name: "제이플러스시스템 갤럭시 버즈"
     query: "갤럭시 버즈"
     mall_name: "제이플러스시스템"
     category: "버즈"
     request:
-      pages: 10
+      pages: 1
   - name: "제이플러스시스템 갤럭시 워치"
     query: "갤럭시 워치"
     mall_name: "제이플러스시스템"
     category: "워치"
     request:
-      pages: 10
+      pages: 1
   - name: "신세계몰 갤럭시 버즈"
     query: "갤럭시 버즈"
     mall_name: "신세계몰"
     category: "버즈"
     request:
-      pages: 10
+      pages: 1
   - name: "신세계몰 갤럭시 워치"
     query: "갤럭시 워치"
     mall_name: "신세계몰"
     category: "워치"
     request:
-      pages: 10
+      pages: 1
   - name: "인터커머스 갤럭시 버즈"
     query: "갤럭시 버즈"
     mall_name: "인터커머스"
     category: "버즈"
     request:
-      pages: 10
+      pages: 1
   - name: "인터커머스 갤럭시 워치"
     query: "갤럭시 워치"
     mall_name: "인터커머스"
     category: "워치"
     request:
-      pages: 10
+      pages: 1
   - name: "정품포유 갤럭시 버즈"
     query: "갤럭시 버즈"
     mall_name: "정품포유"
     category: "버즈"
     request:
-      pages: 10
+      pages: 1
   - name: "정품포유 갤럭시 워치"
     query: "갤럭시 워치"
     mall_name: "정품포유"
     category: "워치"
     request:
-      pages: 10
+      pages: 1
   - name: "쿠팡 갤럭시 버즈"
     query: "갤럭시 버즈"
     mall_name: "쿠팡"
     category: "버즈"
     request:
-      pages: 10
+      pages: 1
   - name: "쿠팡 갤럭시 워치"
     query: "갤럭시 워치"
     mall_name: "쿠팡"
