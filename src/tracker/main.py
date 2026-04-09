@@ -286,7 +286,6 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
         
         # 중복 저장 방지를 위한 배치 구성
         batch_payloads = []
-        from .util import normalize_for_match
         
         # 상품별 중복 방지를 위한 셋 (한 회차 내에서 동일 몰의 동일 상품은 한 번만 저장)
         global_seen = set()
