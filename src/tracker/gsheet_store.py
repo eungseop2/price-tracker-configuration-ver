@@ -469,7 +469,7 @@ class GoogleSheetStore:
                 report[cat][display_mall] = {
                     "total_products": 0,
                     "price_decreased_count": 0,
-                    "last_updated": r.get("collected_at"), # 최근 확인일 추가
+                    "last_updated": r.get("collected_at") or utc_now_iso(), # 최근 확인일 누락 방지
                     "products": []
                 }
             
@@ -534,10 +534,14 @@ class GoogleSheetStore:
                 })
             
             report[cat][mall]["total_products"] += 1
+            # 수집 시간 포맷 정규화
+            c_at = r.get("collected_at", "")
+            if len(c_at) > 16: c_at = c_at[:16]
+            
             report[cat][mall]["products"].append({
                 "title": title,
-                "product_code": r.get("target_name", ""), # product_code 대신 target_name 사용 (GSheet 최적화)
-                "collected_at": r.get("collected_at", "")[:16],
+                "product_code": r.get("target_name", ""),
+                "collected_at": c_at,
                 "price": curr_price,
                 "curr_price_fmt": format_price(curr_price),
                 "prev_price_fmt": format_price(prev_price) if prev_price > 0 else "-",

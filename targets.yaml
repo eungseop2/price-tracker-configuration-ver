@@ -488,26 +488,70 @@ mall_targets:
     query: "갤럭시 버즈"
     mall_name: "정품포유"
     category: "버즈"
+    exclude_keywords: ["충전기", "케이스", "단품", "왼쪽", "오른쪽"]
     request:
       pages: 1
   - name: "정품포유 갤럭시 워치"
     query: "갤럭시 워치"
     mall_name: "정품포유"
     category: "워치"
+    exclude_keywords: ["충전기", "케이스", "단품", "왼쪽", "오른쪽"]
+    request:
+      pages: 1
+  - name: "갤러리몰 갤럭시 버즈"
+    query: "갤럭시 버즈"
+    mall_name: "갤러리몰"
+    category: "버즈"
+    exclude_keywords: ["충전기", "케이스", "단품", "왼쪽", "오른쪽"]
+    request:
+      pages: 1
+  - name: "갤러리몰 갤럭시 워치"
+    query: "갤럭시 워치"
+    mall_name: "갤러리몰"
+    category: "워치"
+    exclude_keywords: ["충전기", "케이스", "단품", "왼쪽", "오른쪽"]
+    request:
+      pages: 1
+  - name: "나노랩 갤럭시 버즈"
+    query: "갤럭시 버즈"
+    mall_name: "나노랩"
+    category: "버즈"
+    exclude_keywords: ["충전기", "케이스", "단품", "왼쪽", "오른쪽"]
+    request:
+      pages: 1
+  - name: "나노랩 갤럭시 워치"
+    query: "갤럭시 워치"
+    mall_name: "나노랩"
+    category: "워치"
+    exclude_keywords: ["충전기", "케이스", "단품", "왼쪽", "오른쪽"]
+    request:
+      pages: 1
+  - name: "프랜드모바일 갤럭시 버즈"
+    query: "갤럭시 버즈"
+    mall_name: "프랜드 모바일"
+    category: "버즈"
+    exclude_keywords: ["충전기", "케이스", "단품", "왼쪽", "오른쪽"]
+    request:
+      pages: 1
+  - name: "프랜드모바일 갤럭시 워치"
+    query: "갤럭시 워치"
+    mall_name: "프랜드 모바일"
+    category: "워치"
+    exclude_keywords: ["충전기", "케이스", "단품", "왼쪽", "오른쪽"]
     request:
       pages: 1
   - name: "쿠팡 갤럭시 버즈"
     query: "갤럭시 버즈"
     mall_name: "쿠팡"
     category: "버즈"
-    exclude_keywords: ["실리콘", "케이스", "본체", "단품"]
+    exclude_keywords: ["실리콘", "케이스", "본체", "단품", "충전기", "왼쪽", "오른쪽"]
     request:
       pages: 1
   - name: "쿠팡 갤럭시 워치"
     query: "갤럭시 워치"
     mall_name: "쿠팡"
     category: "워치"
-    exclude_keywords: ["실리콘", "케이스", "본체", "단품"]
+    exclude_keywords: ["실리콘", "케이스", "본체", "단품", "충전기", "왼쪽", "오른쪽"]
     request:
       pages: 10
 

@@ -1714,9 +1714,9 @@
 
         // 가독성 개선을 위한 날짜 포맷 함수
         function formatKoreanDate(dateStr) {
-            if (!dateStr) return '';
+            if (!dateStr) return '날짜 정보 없음';
             const d = new Date(dateStr);
-            if (isNaN(d.getTime())) return dateStr;
+            if (isNaN(d.getTime())) return dateStr || '날짜 정보 없음';
             const y = d.getFullYear();
             const m = d.getMonth() + 1;
             const day = d.getDate();
@@ -2033,7 +2033,11 @@
             if (!data) return;
             
             document.getElementById('currentMallTitle').textContent = formatSellerName(m);
-            document.getElementById('currentMallUpdate').innerHTML = `📅 최근 확인일: <span style="font-weight:700; color:var(--text-main)">${formatKoreanDate(data.last_updated)}</span> (${timeAgo(data.last_updated)})`;
+            
+            const lastUpdate = data.last_updated || '';
+            const timeStr = lastUpdate ? `${formatKoreanDate(lastUpdate)} (${timeAgo(lastUpdate)})` : '기록 없음 (수집 대기 중)';
+            document.getElementById('currentMallUpdate').innerHTML = `📅 최근 확인일: <span style="font-weight:700; color:var(--text-main)">${timeStr}</span>`;
+            
             document.getElementById('currentMallSellerInfo').innerText = `${currentMallCategory} 카테고리 매칭 상품 리포트`;
             
             document.getElementById('mallStatTotal').innerText = data.total_products || 0;
