@@ -442,6 +442,17 @@
             color: var(--text-muted);
         }
 
+        .product-thumb {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            object-fit: contain;
+            background: #fff;
+            border: 1px solid var(--toss-grey);
+            padding: 2px;
+            flex-shrink: 0;
+        }
+
         /* Main Content */
         .main-content {
             flex: 1;
@@ -1485,8 +1496,9 @@
                 <!-- Mall Content -->
                 <div class="mall-main-content">
                     <div class="header-left">
-                        <h2 id="selectedTitle">상품을 선택하세요</h2>
-                        <div id="sellerInfo" class="seller-info"></div>
+                        <h2 id="currentMallTitle" class="mall-title">쇼핑몰을 선택하세요</h2>
+                        <div id="currentMallUpdate" class="mall-update-time"></div>
+                        <div id="currentMallSellerInfo" class="seller-info"></div>
                     </div>
                     <div class="header-right" id="catalogBtnContainer" style="display: none;">
                         <a id="catalogLink" href="#" target="_blank" class="catalog-btn">카탈로그 바로가기 ↗</a>
@@ -1774,10 +1786,11 @@
                     <li class="product-item ${p.originalIndex === selectedProductIndex ? 'active' : ''}" 
                         onclick="selectProduct(${p.originalIndex})">
                         <input type="checkbox" class="product-checkbox" data-index="${p.originalIndex}" onclick="event.stopPropagation(); updateCheckedCount();">
+                        <img src="${p.image_url || ''}" class="product-thumb" loading="lazy" onerror="this.src='https://search.shopping.naver.com/static/img/catalog/no_image.png'">
                         <div class="product-info">
                             <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                                 <span class="product-name">${p.name}</span>
-                                ${p.is_unauthorized ? '<span class="badge-unauthorized" title="공식 이미지 무단 도용 의심">⚠️ 도용의심</span>' : (p.product_code && p.product_code !== 'IMAGE_MISUSE_DETECTED' ? '<span class="badge-protection" title="공식 이미지 매칭">Match</span>' : '')}
+                                ${p.is_unauthorized ? '<span class="badge-unauthorized" title="공식 이미지 무단 도용 의심">⚠️ 도용예정</span>' : (p.product_code && p.product_code !== 'IMAGE_MISUSE_DETECTED' ? '<span class="badge-protection" title="공식 이미지 매칭">Match</span>' : '')}
                             </div>
                             <div class="product-meta">
                                 <span class="product-price">${formatPrice(p.current_price)}</span>
@@ -2014,7 +2027,11 @@
         function renderMallDashboard(m) {
             const data = dashboardData.mall_reports.categories[currentMallCategory][m];
             if (!data) return;
-            document.getElementById('currentMallTitle').textContent = `[${currentMallCategory}] ${formatSellerName(m)}`;
+            
+            document.getElementById('currentMallTitle').textContent = formatSellerName(m);
+            document.getElementById('currentMallUpdate').innerHTML = `📅 최근 확인일: <span style="font-weight:700; color:var(--text-main)">${formatKoreanDate(data.last_updated)}</span> (${timeAgo(data.last_updated)})`;
+            document.getElementById('currentMallSellerInfo').innerText = `${currentMallCategory} 카테고리 매칭 상품 리포트`;
+            
             document.getElementById('mallStatTotal').innerText = data.total_products || 0;
             document.getElementById('mallStatDecreased').innerText = data.price_decreased_count || 0;
             if (data.products && data.products.length > 0) {
