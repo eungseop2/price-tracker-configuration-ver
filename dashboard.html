@@ -1953,7 +1953,11 @@
                     </td>
                     <td style="font-weight:700">${formatPrice(h.p)}</td>
                     <td>${formatPrice(h.p)}</td>
-                    <td style="color:var(--toss-blue); font-weight:600;">${formatSellerName(h.s || dashboardData.products[selectedProductIndex].seller)}</td>
+                    <td style="color:var(--toss-blue); font-weight:600;">
+                        <a href="${h.u || product.product_url || '#'}" target="_blank" style="color:inherit; text-decoration:none;">
+                            ${formatSellerName(h.s || product.seller)} ↗
+                        </a>
+                    </td>
                     <td>정상</td>
                 </tr>`).join('');
             renderPagination();

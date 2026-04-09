@@ -649,7 +649,8 @@ class GoogleSheetStore:
                 history_points.append({
                     "t": r["collected_at"],
                     "p": int(r.get("price") or 0),
-                    "s": s_name
+                    "s": s_name,
+                    "u": r.get("product_url", "") # 개별 판매처 URL 추가
                 })
 
             # 최신 기록의 판매처명도 '네이버'인 경우 소급 매칭 시도
