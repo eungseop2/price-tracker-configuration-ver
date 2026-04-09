@@ -575,7 +575,6 @@ class GoogleSheetStore:
                 m_idx[key] = mr.get("mall_name")
 
         target_map = {t.name: t for t in targets}
-        from .util import utc_now_iso
         from datetime import datetime, timedelta, timezone
         
         data = {
