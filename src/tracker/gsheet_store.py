@@ -422,6 +422,13 @@ class GoogleSheetStore:
         
         if not records:
             return {}
+
+        # 고정 필터링 대상: 쿠팡 상품 ID 화이트리스트
+        COUPANG_WHITELIST = [
+            "57322532391", "59068753133", "59067978824", "59068757271", "56792877171",
+            "56792977933", "55725905490", "55753151562", "55726941956", "55724725862",
+            "55725863651", "55725676219", "55726762395", "55726266456", "55726458010"
+        ]
             
         # Target별 최신 수집 시점 찾기
         by_target = {}
@@ -443,6 +450,23 @@ class GoogleSheetStore:
         # 필터링 및 정규화용 셋 준비
         m_sellers_norm = {normalize_for_match(s) for s in (monitored_sellers or [])}
         
+        # [수정] 0개여도 노출되도록 사전 초기화
+        if monitored_sellers:
+            # 모든 카테고리에 대해 셀러를 초기화 (데이터에 존재하는 카테고리들 우선)
+            cats_in_data = set(r.get("category") or "기타" for r in records)
+            for c in cats_in_data:
+                if c not in report: report[c] = {}
+                for s in monitored_sellers:
+                    ns = normalize_for_match(s)
+                    if ns == "디엠에이씨": ns = "dmac"
+                    if ns not in report[c]:
+                        report[c][ns] = {
+                            "total_products": 0,
+                            "price_decreased_count": 0,
+                            "last_updated": "-",
+                            "products": []
+                        }
+
         for r in latest_records:
             raw_mall = r.get("mall_name", "")
             if not raw_mall: continue
@@ -461,16 +485,20 @@ class GoogleSheetStore:
                         continue
 
             cat = r.get("category") or "기타"
-            # 대시보드 표시용 이름 (최초 발견 시의 정규화된 이름을 키로 사용하되, 
-            # dmac/디엠에이씨는 'dmac'으로 통일)
             display_mall = norm_mall
             
+            # [쿠팡 전용 필터링] 사용자 요청 ID 리스트만 허용
+            p_id = str(r.get("product_id") or "")
+            if display_mall == "쿠팡":
+                if p_id not in COUPANG_WHITELIST:
+                    continue
+
             if cat not in report: report[cat] = {}
             if display_mall not in report[cat]: 
                 report[cat][display_mall] = {
                     "total_products": 0,
                     "price_decreased_count": 0,
-                    "last_updated": r.get("collected_at") or utc_now_iso(), # 최근 확인일 누락 방지
+                    "last_updated": r.get("collected_at") or utc_now_iso(),
                     "products": []
                 }
             
@@ -478,12 +506,8 @@ class GoogleSheetStore:
             if r.get("collected_at", "") > report[cat][display_mall].get("last_updated", ""):
                 report[cat][display_mall]["last_updated"] = r.get("collected_at")
             
-            # 이하 데이터 구성 시 mall 대신 display_mall 사용
             mall = display_mall
-            
-            # 이전 가격 찾기 (같은 몰의 같은 상품 ID 중 직전 수집 시점)
             title = r.get("title", "")
-            p_id = str(r.get("product_id") or "")
             
             try:
                 curr_price = int(r.get("price") or 0)
@@ -492,7 +516,7 @@ class GoogleSheetStore:
                 
             prev_price = 0
             
-            # 같은 몰의 같은 ID(없으면 이름)를 가진 이전 기록들 필터링 (동의어 및 대소문자 무시 매칭 적용)
+            # 이전 기록 찾기
             def is_same_mall(m1, m2):
                 if not m1 or not m2: return False
                 n1 = normalize_for_match(m1)
@@ -521,7 +545,7 @@ class GoogleSheetStore:
             elif delta > 0:
                 delta_str = f"+{format_price(delta)}"
             
-            # 히스토리 데이터 구성 (그래프용 최근 50개 포인트)
+            # 히스토리 데이터 구성
             all_history = sorted(history + [r], key=lambda x: str(x["collected_at"]))
             chart_history = []
             for h in all_history[-50:]:
@@ -535,7 +559,6 @@ class GoogleSheetStore:
                 })
             
             report[cat][mall]["total_products"] += 1
-            # 수집 시간 포맷 정규화
             c_at = r.get("collected_at", "")
             if len(c_at) > 16: c_at = c_at[:16]
             

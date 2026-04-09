@@ -57,82 +57,55 @@
             height: 100vh;
             overflow: hidden;
             font-family: var(--font-main);
+            padding: 16px; /* Floating look을 위해 바디에 패딩 추가 */
+            gap: 16px;
         }
 
-        /* Sidebar */
+        /* Sidebar - Floating Style */
         .sidebar {
-            width: 360px;
+            width: 320px;
             background: var(--sidebar-bg);
-            border-right: 1px solid var(--glass-border);
+            border-radius: 24px; /* 라운드감 강화 */
             padding: 24px 0;
             display: flex;
             flex-direction: column;
-            height: 100vh;
-            max-height: 100vh;
-            position: sticky;
-            top: 0;
+            height: calc(100vh - 32px);
+            position: relative;
             z-index: 100;
             overflow-y: auto !important;
-            scrollbar-width: thin;
+            scrollbar-width: none;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.7);
         }
 
         .sidebar::-webkit-scrollbar {
-            width: 5px;
-        }
-
-        .sidebar::-webkit-scrollbar-thumb {
-            background: rgba(0, 0, 0, 0.05);
-            border-radius: 10px;
+            display: none;
         }
 
         .logo-container {
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-bottom: 40px;
-            padding: 0 32px;
-        }
-
-        .logo-icon {
-            width: 40px;
-            height: 40px;
-            background: var(--toss-blue);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
+            margin-bottom: 32px;
+            padding: 0 24px;
         }
 
         .logo-text {
-            font-size: 20px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -0.04em;
             color: var(--text-main);
-        }
-
-        .product-list {
-            list-style: none;
-            overflow-y: auto;
-            flex: 1;
-            padding: 0 16px;
-        }
-
-        .product-list::-webkit-scrollbar {
-            width: 5px;
-        }
-
-        .product-list::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
+            background: linear-gradient(135deg, var(--text-main) 0%, #4e5968 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         .sidebar-toolbar {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 20px 12px;
-            border-bottom: 1px solid var(--glass-border);
+            padding: 0 20px 16px;
             margin-bottom: 8px;
         }
 
@@ -456,22 +429,29 @@
         /* Main Content */
         .main-content {
             flex: 1;
-            padding: 48px 64px;
+            padding: 40px;
             overflow-y: auto;
             position: relative;
+            background: var(--bg-color);
+            border-radius: 24px;
+            scrollbar-width: none;
+        }
+
+        .main-content::-webkit-scrollbar {
+            display: none;
         }
 
         header {
-            margin-bottom: 48px;
+            margin-bottom: 40px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
         .header-title h1 {
-            font-size: 32px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
+            font-size: 36px;
+            font-weight: 800;
+            letter-spacing: -0.05em;
             margin-bottom: 8px;
             color: var(--text-main);
         }
@@ -514,39 +494,45 @@
             border-radius: 4px;
         }
 
-        /* Stats Grid */
+        /* Stats Grid - Enhanced Layout */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 20px;
+            gap: 16px;
             margin-bottom: 32px;
         }
 
         .stat-card {
             background: #ffffff;
             padding: 24px;
-            border-radius: 24px;
-            box-shadow: var(--card-shadow);
-            transition: transform 0.2s ease;
-            border: 1px solid rgba(0, 0, 0, 0.02);
+            border-radius: 20px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+            position: relative;
+            overflow: hidden;
         }
 
         .stat-card:hover {
             transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
         }
 
         .stat-label {
-            font-size: 14px;
-            font-weight: 600;
+            font-size: 13px;
+            font-weight: 700;
             color: var(--text-muted);
             margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         .stat-value {
-            font-size: 24px;
-            font-weight: 700;
+            font-size: 28px;
+            font-weight: 800;
             margin-bottom: 8px;
             color: var(--text-main);
+            letter-spacing: -0.02em;
         }
 
         .stat-diff {
@@ -636,45 +622,49 @@
             color: var(--text-main);
         }
 
+        /* No-Line Table Principles */
         .table-container {
             width: 100%;
             overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
+            background: #ffffff;
+            border-radius: 24px;
+            padding: 8px;
         }
 
         table {
             width: 100%;
-            border-collapse: collapse;
-            min-width: 600px;
+            border-collapse: separate;
+            border-spacing: 0 4px;
         }
 
         th {
             text-align: left;
-            padding: 12px 16px;
-            font-size: 14px;
-            font-weight: 600;
+            padding: 16px 20px;
+            font-size: 13px;
+            font-weight: 700;
             color: var(--text-muted);
-            border-bottom: 1px solid var(--toss-grey);
-        }
-
-        td {
-            padding: 16px;
-            font-size: 15px;
-            color: var(--text-main);
-            border-bottom: 1px solid var(--toss-grey);
-        }
-
-        tr:last-child td {
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
             border-bottom: none;
         }
 
-        #mallTableBody tr {
+        td {
+            padding: 20px;
+            font-size: 15px;
+            color: var(--text-main);
+            border-bottom: none;
+            background: transparent;
+            transition: background 0.2s;
+        }
+
+        #historyTable tbody tr, #mallTableBody tr {
+            border-radius: 12px;
             transition: all 0.2s ease;
         }
 
-        #mallTableBody tr:hover {
-            background-color: rgba(49, 130, 247, 0.05);
-            cursor: pointer;
+        #historyTable tbody tr:hover, #mallTableBody tr:hover {
+            background-color: rgba(49, 130, 247, 0.04);
+            transform: scale(1.002);
         }
 
         #mallTableBody tr.active {
@@ -1367,14 +1357,14 @@
     <div class="main-content">
         <header>
             <div class="header-main-row">
-                <div id="selectedImageContainer" class="selected-image-container">
-                    <img id="selectedImage" src="" alt="">
+                <div id="selectedImageContainer" class="selected-image-container" style="width: 72px; height: 72px; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.06); padding: 8px; background: white; border: 1px solid rgba(0,0,0,0.02);">
+                    <img id="selectedImage" src="" alt="" style="width: 100%; height: 100%; object-fit: contain;">
                 </div>
 
                 <div class="header-title">
-                    <h1 id="selectedTitle">Welcome</h1>
-                    <div class="header-subtitle">
-                        <div class="seller-info" id="sellerInfo">
+                    <h1 id="selectedTitle" style="font-size: 40px;">Welcome</h1>
+                    <div class="header-subtitle" style="margin-top: 4px;">
+                        <div class="seller-info" id="sellerInfo" style="box-shadow: none; padding: 0; background: transparent; font-weight: 500;">
                             상품을 선택하여 분석을 시작하세요
                         </div>
                     </div>
