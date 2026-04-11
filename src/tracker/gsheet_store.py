@@ -24,6 +24,9 @@ HEADERS = {
     "ranking_history": [
         "query", "rank", "collected_at", "title", "price", "seller_name", 
         "product_id", "product_url", "image_url", "is_ad"
+    ],
+    "seller_config": [
+        "seller_name", "type", "is_active", "updated_at"
     ]
 }
 
@@ -400,6 +403,72 @@ class GoogleSheetStore:
             self._maybe_cleanup()
         except Exception as e:
             logger.error(f"랭킹 히스토리 저장 실패 (ranking_history): {e}")
+
+    def sync_seller_config(self, app_config):
+        """YAML의 셀러 목록과 구글 시트의 설정을 동기화합니다."""
+        try:
+            ws = self._get_worksheet("seller_config")
+            all_rows = ws.get_all_values()
+            
+            headers = ["seller_name", "type", "is_active", "updated_at"]
+            if not all_rows or not all_rows[0] or all_rows[0][0] != "seller_name":
+                ws.update('A1', [headers])
+                all_rows = [headers]
+                
+            existing_sellers = set()
+            for row in all_rows[1:]:
+                if row:
+                    existing_sellers.add(row[0])
+                    
+            # YAML에서 새로운 셀러 추출
+            yaml_sellers = []
+            seen_names = set()
+            
+            for s in (app_config.authorized_sellers or []):
+                if s not in seen_names:
+                    yaml_sellers.append({"name": s, "type": "AUTHORIZED"})
+                    seen_names.add(s)
+            for s in (app_config.monitored_sellers or []):
+                if s not in seen_names:
+                    yaml_sellers.append({"name": s, "type": "MONITORED"})
+                    seen_names.add(s)
+                
+            new_rows = []
+            now = utc_now_iso()
+            for s_info in yaml_sellers:
+                if s_info["name"] not in existing_sellers:
+                    new_rows.append([s_info["name"], s_info["type"], "TRUE", now])
+                    
+            if new_rows:
+                ws.append_rows(new_rows)
+                logger.info(f"새로운 셀러 {len(new_rows)}개를 seller_config 시트에 추가했습니다.")
+        except Exception as e:
+            logger.error(f"셀러 설정 동기화 실패: {e}")
+
+    def get_active_sellers(self) -> dict[str, list[str]]:
+        """시트에서 활성화된 셀러 목록을 가져옵니다."""
+        try:
+            ws = self._get_worksheet("seller_config")
+            records = self._get_all_records_safe(ws)
+            
+            active = {
+                "authorized": [],
+                "monitored": []
+            }
+            for r in records:
+                is_active = str(r.get("is_active")).upper()
+                if is_active in ["TRUE", "1", "YES"]:
+                    s_type = str(r.get("type")).upper()
+                    s_name = r.get("seller_name")
+                    if s_type == "AUTHORIZED":
+                        active["authorized"].append(s_name)
+                    else:
+                        # 기본적으로 MONITORED로 간주
+                        active["monitored"].append(s_name)
+            return active
+        except Exception as e:
+            logger.error(f"활성 셀러 목록 조회 실패 (YAML 기본값 사용): {e}")
+            return None
 
     def get_latest_rankings(self, query: str) -> list[dict[str, Any]]:
         """특정 쿼리의 가장 최근 랭킹 데이터를 가져옵니다."""

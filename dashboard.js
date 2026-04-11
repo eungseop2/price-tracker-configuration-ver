@@ -110,9 +110,15 @@ async function init() {
 
         if (dashboardData.gsheet_id) {
             const linkEl = document.getElementById('gsheetLink');
+            const configLinkEl = document.getElementById('configSheetLink');
             if (linkEl) {
                 linkEl.href = `https://docs.google.com/spreadsheets/d/${dashboardData.gsheet_id}`;
                 linkEl.style.display = 'block';
+            }
+            if (configLinkEl) {
+                // 특정 탭으로 바로 이동하는 gid는 시트마다 다르므로 기본 주소로 연결하되 문구로 유도
+                configLinkEl.href = `https://docs.google.com/spreadsheets/d/${dashboardData.gsheet_id}/edit#gid=0`;
+                configLinkEl.style.display = 'block';
             }
         }
 

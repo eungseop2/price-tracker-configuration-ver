@@ -118,6 +118,32 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
     store = GoogleSheetStore(gsheet_id, service_account_json)
     client = NaverShoppingSearchClient(timeout_seconds=app_config.timeout_seconds)
 
+    # ---------- [셀러 설정 동기화 및 활성 목록 필터링] ----------
+    try:
+        store.sync_seller_config(app_config)
+        active_sellers = store.get_active_sellers()
+        
+        if active_sellers is not None:
+            logger.info(f"시트 기반 활성 셀러 필터링 적용 (공식: {len(active_sellers['authorized'])}, 모니터링: {len(active_sellers['monitored'])})")
+            app_config.authorized_sellers = active_sellers["authorized"]
+            app_config.monitored_sellers = active_sellers["monitored"]
+            
+            # mall_targets도 활성 셀러 기준으로 필터링
+            from .util import normalize_for_match
+            all_active_names = set(active_sellers["authorized"] + active_sellers["monitored"])
+            active_norm = {normalize_for_match(n) for n in all_active_names}
+            
+            if app_config.mall_targets:
+                filtered_mall_targets = []
+                for mt in app_config.mall_targets:
+                    if normalize_for_match(mt.mall_name) in active_norm:
+                        filtered_mall_targets.append(mt)
+                    else:
+                        logger.debug(f"비활성 셀러 관련 타겟 제외: {mt.name} ({mt.mall_name})")
+                app_config.mall_targets = filtered_mall_targets
+    except Exception as e:
+        logger.error(f"셀러 동기화 중 오류 발생 (YAML 설정으로 계속 진행): {e}")
+
     for target in app_config.targets:
         logger.info("수집 시작 | %s | mode=%s", target.name, target.mode)
         try:
