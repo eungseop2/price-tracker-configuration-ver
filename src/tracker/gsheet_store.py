@@ -423,13 +423,6 @@ class GoogleSheetStore:
         if not records:
             return {}
 
-        # 고정 필터링 대상: 쿠팡 상품 ID 화이트리스트
-        COUPANG_WHITELIST = [
-            "57322532391", "59068753133", "59067978824", "59068757271", "56792877171",
-            "56792977933", "55725905490", "55753151562", "55726941956", "55724725862",
-            "55725863651", "55725676219", "55726762395", "55726266456", "55726458010"
-        ]
-            
         # Target별 최신 수집 시점 찾기
         by_target = {}
         for r in records:
@@ -487,11 +480,8 @@ class GoogleSheetStore:
             cat = r.get("category") or "기타"
             display_mall = norm_mall
             
-            # [쿠팡 전용 필터링] 사용자 요청 ID 리스트만 허용
-            p_id = str(r.get("product_id") or "")
-            if display_mall == "쿠팡":
-                if p_id not in COUPANG_WHITELIST:
-                    continue
+            cat = r.get("category") or "기타"
+            display_mall = norm_mall
 
             if cat not in report: report[cat] = {}
             if display_mall not in report[cat]: 
