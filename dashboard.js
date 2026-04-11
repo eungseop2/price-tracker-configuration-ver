@@ -246,6 +246,12 @@ function selectProduct(index) {
     const titleEl = document.getElementById('selectedTitle');
     if (titleEl) titleEl.innerText = product.name;
 
+    const imgEl = document.getElementById('selectedImage');
+    if (imgEl) {
+        imgEl.src = product.image_url || 'https://search.shopping.naver.com/static/img/catalog/no_image.png';
+        imgEl.onerror = () => { imgEl.src = 'https://search.shopping.naver.com/static/img/catalog/no_image.png'; };
+    }
+
     const rankHtml = product.search_rank ? ` <span style="margin:0 8px; color:var(--glass-border);">|</span> <span style="color:var(--toss-blue); font-weight:700;">네이버랭킹 ${product.search_rank}위</span>` : '';
     const keywordHtml = ` <span style="margin:0 8px; color:var(--glass-border);">|</span> <span style="font-size:12px; color:var(--text-muted);">키워드: "${product.rank_query || product.name}"</span>`;
     
@@ -429,6 +435,8 @@ function renderMallCategoryTabs() {
 
 function selectMallCategory(cat) {
     currentMallCategory = cat;
+    currentMall = null; // 카테고리 이동 시 셀러 초기화
+    selectedMallProductIndex = 0; // 상품 인덱스 초기화
     renderMallCategoryTabs();
     renderMallReportTabs();
 }
@@ -464,7 +472,7 @@ function renderMallReportTabs() {
 
 function selectMall(m) {
     currentMall = m;
-    selectedMallProductIndex = 0;
+    selectedMallProductIndex = 0; // 셀러 변경 시 상품 인덱스 초기화
     renderMallReportTabs();
     renderMallDashboard(m);
 }
@@ -524,7 +532,7 @@ function renderMallTable(prods) {
     if (!tbody) return;
     const product = prods[selectedMallProductIndex];
     if (!product) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px; color:var(--text-muted)">상품을 선택하세요.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:40px; color:var(--text-muted)">상품을 선택하세요.</td></tr>';
         return;
     }
 
@@ -532,12 +540,30 @@ function renderMallTable(prods) {
     const sortedHistory = history.slice().reverse();
     
     if (sortedHistory.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px; color:var(--text-muted)">히스토리 데이터가 없습니다.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:40px; color:var(--text-muted)">히스토리 데이터가 없습니다.</td></tr>';
         return;
     }
 
-    tbody.innerHTML = sortedHistory.map(h => {
+    tbody.innerHTML = sortedHistory.map((h, idx) => {
         const isRecent = (new Date() - new Date(h.t)) < 3600000;
+        
+        // 이전 가격 계산 (현재 인덱스 + 1이 있으면 그 가격과 비교)
+        const prevH = sortedHistory[idx + 1];
+        let diffHtml = '-';
+        let prevPriceHtml = '-';
+        
+        if (prevH && prevH.p) {
+            const diff = h.p - prevH.p;
+            prevPriceHtml = formatPrice(prevH.p);
+            if (diff < 0) {
+                diffHtml = `<span style="color:var(--price-down); font-weight:700;">↓ ${formatPrice(Math.abs(diff))}</span>`;
+            } else if (diff > 0) {
+                diffHtml = `<span style="color:var(--price-up); font-weight:700;">↑ ${formatPrice(diff)}</span>`;
+            } else {
+                diffHtml = `<span style="color:var(--text-muted);">0</span>`;
+            }
+        }
+
         return `
         <tr style="cursor:default" class="${isRecent ? 'recent-data' : ''}">
             <td class="mono">
@@ -547,8 +573,8 @@ function renderMallTable(prods) {
             <td><span class="badge-protection" style="background:rgba(49,130,247,0.05); color:var(--toss-blue); border:none; padding:2px 8px; font-size:11px;">${product.product_code || '-'}</span></td>
             <td>${product.title}</td>
             <td class="mono" style="font-weight:700; color:var(--text-main)">${formatPrice(h.p)}</td>
-            <td class="mono">-</td>
-            <td class="mono">-</td>
+            <td class="mono" style="color:var(--text-muted); font-size:13px;">${prevPriceHtml}</td>
+            <td class="mono">${diffHtml}</td>
             <td style="text-align:right">
                 <a href="${product.url}" target="_blank" class="catalog-btn" style="padding: 4px 12px; font-size: 12px;" onclick="event.stopPropagation()">링크</a>
             </td>
