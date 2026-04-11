@@ -333,7 +333,7 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                     "product_type": item.get("product_type"),
                     "product_url": item.get("product_url"),
                     "image_url": item.get("image_url"),
-                    "is_ad": itm.get("is_ad", False),
+                    "is_ad": item.get("is_ad", False),
                     "collected_at": now_ts
                 })
         
