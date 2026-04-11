@@ -1100,6 +1100,41 @@ td {
     width: 40px;
     text-align: center;
 }
+
+/* --- Added Ranking & Keyword Tab Styles --- */
+.keyword-tab {
+    padding: 8px 18px;
+    border-radius: 12px;
+    background: #f2f4f6;
+    color: var(--text-subtitle);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    border: 1px solid transparent;
+}
+
+.keyword-tab:hover {
+    background: #e5e8eb;
+    color: var(--text-main);
+}
+
+.keyword-tab.active {
+    background: var(--toss-blue);
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(49, 130, 247, 0.2);
+}
+
+.rank-num.top3 {
+    background: rgba(49, 130, 247, 0.05);
+    color: var(--toss-blue);
+    border: 1px solid rgba(49, 130, 247, 0.1);
+}
+
+#ranking-keyword-tabs {
+    border-bottom: 1px solid var(--glass-border);
+    padding-bottom: 16px;
+}
 .ranking-card .rank-num.top1 { color: var(--accent-primary); }
 .ranking-card .thumb {
     width: 80px;

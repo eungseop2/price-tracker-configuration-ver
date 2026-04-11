@@ -15,7 +15,7 @@ let currentMall = null;
 let selectedMallProductIndex = 0;
 
 function switchView(viewName) {
-    const views = ['priceView', 'mallReportView'];
+    const views = ['priceView', 'rankingView', 'mallReportView'];
     views.forEach(v => {
         const el = document.getElementById(v);
         if (el) el.classList.remove('active');
@@ -23,6 +23,11 @@ function switchView(viewName) {
     
     const targetView = document.getElementById(viewName);
     if (targetView) targetView.classList.add('active');
+
+    // 상단 가로 탭 버튼 활성화 상태 업데이트
+    document.querySelectorAll('.view-tab').forEach(tab => tab.classList.remove('active'));
+    if (viewName === 'priceView') document.getElementById('tabPrice')?.classList.add('active');
+    if (viewName === 'rankingView') document.getElementById('tabRanking')?.classList.add('active');
 
     // 사이드바 글로벌 네비게이션 활성화
     document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
@@ -416,11 +421,39 @@ function renderTable() {
 
 function renderRankingView(kw) {
     const container = document.getElementById('ranking-list-container');
-    if (!container || !dashboardData?.rankings || !dashboardData.rankings[kw]) return;
+    const tabContainer = document.getElementById('ranking-keyword-tabs');
+    if (!container) return;
+
+    // 1. 키워드 탭 렌더링 (동적으로 선택 가능한 키워드 목록 추출)
+    if (tabContainer && dashboardData?.rankings) {
+        const keywords = Object.keys(dashboardData.rankings);
+        if (keywords.length > 0) {
+            tabContainer.innerHTML = keywords.map(k => `
+                <div class="keyword-tab ${k === kw ? 'active' : ''}" onclick="renderRankingView('${k}')">
+                    ${k}
+                </div>
+            `).join('');
+        } else {
+            tabContainer.innerHTML = '';
+        }
+    }
+
+    // 2. 랭킹 리스트 렌더링
+    if (!dashboardData?.rankings || !dashboardData.rankings[kw]) {
+        container.innerHTML = `
+            <div style="text-align: center; color: var(--text-muted); padding: 60px 20px;">
+                <div style="font-size: 40px; margin-bottom: 20px;">🔍</div>
+                데이터를 불러오는 중이거나 현재 선택된 타겟("${kw}")의 랭킹 기록이 없습니다.<br>
+                <span style="font-size: 13px; margin-top: 8px; display: block;">(방금 수정한 한글 설정으로 수집기가 1회 완료되어야 데이터가 나타납니다.)</span>
+            </div>
+        `;
+        return;
+    }
+
     const rankings = dashboardData.rankings[kw].slice(0, 10);
     container.innerHTML = rankings.map((item, idx) => `
         <div class="ranking-card" onclick="window.open('${item.url}', '_blank')">
-            <div class="rank-num ${idx === 0 ? 'top1' : ''}">${idx + 1}</div>
+            <div class="rank-num ${idx === 0 ? 'top1' : (idx < 3 ? 'top3' : '')}">${idx + 1}</div>
             <img src="${item.image_url || ''}" class="thumb" onerror="this.src='https://search.shopping.naver.com/static/img/catalog/no_image.png'">
             <div class="ranking-card-body">
                 <div class="mall">${item.seller_name}</div>
