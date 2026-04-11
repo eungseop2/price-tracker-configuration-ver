@@ -281,23 +281,45 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
     for payload in collected_payloads:
         if payload.get("success") and payload.get("seller_name") in ["네이버", "Naver", None]:
             price = payload.get("price")
+            p_id = str(payload.get("product_id") or "")
+            t_name = payload.get("target_name", "")
             if not price: continue
             
             found_mall = None
-            # 같은 회차에 수집된 모든 상품 중 가격이 일치하는 가장 적절한 판매처 검색
-            for itm in all_peeked_items:
-                try:
-                    m_price = int(itm.get("price") or 0)
-                    if m_price == int(price) and m_price > 0:
-                        m_seller = itm.get("seller_name")
-                        if m_seller and m_seller not in ["네이버", "Naver"]:
-                            found_mall = m_seller
-                            break
-                except (ValueError, TypeError):
-                    continue
+            int_price = int(price)
+            
+            # 1순위: 같은 product_id + 같은 가격인 실제 판매처 (정확한 매칭)
+            if p_id:
+                for itm in all_peeked_items:
+                    try:
+                        if str(itm.get("product_id") or "") != p_id:
+                            continue
+                        m_price = int(itm.get("price") or 0)
+                        if m_price == int_price and m_price > 0:
+                            m_seller = itm.get("seller_name")
+                            if m_seller and m_seller not in ["네이버", "Naver"]:
+                                found_mall = m_seller
+                                break
+                    except (ValueError, TypeError):
+                        continue
+            
+            # 2순위: 같은 target_name(동일 상품 검색 결과) 내에서 가격 매칭
+            if not found_mall and t_name:
+                for itm in all_peeked_items:
+                    try:
+                        if itm.get("target_name") != t_name:
+                            continue
+                        m_price = int(itm.get("price") or 0)
+                        if m_price == int_price and m_price > 0:
+                            m_seller = itm.get("seller_name")
+                            if m_seller and m_seller not in ["네이버", "Naver"]:
+                                found_mall = m_seller
+                                break
+                    except (ValueError, TypeError):
+                        continue
             
             if found_mall:
-                logger.info(f"  [MARKET MATCH] {payload['target_name']} -> {found_mall} (Price: {price})")
+                logger.info(f"  [MARKET MATCH] {t_name} -> {found_mall} (Price: {price})")
                 payload["seller_name"] = found_mall
 
     # 루프 종료 후 한 번에 저장 (Batch Insert)
