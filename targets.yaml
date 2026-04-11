@@ -726,34 +726,16 @@ mall_targets:
   category: 워치
   request:
     pages: 7
-- name: dmac 갤럭시 버즈
-  query: 갤럭시 버즈
-  mall_name: dmac
-  category: 버즈
-  request:
-    pages: 7
 - name: dmac 갤럭시 워치
   query: 갤럭시 워치
   mall_name: dmac
   category: 워치
   request:
     pages: 7
-- name: 올인포 갤럭시 버즈
-  query: 갤럭시 버즈
-  mall_name: 올인포
-  category: 버즈
-  request:
-    pages: 7
 - name: 올인포 갤럭시 워치
   query: 갤럭시 워치
   mall_name: 올인포
   category: 워치
-  request:
-    pages: 7
-- name: 쇼마젠시 갤럭시 버즈
-  query: 갤럭시 버즈
-  mall_name: 쇼마젠시
-  category: 버즈
   request:
     pages: 7
 - name: 쇼마젠시 갤럭시 워치
