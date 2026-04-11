@@ -492,25 +492,42 @@ class GoogleSheetStore:
         if not records:
             return {}
 
-        # Target별 최신 수집 시점 찾기
-        by_target = {}
-        for r in records:
-            tn = r.get("target_name")
-            if not tn: continue
-            if tn not in by_target: by_target[tn] = []
-            by_target[tn].append(r)
-            
-        latest_records = []
-        for tn, group in by_target.items():
-            max_t = max(g["collected_at"] for g in group)
-            latest_records.extend([g for g in group if g["collected_at"] == max_t])
-        
-        # 카테고리/몰별 그룹화 및 필터링
-        report = {}
         from .util import format_price, normalize_for_match
         
         # 필터링 및 정규화용 셋 준비
         m_sellers_norm = {normalize_for_match(s) for s in (monitored_sellers or [])}
+        # dmac 정규화 추가
+        if "디엠에이씨" in m_sellers_norm:
+            m_sellers_norm.add("dmac")
+        
+        def norm_mall_name(raw):
+            n = normalize_for_match(raw)
+            if n == "디엠에이씨": n = "dmac"
+            return n
+        
+        # 셀러+카테고리+상품ID 조합별로 최신 레코드를 수집 (target_name 기반이 아닌 실제 데이터 기반)
+        # 이렇게 하면 특정 수집 회차에 셀러가 빠져도 이전 데이터가 유지됨
+        latest_records = []
+        by_seller_cat = {}
+        for r in records:
+            raw_mall = r.get("mall_name", "")
+            cat = r.get("category") or "기타"
+            p_id = str(r.get("product_id", "")) if r.get("product_id") else r.get("title", "")
+            if not raw_mall: continue
+            
+            nm = norm_mall_name(raw_mall)
+            key = f"{nm}|{cat}|{p_id}"
+            
+            if key not in by_seller_cat:
+                by_seller_cat[key] = r
+            else:
+                if str(r.get("collected_at", "")) > str(by_seller_cat[key].get("collected_at", "")):
+                    by_seller_cat[key] = r
+        
+        latest_records = list(by_seller_cat.values())
+
+        # 카테고리/몰별 그룹화 및 필터링
+        report = {}
         
         # [수정] 0개여도 노출되도록 사전 초기화
         if monitored_sellers:
@@ -519,8 +536,7 @@ class GoogleSheetStore:
             for c in cats_in_data:
                 if c not in report: report[c] = {}
                 for s in monitored_sellers:
-                    ns = normalize_for_match(s)
-                    if ns == "디엠에이씨": ns = "dmac"
+                    ns = norm_mall_name(s)
                     if ns not in report[c]:
                         report[c][ns] = {
                             "total_products": 0,
@@ -534,9 +550,7 @@ class GoogleSheetStore:
             if not raw_mall: continue
             
             # 몰 이름 정규화 (필터링 및 그룹화 목적)
-            norm_mall = normalize_for_match(raw_mall)
-            if norm_mall == "디엠에이씨": 
-                norm_mall = "dmac"
+            norm_mall = norm_mall_name(raw_mall)
             
             # 필터링 로직 (monitored_sellers가 지정된 경우)
             if monitored_sellers:
@@ -546,9 +560,6 @@ class GoogleSheetStore:
                     if not is_contained:
                         continue
 
-            cat = r.get("category") or "기타"
-            display_mall = norm_mall
-            
             cat = r.get("category") or "기타"
             display_mall = norm_mall
 
