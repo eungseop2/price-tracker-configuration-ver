@@ -1,931 +1,931 @@
-﻿common:
-
-  exclude: used:cbshop
-
-  display: 30
-
-  timeout_seconds: 20
-
-  ranking_limit: 100
-
-  authorized_sellers:
-
-    - "?쒖씠??
-
-    - "?щ뵒?꾩씠"
-
-    - "?좊뵒??
-
-    - "?쇰쭏?좎떆"
-
-    - "?ъ씤??
-
-  monitored_sellers:
-
-    - "?쒖씠??
-
-    - "?щ뵒?꾩씠"
-
-    - "?좊뵒??
-
-    - "?ъ씤??
-
-    - "?쇰쭏?좎떆"
-
-    - "?좏뵾?쒖뒪??
-
-    - "媛ㅻ윭由щぐ"
-
-    - "?ㅼ떖而댄띁??
-
-    - "?ㅻⅤ誘紐?
-
-    - "?섎끂??
-
-    - "留μ븻釉뚮옖??
-
-    - "?곕뵒"
-
-    - "?꾨젋??紐⑤컮??
-
-    - "?쒖씠?뚮윭?ㅼ떆?ㅽ뀥"
-
-    - "?명꽣而ㅻ㉧??
-
-    - "?뺥뭹?ъ쑀"
-
-    - "쿠팡"
-
-  
-
-targets:
-
-- name: 갤럭시버즈3 화이트
-
-  mode: api_query
-
-  query: '갤럭시버즈3 화이트
-
-  rank_query: '버즈3'
-
-  category: 버즈
-
-  request:
-
-    pages: 7
-
-    sort: sim
-
-  match:
-
-    required_keywords: [버즈3]
-
-    exclude_keywords: [以묎퀬, 由ы띁, 而ㅻ쾭, ?꾨쫫, ?ㅽ궓, ?ㅽ떚而? 프로]
-
-    product_id: '53507707536'
-
-    allowed_product_types: [1, 3]
-
-  url: https://search.shopping.naver.com/catalog/53507707536
-
-- name: 갤럭시버즈3 실버
-
-  mode: api_query
-
-  query: '갤럭시버즈3 실버'
-
-  rank_query: '버즈3'
-
-  category: 버즈
-
-  request:
-
-    pages: 7
-
-    sort: sim
-
-  match:
-
-    required_keywords: [버즈3]
-
-    exclude_keywords: [以묎퀬, 由ы띁, 而ㅻ쾭, ?꾨쫫, ?ㅽ궓, ?ㅽ떚而? 프로]
-
-    product_id: '53507707537'
-
-    allowed_product_types: [1, 3]
-
-  url: https://search.shopping.naver.com/catalog/53507707537
-
-- name: 갤럭시버즈3프로 화이트
-
-  mode: api_query
-
-  query: '갤럭시버즈3프로 화이트
-
-  rank_query: '갤럭시버즈3프로'
-
-  category: 버즈
-
-  request:
-
-    pages: 7
-
-    sort: sim
-
-  match:
-
-    required_keywords: [버즈3, 프로]
-
-    exclude_keywords: [以묎퀬, 由ы띁, 而ㅻ쾭, ?꾨쫫, ?ㅽ궓, ?ㅽ떚而?
-
-    product_id: '53508451504'
-
-    allowed_product_types: [1, 3]
-
-  url: https://search.shopping.naver.com/catalog/53508451504
-
-- name: 갤럭시버즈3프로 실버
-
-  mode: api_query
-
-  query: '갤럭시버즈3프로 실버'
-
-  rank_query: '갤럭시버즈3프로'
-
-  category: 버즈
-
-  request:
-
-    pages: 7
-
-    sort: sim
-
-  match:
-
-    required_keywords: [버즈3, 프로]
-
-    exclude_keywords: [以묎퀬, 由ы띁, 而ㅻ쾭, ?꾨쫫, ?ㅽ궓, ?ㅽ떚而?
-
-    product_id: '53508451505'
-
-    allowed_product_types: [1, 3]
-
-  url: https://search.shopping.naver.com/catalog/53508451505
-
-- name: 갤럭시버즈4프로 釉붾옓
-
-  mode: api_query
-
-  query: '갤럭시버즈4프로 釉붾옓'
-
-  rank_query: '갤럭시버즈4프로'
-
-  category: 버즈
-
-  request:
-
-    pages: 7
-
-    sort: sim
-
-  match:
-
-    required_keywords: [버즈4, 프로]
-
-    exclude_keywords: [以묎퀬, 由ы띁, 而ㅻ쾭, ?꾨쫫, ?ㅽ궓, ?ㅽ떚而?
-
-    product_id: '59061283797'
-
-    allowed_product_types: [1, 3]
-
-  url: https://search.shopping.naver.com/catalog/59061283797
-
-- name: 갤럭시버즈4프로 화이트
-
-  mode: api_query
-
-  query: '갤럭시버즈4프로 화이트
-
-  rank_query: '갤럭시버즈4프로'
-
-  category: 버즈
-
-  request:
-
-    pages: 7
-
-    sort: sim
-
-  match:
-
-    required_keywords: [버즈4, 프로]
-
-    exclude_keywords: [以묎퀬, 由ы띁, 而ㅻ쾭, ?꾨쫫, ?ㅽ궓, ?ㅽ떚而?
-
-    product_id: '59061283798'
-
-    allowed_product_types: [1, 3]
-
-  url: https://search.shopping.naver.com/catalog/59061283798
-
-- name: 갤럭시버즈4 釉붾옓
-
-  mode: api_query
-
-  query: '갤럭시버즈4 釉붾옓'
-
-  rank_query: '갤럭시버즈4'
-
-  category: 버즈
-
-  request:
-
-    pages: 7
-
-    sort: sim
-
-  match:
-
-    required_keywords: [버즈4]
-
-    exclude_keywords: [以묎퀬, 由ы띁, 而ㅻ쾭, ?꾨쫫, ?ㅽ궓, ?ㅽ떚而?
-
-    product_id: '59061250873'
-
-    allowed_product_types: [1, 3]
-
-  url: https://search.shopping.naver.com/catalog/59061250873
-
-- name: 갤럭시버즈4 화이트
-
-  mode: api_query
-
-  query: '갤럭시버즈4 화이트
-
-  rank_query: '갤럭시버즈4'
-
-  category: 버즈
-
-  request:
-
-    pages: 7
-
-    sort: sim
-
-  match:
-
-    required_keywords: [버즈4]
-
-    exclude_keywords: [以묎퀬, 由ы띁, 而ㅻ쾭, ?꾨쫫, ?ㅽ궓, ?ㅽ떚而?
-
-    product_id: '59061250874'
-
-    allowed_product_types: [1, 3]
-
-  url: https://search.shopping.naver.com/catalog/59061250874
-
-- name: 갤럭시?뚯튂8 40mm 실버
-
-  mode: api_query
-
-  query: '媛ㅻ윮?쒖썙移? 40mm 실버'
-
-  rank_query: '갤럭시?뚯튂8'
-
-  category: ?뚯튂
-
-  request:
-
-    pages: 7
-
-    sort: sim
-
-  match:
-
-    required_keywords: [?뚯튂8, 40mm]
-
-    exclude_keywords: [以묎퀬, 由ы띁, ?ㅽ듃?? ?꾨쫫]
-
-    product_id: '55668557960'
-
-    allowed_product_types: [1, 3]
-
-  url: https://search.shopping.naver.com/catalog/55668557960
-
-- name: 갤럭시?뚯튂8 40mm 洹몃씪?뚯씠??
-
-  mode: api_query
-
-  query: '媛ㅻ윮?쒖썙移? 40mm 洹몃씪?뚯씠??
-
-  rank_query: '갤럭시?뚯튂8'
-
-  category: ?뚯튂
-
-  request:
-
-    pages: 7
-
-    sort: sim
-
-  match:
-
-    required_keywords: [?뚯튂8, 40mm]
-
-    exclude_keywords: [以묎퀬, 由ы띁, ?ㅽ듃?? ?꾨쫫]
-
-    product_id: '55727496882'
-
-    allowed_product_types: [1, 3]
-
-  url: https://search.shopping.naver.com/catalog/55727496882
-
-- name: 갤럭시?뚯튂8 44mm 실버
-
-  mode: api_query
-
-  query: '媛ㅻ윮?쒖썙移? 44mm 실버'
-
-  rank_query: '갤럭시?뚯튂8'
-
-  category: ?뚯튂
-
-  request:
-
-    pages: 7
-
-    sort: sim
-
-  match:
-
-    required_keywords: [?뚯튂8, 44mm]
-
-    exclude_keywords: [以묎퀬, 由ы띁, ?ㅽ듃?? ?꾨쫫]
-
-    product_id: '55668557962'
-
-    allowed_product_types: [1, 3]
-
-  url: https://search.shopping.naver.com/catalog/55668557962
-
-- name: 갤럭시?뚯튂8 44mm 洹몃씪?뚯씠??
-
-  mode: api_query
-
-  query: '媛ㅻ윮?쒖썙移? 44mm 洹몃씪?뚯씠??
-
-  rank_query: '갤럭시?뚯튂8'
-
-  category: ?뚯튂
-
-  request:
-
-    pages: 7
-
-    sort: sim
-
-  match:
-
-    required_keywords: [?뚯튂8, 44mm]
-
-    exclude_keywords: [以묎퀬, 由ы띁, ?ㅽ듃?? ?꾨쫫]
-
-    product_id: '55727496884'
-
-    allowed_product_types: [1, 3]
-
-  url: https://search.shopping.naver.com/catalog/55727496884
-
-- name: 갤럭시?뚯튂8 ?대옒??釉붾옓
-
-  mode: api_query
-
-  query: '媛ㅻ윮?쒖썙移? ?대옒??釉붾옓'
-
-  rank_query: '갤럭시?뚯튂8 ?대옒??
-
-  category: ?뚯튂
-
-  request:
-
-    pages: 7
-
-    sort: sim
-
-  match:
-
-    required_keywords: [?뚯튂8, ?대옒??
-
-    exclude_keywords: [以묎퀬, 由ы띁, ?ㅽ듃?? ?꾨쫫]
-
-    product_id: '55727507152'
-
-    allowed_product_types: [1, 3]
-
-  url: https://search.shopping.naver.com/catalog/55727507152
-
-- name: 갤럭시?뚯튂8 ?대옒??화이트
-
-  mode: api_query
-
-  query: '媛ㅻ윮?쒖썙移? ?대옒??화이트
-
-  rank_query: '갤럭시?뚯튂8 ?대옒??
-
-  category: ?뚯튂
-
-  request:
-
-    pages: 7
-
-    sort: sim
-
-  match:
-
-    required_keywords: [?뚯튂8, ?대옒??
-
-    exclude_keywords: [以묎퀬, 由ы띁, ?ㅽ듃?? ?꾨쫫]
-
-    product_id: '55668573794'
-
-    allowed_product_types: [1, 3]
-
-  url: https://search.shopping.naver.com/catalog/55668573794
-
-- name: 갤럭시??
-
-  mode: api_query
-
-  query: '갤럭시??'
-
-  rank_query: '갤럭시??'
-
-  category: ??
-
-  request:
-
-    pages: 7
-
-    sort: sim
-
-  match:
-
-    required_keywords: [??]
-
-    exclude_keywords: [以묎퀬, 由ы띁, ?ㅽ듃?? ?꾨쫫]
-
-    product_id: '55900277515'
-
-    allowed_product_types: [1, 3]
-
-  url: https://search.shopping.naver.com/catalog/55900277515
-
-- name: 갤럭시버즈3FE 洹몃젅??
-
-  mode: api_query
-
-  query: '갤럭시버즈3FE 洹몃젅??
-
-  rank_query: '버즈3'FE'
-
-  category: 버즈
-
-  request:
-
-    pages: 7
-
-    sort: sim
-
-  match:
-
-    required_keywords: [버즈3, FE]
-
-    exclude_keywords: [以묎퀬, 由ы띁, 而ㅻ쾭, ?꾨쫫, ?ㅽ궓, ?ㅽ떚而?
-
-    product_id: '56796984706'
-
-    allowed_product_types: [1, 3]
-
-  url: https://search.shopping.naver.com/catalog/56796984706
-
-- name: 갤럭시버즈3FE 釉붾옓
-
-  mode: api_query
-
-  query: '갤럭시버즈3FE 釉붾옓'
-
-  rank_query: '버즈3'FE'
-
-  category: 버즈
-
-  request:
-
-    pages: 7
-
-    sort: sim
-
-  match:
-
-    required_keywords: [버즈3, FE]
-
-    exclude_keywords: [以묎퀬, 由ы띁, 而ㅻ쾭, ?꾨쫫, ?ㅽ궓, ?ㅽ떚而?
-
-    product_id: '56796983823'
-
-    allowed_product_types: [1, 3]
-
-  url: https://search.shopping.naver.com/catalog/56796983823
-
-- name: 갤럭시?뚯튂 ?명듃???고???실버
-
-  mode: api_query
-
-  query: '媛ㅻ윮?쒖썙移??명듃???고???실버'
-
-  rank_query: '갤럭시?뚯튂 ?명듃??
-
-  category: ?뚯튂
-
-  request:
-
-    pages: 7
-
-    sort: sim
-
-  match:
-
-    required_keywords: [?뚯튂, ?명듃??
-
-    exclude_keywords: [以묎퀬, 由ы띁, ?ㅽ듃?? ?꾨쫫]
-
-    product_id: '55727792362'
-
-    allowed_product_types: [1, 3]
-
-  url: https://search.shopping.naver.com/catalog/55727792362
-
-- name: 갤럭시?뚯튂 ?명듃???고???洹몃젅??
-
-  mode: api_query
-
-  query: '媛ㅻ윮?쒖썙移??명듃???고???洹몃젅??
-
-  rank_query: '갤럭시?뚯튂 ?명듃??
-
-  category: ?뚯튂
-
-  request:
-
-    pages: 7
-
-    sort: sim
-
-  match:
-
-    required_keywords: [?뚯튂, ?명듃??
-
-    exclude_keywords: [以묎퀬, 由ы띁, ?ㅽ듃?? ?꾨쫫]
-
-    product_id: '55727789525'
-
-    allowed_product_types: [1, 3]
-
-  url: https://search.shopping.naver.com/catalog/55727789525
-
-- name: 갤럭시?뚯튂 ?명듃???고???釉붾（
-
-  mode: api_query
-
-  query: '媛ㅻ윮?쒖썙移??명듃???고???釉붾（'
-
-  rank_query: '갤럭시?뚯튂 ?명듃??
-
-  category: ?뚯튂
-
-  request:
-
-    pages: 7
-
-    sort: sim
-
-  match:
-
-    required_keywords: [?뚯튂, ?명듃??
-
-    exclude_keywords: [以묎퀬, 由ы띁, ?ㅽ듃?? ?꾨쫫]
-
-    product_id: '55727555801'
-
-    allowed_product_types: [1, 3]
-
-  url: https://search.shopping.naver.com/catalog/55727555801
-
-- name: 갤럭시?뚯튂 ?명듃???고???화이트
-
-  mode: api_query
-
-  query: '媛ㅻ윮?쒖썙移??명듃???고???화이트
-
-  rank_query: '갤럭시?뚯튂 ?명듃??
-
-  category: ?뚯튂
-
-  request:
-
-    pages: 7
-
-    sort: sim
-
-  match:
-
-    required_keywords: [?뚯튂, ?명듃??
-
-    exclude_keywords: [以묎퀬, 由ы띁, ?ㅽ듃?? ?꾨쫫]
-
-    product_id: '55727792338'
-
-    allowed_product_types: [1, 3]
-
-  url: https://search.shopping.naver.com/catalog/55727792338
-
-
-
-mall_targets:
-
-  - name: "?쒖씠??갤럭시버즈"
-
-    query: "갤럭시버즈"
-
-    mall_name: "?쒖씠??
-
-    category: "버즈"
-
-    request:
-
-      pages: 7
-
-  - name: "?щ뵒?꾩씠 갤럭시버즈"
-
-    query: "갤럭시버즈"
-
-    mall_name: "?щ뵒?꾩씠"
-
-    category: "버즈"
-
-    request:
-
-      pages: 7
-
-  - name: "?좊뵒??갤럭시버즈"
-
-    query: "갤럭시버즈"
-
-    mall_name: "?좊뵒??
-
-    category: "버즈"
-
-    request:
-
-      pages: 7
-
-  - name: "?ъ씤??갤럭시?뚯튂"
-
-    query: "갤럭시?뚯튂"
-
-    mall_name: "?ъ씤??
-
-    category: "?뚯튂"
-
-    request:
-
-      pages: 7
-
-  - name: "?쇰쭏?좎떆 갤럭시?뚯튂"
-
-    query: "갤럭시?뚯튂"
-
-    mall_name: "?쇰쭏?좎떆"
-
-    category: "?뚯튂"
-
-    request:
-
-      pages: 7
-
-  - name: "?좏뵾?쒖뒪??갤럭시버즈"
-
-    query: "갤럭시버즈"
-
-    mall_name: "?좏뵾?쒖뒪??
-
-    category: "버즈"
-
-    request:
-
-      pages: 7
-
-  - name: "?좏뵾?쒖뒪??갤럭시?뚯튂"
-
-    query: "갤럭시?뚯튂"
-
-    mall_name: "?좏뵾?쒖뒪??
-
-    category: "?뚯튂"
-
-    request:
-
-      pages: 7
-
-  - name: "?쒖씠?뚮윭?ㅼ떆?ㅽ뀥 갤럭시버즈"
-
-    query: "갤럭시버즈"
-
-    mall_name: "?쒖씠?뚮윭?ㅼ떆?ㅽ뀥"
-
-    category: "버즈"
-
-    request:
-
-      pages: 7
-
-  - name: "?쒖씠?뚮윭?ㅼ떆?ㅽ뀥 갤럭시?뚯튂"
-
-    query: "갤럭시?뚯튂"
-
-    mall_name: "?쒖씠?뚮윭?ㅼ떆?ㅽ뀥"
-
-    category: "?뚯튂"
-
-    request:
-
-      pages: 7
-
-  - name: "?명꽣而ㅻ㉧??갤럭시버즈"
-
-    query: "갤럭시버즈"
-
-    mall_name: "?명꽣而ㅻ㉧??
-
-    category: "버즈"
-
-    request:
-
-      pages: 7
-
-  - name: "?명꽣而ㅻ㉧??갤럭시?뚯튂"
-
-    query: "갤럭시?뚯튂"
-
-    mall_name: "?명꽣而ㅻ㉧??
-
-    category: "?뚯튂"
-
-    request:
-
-      pages: 7
-
-  - name: "?뺥뭹?ъ쑀 갤럭시버즈"
-
-    query: "갤럭시버즈"
-
-    mall_name: "?뺥뭹?ъ쑀"
-
-    category: "버즈"
-
-    exclude_keywords: ["?⑦뭹", "?쇱そ", "?ㅻⅨ履?]
-
-    request:
-
-      pages: 7
-
-  - name: "?뺥뭹?ъ쑀 갤럭시?뚯튂"
-
-    query: "갤럭시?뚯튂"
-
-    mall_name: "?뺥뭹?ъ쑀"
-
-    category: "?뚯튂"
-
-    exclude_keywords: ["?⑦뭹", "?쇱そ", "?ㅻⅨ履?]
-
-    request:
-
-      pages: 7
-
-  - name: "媛ㅻ윭由щぐ 갤럭시버즈"
-
-    query: "갤럭시버즈"
-
-    mall_name: "媛ㅻ윭由щぐ"
-
-    category: "버즈"
-
-    exclude_keywords: ["?⑦뭹", "?쇱そ", "?ㅻⅨ履?]
-
-    request:
-
-      pages: 7
-
-  - name: "媛ㅻ윭由щぐ 갤럭시?뚯튂"
-
-    query: "갤럭시?뚯튂"
-
-    mall_name: "媛ㅻ윭由щぐ"
-
-    category: "?뚯튂"
-
-    exclude_keywords: ["?⑦뭹", "?쇱そ", "?ㅻⅨ履?]
-
-    request:
-
-      pages: 7
-
-  - name: "?섎끂??갤럭시버즈"
-
-    query: "갤럭시버즈"
-
-    mall_name: "?섎끂??
-
-    category: "버즈"
-
-    exclude_keywords: ["?⑦뭹", "?쇱そ", "?ㅻⅨ履?]
-
-    request:
-
-      pages: 7
-
-  - name: "?섎끂??갤럭시?뚯튂"
-
-    query: "갤럭시?뚯튂"
-
-    mall_name: "?섎끂??
-
-    category: "?뚯튂"
-
-    exclude_keywords: ["?⑦뭹", "?쇱そ", "?ㅻⅨ履?]
-
-    request:
-
-      pages: 7
-
-  - name: "?꾨옖?쒕え諛붿씪 갤럭시버즈"
-
-    query: "갤럭시버즈"
-
-    mall_name: "?꾨옖??紐⑤컮??
-
-    category: "버즈"
-
-    exclude_keywords: ["?⑦뭹", "?쇱そ", "?ㅻⅨ履?]
-
-    request:
-
-      pages: 7
-
-  - name: "?꾨옖?쒕え諛붿씪 갤럭시?뚯튂"
-
-    query: "갤럭시?뚯튂"
-
-    mall_name: "?꾨옖??紐⑤컮??
-
-    category: "?뚯튂"
-
-    exclude_keywords: ["?⑦뭹", "?쇱そ", "?ㅻⅨ履?]
-
-    request:
-
-      pages: 7
-
-  - name: "쿠팡 갤럭시버즈"
-
-    query: "갤럭시버즈"
-
-    mall_name: "쿠팡"
-
-    category: "버즈"
-
-    exclude_keywords: ["?ㅻ━肄?, "蹂몄껜", "?⑦뭹", "?쇱そ", "?ㅻⅨ履?]
-
-    request:
-
-      pages: 7
-
-  - name: "쿠팡 갤럭시?뚯튂"
-
-    query: "갤럭시?뚯튂"
-
-    mall_name: "쿠팡"
-
-    category: "?뚯튂"
-
-    exclude_keywords: ["?ㅻ━肄?, "蹂몄껜", "?⑦뭹", "?쇱そ", "?ㅻⅨ履?]
-
-    request:
-
-      pages: 7
-
-
-
-
-
-
+﻿common:
+
+  exclude: used:cbshop
+
+  display: 30
+
+  timeout_seconds: 20
+
+  ranking_limit: 100
+
+  authorized_sellers:
+
+    - "?쒖씠??
+
+    - "?щ뵒?꾩씠"
+
+    - "?좊뵒??
+
+    - "?쇰쭏?좎떆"
+
+    - "?ъ씤??
+
+  monitored_sellers:
+
+    - "?쒖씠??
+
+    - "?щ뵒?꾩씠"
+
+    - "?좊뵒??
+
+    - "?ъ씤??
+
+    - "?쇰쭏?좎떆"
+
+    - "?좏뵾?쒖뒪??
+
+    - "媛ㅻ윭由щぐ"
+
+    - "?ㅼ떖而댄띁??
+
+    - "?ㅻⅤ誘紐?
+
+    - "?섎끂??
+
+    - "留μ븻釉뚮옖??
+
+    - "?곕뵒"
+
+    - "?꾨젋??紐⑤컮??
+
+    - "?쒖씠?뚮윭?ㅼ떆?ㅽ뀥"
+
+    - "?명꽣而ㅻ㉧??
+
+    - "?뺥뭹?ъ쑀"
+
+    - "쿠팡"
+
+  
+
+targets:
+
+- name: 갤럭시버즈3 화이트
+
+  mode: api_query
+
+  query: '갤럭시버즈3 화이트
+
+  rank_query: '버즈3'
+
+  category: 버즈
+
+  request:
+
+    pages: 7
+
+    sort: sim
+
+  match:
+
+    required_keywords: [버즈3]
+
+    exclude_keywords: [중고, 리퍼, 而ㅻ쾭, 필름, ?ㅽ궓, ?ㅽ떚而? 프로]
+
+    product_id: '53507707536'
+
+    allowed_product_types: [1, 3]
+
+  url: https://search.shopping.naver.com/catalog/53507707536
+
+- name: 갤럭시버즈3 실버
+
+  mode: api_query
+
+  query: '갤럭시버즈3 실버'
+
+  rank_query: '버즈3'
+
+  category: 버즈
+
+  request:
+
+    pages: 7
+
+    sort: sim
+
+  match:
+
+    required_keywords: [버즈3]
+
+    exclude_keywords: [중고, 리퍼, 而ㅻ쾭, 필름, ?ㅽ궓, ?ㅽ떚而? 프로]
+
+    product_id: '53507707537'
+
+    allowed_product_types: [1, 3]
+
+  url: https://search.shopping.naver.com/catalog/53507707537
+
+- name: 갤럭시버즈3프로 화이트
+
+  mode: api_query
+
+  query: '갤럭시버즈3프로 화이트
+
+  rank_query: '갤럭시버즈3프로'
+
+  category: 버즈
+
+  request:
+
+    pages: 7
+
+    sort: sim
+
+  match:
+
+    required_keywords: [버즈3, 프로]
+
+    exclude_keywords: [중고, 리퍼, 而ㅻ쾭, 필름, ?ㅽ궓, ?ㅽ떚而?
+
+    product_id: '53508451504'
+
+    allowed_product_types: [1, 3]
+
+  url: https://search.shopping.naver.com/catalog/53508451504
+
+- name: 갤럭시버즈3프로 실버
+
+  mode: api_query
+
+  query: '갤럭시버즈3프로 실버'
+
+  rank_query: '갤럭시버즈3프로'
+
+  category: 버즈
+
+  request:
+
+    pages: 7
+
+    sort: sim
+
+  match:
+
+    required_keywords: [버즈3, 프로]
+
+    exclude_keywords: [중고, 리퍼, 而ㅻ쾭, 필름, ?ㅽ궓, ?ㅽ떚而?
+
+    product_id: '53508451505'
+
+    allowed_product_types: [1, 3]
+
+  url: https://search.shopping.naver.com/catalog/53508451505
+
+- name: 갤럭시버즈4프로 釉붾옓
+
+  mode: api_query
+
+  query: '갤럭시버즈4프로 釉붾옓'
+
+  rank_query: '갤럭시버즈4프로'
+
+  category: 버즈
+
+  request:
+
+    pages: 7
+
+    sort: sim
+
+  match:
+
+    required_keywords: [버즈4, 프로]
+
+    exclude_keywords: [중고, 리퍼, 而ㅻ쾭, 필름, ?ㅽ궓, ?ㅽ떚而?
+
+    product_id: '59061283797'
+
+    allowed_product_types: [1, 3]
+
+  url: https://search.shopping.naver.com/catalog/59061283797
+
+- name: 갤럭시버즈4프로 화이트
+
+  mode: api_query
+
+  query: '갤럭시버즈4프로 화이트
+
+  rank_query: '갤럭시버즈4프로'
+
+  category: 버즈
+
+  request:
+
+    pages: 7
+
+    sort: sim
+
+  match:
+
+    required_keywords: [버즈4, 프로]
+
+    exclude_keywords: [중고, 리퍼, 而ㅻ쾭, 필름, ?ㅽ궓, ?ㅽ떚而?
+
+    product_id: '59061283798'
+
+    allowed_product_types: [1, 3]
+
+  url: https://search.shopping.naver.com/catalog/59061283798
+
+- name: 갤럭시버즈4 釉붾옓
+
+  mode: api_query
+
+  query: '갤럭시버즈4 釉붾옓'
+
+  rank_query: '갤럭시버즈4'
+
+  category: 버즈
+
+  request:
+
+    pages: 7
+
+    sort: sim
+
+  match:
+
+    required_keywords: [버즈4]
+
+    exclude_keywords: [중고, 리퍼, 而ㅻ쾭, 필름, ?ㅽ궓, ?ㅽ떚而?
+
+    product_id: '59061250873'
+
+    allowed_product_types: [1, 3]
+
+  url: https://search.shopping.naver.com/catalog/59061250873
+
+- name: 갤럭시버즈4 화이트
+
+  mode: api_query
+
+  query: '갤럭시버즈4 화이트
+
+  rank_query: '갤럭시버즈4'
+
+  category: 버즈
+
+  request:
+
+    pages: 7
+
+    sort: sim
+
+  match:
+
+    required_keywords: [버즈4]
+
+    exclude_keywords: [중고, 리퍼, 而ㅻ쾭, 필름, ?ㅽ궓, ?ㅽ떚而?
+
+    product_id: '59061250874'
+
+    allowed_product_types: [1, 3]
+
+  url: https://search.shopping.naver.com/catalog/59061250874
+
+- name: 갤럭시워치8 40mm 실버
+
+  mode: api_query
+
+  query: '갤럭시워치 40mm 실버'
+
+  rank_query: '갤럭시워치8'
+
+  category: 워치
+
+  request:
+
+    pages: 7
+
+    sort: sim
+
+  match:
+
+    required_keywords: [워치8, 40mm]
+
+    exclude_keywords: [중고, 리퍼, 스트랩 필름]
+
+    product_id: '55668557960'
+
+    allowed_product_types: [1, 3]
+
+  url: https://search.shopping.naver.com/catalog/55668557960
+
+- name: 갤럭시워치8 40mm 그라파이트
+
+  mode: api_query
+
+  query: '갤럭시워치 40mm 그라파이트
+
+  rank_query: '갤럭시워치8'
+
+  category: 워치
+
+  request:
+
+    pages: 7
+
+    sort: sim
+
+  match:
+
+    required_keywords: [워치8, 40mm]
+
+    exclude_keywords: [중고, 리퍼, 스트랩 필름]
+
+    product_id: '55727496882'
+
+    allowed_product_types: [1, 3]
+
+  url: https://search.shopping.naver.com/catalog/55727496882
+
+- name: 갤럭시워치8 44mm 실버
+
+  mode: api_query
+
+  query: '갤럭시워치 44mm 실버'
+
+  rank_query: '갤럭시워치8'
+
+  category: 워치
+
+  request:
+
+    pages: 7
+
+    sort: sim
+
+  match:
+
+    required_keywords: [워치8, 44mm]
+
+    exclude_keywords: [중고, 리퍼, 스트랩 필름]
+
+    product_id: '55668557962'
+
+    allowed_product_types: [1, 3]
+
+  url: https://search.shopping.naver.com/catalog/55668557962
+
+- name: 갤럭시워치8 44mm 그라파이트
+
+  mode: api_query
+
+  query: '갤럭시워치 44mm 그라파이트
+
+  rank_query: '갤럭시워치8'
+
+  category: 워치
+
+  request:
+
+    pages: 7
+
+    sort: sim
+
+  match:
+
+    required_keywords: [워치8, 44mm]
+
+    exclude_keywords: [중고, 리퍼, 스트랩 필름]
+
+    product_id: '55727496884'
+
+    allowed_product_types: [1, 3]
+
+  url: https://search.shopping.naver.com/catalog/55727496884
+
+- name: 갤럭시워치8 클래식釉붾옓
+
+  mode: api_query
+
+  query: '갤럭시워치 클래식釉붾옓'
+
+  rank_query: '갤럭시워치8 클래식
+
+  category: 워치
+
+  request:
+
+    pages: 7
+
+    sort: sim
+
+  match:
+
+    required_keywords: [워치8, 클래식
+
+    exclude_keywords: [중고, 리퍼, 스트랩 필름]
+
+    product_id: '55727507152'
+
+    allowed_product_types: [1, 3]
+
+  url: https://search.shopping.naver.com/catalog/55727507152
+
+- name: 갤럭시워치8 클래식화이트
+
+  mode: api_query
+
+  query: '갤럭시워치 클래식화이트
+
+  rank_query: '갤럭시워치8 클래식
+
+  category: 워치
+
+  request:
+
+    pages: 7
+
+    sort: sim
+
+  match:
+
+    required_keywords: [워치8, 클래식
+
+    exclude_keywords: [중고, 리퍼, 스트랩 필름]
+
+    product_id: '55668573794'
+
+    allowed_product_types: [1, 3]
+
+  url: https://search.shopping.naver.com/catalog/55668573794
+
+- name: 갤럭시??
+
+  mode: api_query
+
+  query: '갤럭시??'
+
+  rank_query: '갤럭시??'
+
+  category: ??
+
+  request:
+
+    pages: 7
+
+    sort: sim
+
+  match:
+
+    required_keywords: [??]
+
+    exclude_keywords: [중고, 리퍼, 스트랩 필름]
+
+    product_id: '55900277515'
+
+    allowed_product_types: [1, 3]
+
+  url: https://search.shopping.naver.com/catalog/55900277515
+
+- name: 갤럭시버즈3FE 洹몃젅??
+
+  mode: api_query
+
+  query: '갤럭시버즈3FE 洹몃젅??
+
+  rank_query: '버즈3'FE'
+
+  category: 버즈
+
+  request:
+
+    pages: 7
+
+    sort: sim
+
+  match:
+
+    required_keywords: [버즈3, FE]
+
+    exclude_keywords: [중고, 리퍼, 而ㅻ쾭, 필름, ?ㅽ궓, ?ㅽ떚而?
+
+    product_id: '56796984706'
+
+    allowed_product_types: [1, 3]
+
+  url: https://search.shopping.naver.com/catalog/56796984706
+
+- name: 갤럭시버즈3FE 釉붾옓
+
+  mode: api_query
+
+  query: '갤럭시버즈3FE 釉붾옓'
+
+  rank_query: '버즈3'FE'
+
+  category: 버즈
+
+  request:
+
+    pages: 7
+
+    sort: sim
+
+  match:
+
+    required_keywords: [버즈3, FE]
+
+    exclude_keywords: [중고, 리퍼, 而ㅻ쾭, 필름, ?ㅽ궓, ?ㅽ떚而?
+
+    product_id: '56796983823'
+
+    allowed_product_types: [1, 3]
+
+  url: https://search.shopping.naver.com/catalog/56796983823
+
+- name: 갤럭시워치 울트라?실버
+
+  mode: api_query
+
+  query: '갤럭시워치울트라?실버'
+
+  rank_query: '갤럭시워치 ?명듃??
+
+  category: 워치
+
+  request:
+
+    pages: 7
+
+    sort: sim
+
+  match:
+
+    required_keywords: [워치, ?명듃??
+
+    exclude_keywords: [중고, 리퍼, 스트랩 필름]
+
+    product_id: '55727792362'
+
+    allowed_product_types: [1, 3]
+
+  url: https://search.shopping.naver.com/catalog/55727792362
+
+- name: 갤럭시워치 울트라?洹몃젅??
+
+  mode: api_query
+
+  query: '갤럭시워치울트라?洹몃젅??
+
+  rank_query: '갤럭시워치 ?명듃??
+
+  category: 워치
+
+  request:
+
+    pages: 7
+
+    sort: sim
+
+  match:
+
+    required_keywords: [워치, ?명듃??
+
+    exclude_keywords: [중고, 리퍼, 스트랩 필름]
+
+    product_id: '55727789525'
+
+    allowed_product_types: [1, 3]
+
+  url: https://search.shopping.naver.com/catalog/55727789525
+
+- name: 갤럭시워치 울트라?釉붾（
+
+  mode: api_query
+
+  query: '갤럭시워치울트라?釉붾（'
+
+  rank_query: '갤럭시워치 ?명듃??
+
+  category: 워치
+
+  request:
+
+    pages: 7
+
+    sort: sim
+
+  match:
+
+    required_keywords: [워치, ?명듃??
+
+    exclude_keywords: [중고, 리퍼, 스트랩 필름]
+
+    product_id: '55727555801'
+
+    allowed_product_types: [1, 3]
+
+  url: https://search.shopping.naver.com/catalog/55727555801
+
+- name: 갤럭시워치 울트라?화이트
+
+  mode: api_query
+
+  query: '갤럭시워치울트라?화이트
+
+  rank_query: '갤럭시워치 ?명듃??
+
+  category: 워치
+
+  request:
+
+    pages: 7
+
+    sort: sim
+
+  match:
+
+    required_keywords: [워치, ?명듃??
+
+    exclude_keywords: [중고, 리퍼, 스트랩 필름]
+
+    product_id: '55727792338'
+
+    allowed_product_types: [1, 3]
+
+  url: https://search.shopping.naver.com/catalog/55727792338
+
+
+
+mall_targets:
+
+  - name: "?쒖씠??갤럭시버즈"
+
+    query: "갤럭시버즈"
+
+    mall_name: "?쒖씠??
+
+    category: "버즈"
+
+    request:
+
+      pages: 7
+
+  - name: "?щ뵒?꾩씠 갤럭시버즈"
+
+    query: "갤럭시버즈"
+
+    mall_name: "?щ뵒?꾩씠"
+
+    category: "버즈"
+
+    request:
+
+      pages: 7
+
+  - name: "?좊뵒??갤럭시버즈"
+
+    query: "갤럭시버즈"
+
+    mall_name: "?좊뵒??
+
+    category: "버즈"
+
+    request:
+
+      pages: 7
+
+  - name: "?ъ씤??갤럭시워치"
+
+    query: "갤럭시워치"
+
+    mall_name: "?ъ씤??
+
+    category: "워치"
+
+    request:
+
+      pages: 7
+
+  - name: "?쇰쭏?좎떆 갤럭시워치"
+
+    query: "갤럭시워치"
+
+    mall_name: "?쇰쭏?좎떆"
+
+    category: "워치"
+
+    request:
+
+      pages: 7
+
+  - name: "?좏뵾?쒖뒪??갤럭시버즈"
+
+    query: "갤럭시버즈"
+
+    mall_name: "?좏뵾?쒖뒪??
+
+    category: "버즈"
+
+    request:
+
+      pages: 7
+
+  - name: "?좏뵾?쒖뒪??갤럭시워치"
+
+    query: "갤럭시워치"
+
+    mall_name: "?좏뵾?쒖뒪??
+
+    category: "워치"
+
+    request:
+
+      pages: 7
+
+  - name: "?쒖씠?뚮윭?ㅼ떆?ㅽ뀥 갤럭시버즈"
+
+    query: "갤럭시버즈"
+
+    mall_name: "?쒖씠?뚮윭?ㅼ떆?ㅽ뀥"
+
+    category: "버즈"
+
+    request:
+
+      pages: 7
+
+  - name: "?쒖씠?뚮윭?ㅼ떆?ㅽ뀥 갤럭시워치"
+
+    query: "갤럭시워치"
+
+    mall_name: "?쒖씠?뚮윭?ㅼ떆?ㅽ뀥"
+
+    category: "워치"
+
+    request:
+
+      pages: 7
+
+  - name: "?명꽣而ㅻ㉧??갤럭시버즈"
+
+    query: "갤럭시버즈"
+
+    mall_name: "?명꽣而ㅻ㉧??
+
+    category: "버즈"
+
+    request:
+
+      pages: 7
+
+  - name: "?명꽣而ㅻ㉧??갤럭시워치"
+
+    query: "갤럭시워치"
+
+    mall_name: "?명꽣而ㅻ㉧??
+
+    category: "워치"
+
+    request:
+
+      pages: 7
+
+  - name: "?뺥뭹?ъ쑀 갤럭시버즈"
+
+    query: "갤럭시버즈"
+
+    mall_name: "?뺥뭹?ъ쑀"
+
+    category: "버즈"
+
+    exclude_keywords: ["?⑦뭹", "?쇱そ", "?ㅻⅨ履?]
+
+    request:
+
+      pages: 7
+
+  - name: "?뺥뭹?ъ쑀 갤럭시워치"
+
+    query: "갤럭시워치"
+
+    mall_name: "?뺥뭹?ъ쑀"
+
+    category: "워치"
+
+    exclude_keywords: ["?⑦뭹", "?쇱そ", "?ㅻⅨ履?]
+
+    request:
+
+      pages: 7
+
+  - name: "媛ㅻ윭由щぐ 갤럭시버즈"
+
+    query: "갤럭시버즈"
+
+    mall_name: "媛ㅻ윭由щぐ"
+
+    category: "버즈"
+
+    exclude_keywords: ["?⑦뭹", "?쇱そ", "?ㅻⅨ履?]
+
+    request:
+
+      pages: 7
+
+  - name: "媛ㅻ윭由щぐ 갤럭시워치"
+
+    query: "갤럭시워치"
+
+    mall_name: "媛ㅻ윭由щぐ"
+
+    category: "워치"
+
+    exclude_keywords: ["?⑦뭹", "?쇱そ", "?ㅻⅨ履?]
+
+    request:
+
+      pages: 7
+
+  - name: "?섎끂??갤럭시버즈"
+
+    query: "갤럭시버즈"
+
+    mall_name: "?섎끂??
+
+    category: "버즈"
+
+    exclude_keywords: ["?⑦뭹", "?쇱そ", "?ㅻⅨ履?]
+
+    request:
+
+      pages: 7
+
+  - name: "?섎끂??갤럭시워치"
+
+    query: "갤럭시워치"
+
+    mall_name: "?섎끂??
+
+    category: "워치"
+
+    exclude_keywords: ["?⑦뭹", "?쇱そ", "?ㅻⅨ履?]
+
+    request:
+
+      pages: 7
+
+  - name: "?꾨옖?쒕え諛붿씪 갤럭시버즈"
+
+    query: "갤럭시버즈"
+
+    mall_name: "?꾨옖??紐⑤컮??
+
+    category: "버즈"
+
+    exclude_keywords: ["?⑦뭹", "?쇱そ", "?ㅻⅨ履?]
+
+    request:
+
+      pages: 7
+
+  - name: "?꾨옖?쒕え諛붿씪 갤럭시워치"
+
+    query: "갤럭시워치"
+
+    mall_name: "?꾨옖??紐⑤컮??
+
+    category: "워치"
+
+    exclude_keywords: ["?⑦뭹", "?쇱そ", "?ㅻⅨ履?]
+
+    request:
+
+      pages: 7
+
+  - name: "쿠팡 갤럭시버즈"
+
+    query: "갤럭시버즈"
+
+    mall_name: "쿠팡"
+
+    category: "버즈"
+
+    exclude_keywords: ["?ㅻ━肄?, "蹂몄껜", "?⑦뭹", "?쇱そ", "?ㅻⅨ履?]
+
+    request:
+
+      pages: 7
+
+  - name: "쿠팡 갤럭시워치"
+
+    query: "갤럭시워치"
+
+    mall_name: "쿠팡"
+
+    category: "워치"
+
+    exclude_keywords: ["?ㅻ━肄?, "蹂몄껜", "?⑦뭹", "?쇱そ", "?ㅻⅨ履?]
+
+    request:
+
+      pages: 7
+
+
+
+
+
+
