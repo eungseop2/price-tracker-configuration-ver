@@ -593,6 +593,14 @@ class GoogleSheetStore:
                     # 부분 일치 확인 (예: "dmac 네이버 스마트스토어" -> "dmac")
                     if not any(s in norm_mall for s in all_m_sellers):
                         continue
+                
+                # [보강] 카테고리별 매핑이 있다면 해당 카테고리에 속한 셀러인지도 체크
+                if isinstance(monitored_sellers, dict) and m_sellers_map:
+                    target_list = m_sellers_map.get(cat, [])
+                    # 정규화된 이름으로 매칭 확인
+                    target_list_norm = [norm_mall_name(s) for s in target_list]
+                    if norm_mall not in target_list_norm:
+                        continue
 
             if cat not in report: report[cat] = {}
             if norm_mall not in report[cat]: 

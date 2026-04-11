@@ -696,34 +696,10 @@ mall_targets:
   category: 버즈
   request:
     pages: 7
-- name: 제이유 갤럭시 워치
-  query: 갤럭시 워치
-  mall_name: 제이유
-  category: 워치
-  request:
-    pages: 7
-- name: 포디아이 갤럭시 버즈
-  query: 갤럭시 버즈
-  mall_name: 포디아이
-  category: 버즈
-  request:
-    pages: 7
-- name: 포디아이 갤럭시 워치
-  query: 갤럭시 워치
-  mall_name: 포디아이
-  category: 워치
-  request:
-    pages: 7
 - name: 엠디텍 갤럭시 버즈
   query: 갤럭시 버즈
   mall_name: 엠디텍
   category: 버즈
-  request:
-    pages: 7
-- name: 엠디텍 갤럭시 워치
-  query: 갤럭시 워치
-  mall_name: 엠디텍
-  category: 워치
   request:
     pages: 7
 - name: dmac 갤럭시 워치
