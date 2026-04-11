@@ -387,7 +387,7 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                 # [해제] 감시 셀러의 상품이라면 어떤 키워드 기준도 따지지 않고 수입합니다.
                 curr_itm_mall_norm = normalize_for_match(itm.get("seller_name", ""))
                 
-                if curr_itm_mall_norm == target_mall_norm:
+                if target_mall_norm in curr_itm_mall_norm:
                     p_id = str(itm.get("product_id") or itm.get("product_url", ""))
                     dup_key = f"{target_mall_norm}|{p_id}"
                     
