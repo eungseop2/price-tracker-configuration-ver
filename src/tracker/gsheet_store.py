@@ -263,9 +263,18 @@ class GoogleSheetStore:
         return getattr(self, '_headers_cache', {}).get(name, ws.row_values(1))
 
     def _get_all_records_safe(self, ws):
-        """gspread의 get_all_records()가 빈 헤더 중복 시 에러를 내는 문제를 해결한 안전한 버전"""
+        """gspread의 get_all_records()가 빈 헤더 중복 시 에러를 내는 문제를 해결한 안전한 버전.
+        동일 시트 반복 조회 시 캐시를 사용하여 API 할당량 초과를 방지합니다."""
+        if not hasattr(self, '_records_cache'):
+            self._records_cache = {}
+        
+        cache_key = ws.title
+        if cache_key in self._records_cache:
+            return self._records_cache[cache_key]
+        
         all_values = ws.get_all_values()
         if not all_values:
+            self._records_cache[cache_key] = []
             return []
         
         headers = all_values[0]
@@ -277,6 +286,8 @@ class GoogleSheetStore:
                 if h: # 헤더가 비어있지 않은 컬럼만 데이터로 포함
                     record[h] = row[i] if i < len(row) else ""
             records.append(record)
+        
+        self._records_cache[cache_key] = records
         return records
 
     def _maybe_cleanup(self):
