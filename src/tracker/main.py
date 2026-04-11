@@ -303,18 +303,22 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                     except (ValueError, TypeError):
                         continue
             
-            # 2순위: 같은 target_name(동일 상품 검색 결과) 내에서 가격 매칭
+            # 2순위: 상품 제목(title)에 타겟 명칭이 포함되어 있고 가격 매칭 (완화된 매칭)
             if not found_mall and t_name:
                 for itm in all_peeked_items:
                     try:
-                        if itm.get("target_name") != t_name:
-                            continue
-                        m_price = int(itm.get("price") or 0)
-                        if m_price == int_price and m_price > 0:
-                            m_seller = itm.get("seller_name")
-                            if m_seller and m_seller not in ["네이버", "Naver"]:
-                                found_mall = m_seller
-                                break
+                        # [오류수정] itm에는 product_code 키에 타겟명이 들어있음
+                        itm_t_name = itm.get("product_code") or ""
+                        itm_title = itm.get("title") or ""
+                        
+                        # 타겟명이 같거나, 상품 제목에 타겟명이 포함된 경우
+                        if itm_t_name == t_name or t_name in itm_title:
+                            m_price = int(itm.get("price") or 0)
+                            if m_price == int_price and m_price > 0:
+                                m_seller = itm.get("seller_name")
+                                if m_seller and m_seller not in ["네이버", "Naver"]:
+                                    found_mall = m_seller
+                                    break
                     except (ValueError, TypeError):
                         continue
             
@@ -496,18 +500,32 @@ def main() -> None:
                 if latest:
                     rankings[rq] = latest
             
-            # 셀러별 쇼핑몰 리포트 데이터 수집 (seller_config 시트의 is_active 반영)
+            # 셀러별 쇼핑몰 리포트 데이터 수집 (seller_config 시트의 is_active 반영 + 카테고리 맵핑)
             active_sellers = store.get_active_sellers()
+            
+            # 카테고리별 셀러 맵 생성 (mall_targets 활용)
+            cat_seller_map = {}
+            if app_config.mall_targets:
+                for mt in app_config.mall_targets:
+                    cat = mt.category or "기타"
+                    if cat not in cat_seller_map: cat_seller_map[cat] = []
+                    cat_seller_map[cat].append(mt.mall_name)
+            
             if active_sellers:
-                # 시트 기반 활성 셀러만 사용 (is_active=false인 셀러 제외)
-                # monitored와 authorized 중복 제거 및 이름 정규화 정합성 유지
+                # 시트 기반 활성 셀러만 필터링하여 맵 재구성
                 eff_set = set(active_sellers.get("monitored", []) + active_sellers.get("authorized", []))
-                effective_sellers = list(eff_set)
-                logger.info(f"seller_config 시트 기반 활성 셀러 {len(effective_sellers)}개 적용: {', '.join(effective_sellers[:10])}...")
+                filtered_cat_map = {}
+                for cat, slist in cat_seller_map.items():
+                    filtered_list = [s for s in slist if s in eff_set]
+                    if filtered_list:
+                        filtered_cat_map[cat] = filtered_list
+                
+                effective_sellers = filtered_cat_map if filtered_cat_map else eff_set
+                logger.info(f"seller_config 시트 기반 활성 셀러 필터링 적용 (카테고리 맵핑 완료)")
             else:
-                # 시트 조회 실패 시 YAML 기본값 사용
-                effective_sellers = app_config.monitored_sellers
-                logger.info("seller_config 시트 조회 실패로 YAML monitored_sellers를 사용합니다.")
+                # 시트 조회 실패 시 생성된 맵 그대로 사용
+                effective_sellers = cat_seller_map
+                logger.info("seller_config 시트 조회 실패로 YAML 기반 카테고리 맵을 사용합니다.")
             
             mall_raw = store.get_mall_report_data(monitored_sellers=effective_sellers)
             mall_reports = {"categories": mall_raw}

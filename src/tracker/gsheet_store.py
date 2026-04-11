@@ -495,7 +495,7 @@ class GoogleSheetStore:
         # UI에서 기대하는 필드명(image_url 등)이 포함되도록 반환
         return [m for m in matches if m["collected_at"] == latest_time]
 
-    def get_mall_report_data(self, monitored_sellers: list[str] | None = None) -> dict[str, Any]:
+    def get_mall_report_data(self, monitored_sellers: list[str] | dict[str, list[str]] | None = None) -> dict[str, Any]:
         """쇼핑몰 리포트용 계층 데이터 구성 (대시보드 노출)"""
         ws = self._get_worksheet("mall_observations")
         records = self._get_all_records_safe(ws)
@@ -505,19 +505,29 @@ class GoogleSheetStore:
 
         from .util import format_price, normalize_for_match
         
-        # 필터링 및 정규화용 셋 준비
-        m_sellers_norm = {normalize_for_match(s) for s in (monitored_sellers or [])}
-        # dmac 정규화 추가
-        if "디엠에이씨" in m_sellers_norm:
-            m_sellers_norm.add("dmac")
+        # 필터링 및 정규화용 데이터 구조 준비
+        if isinstance(monitored_sellers, dict):
+            # 카테고리별 셀러 맵이 명시된 경우
+            m_sellers_map = monitored_sellers
+            all_m_sellers = set()
+            for slist in m_sellers_map.values():
+                for s in slist: all_m_sellers.add(normalize_for_match(s))
+        else:
+            # 기존 평면 리스트인 경우 (모든 카테고리에 공통 적용)
+            common_list = monitored_sellers or []
+            m_sellers_map = None 
+            all_m_sellers = {normalize_for_match(s) for s in common_list}
+            
+        # dmac 정규화 추가 (전체 집합 기준)
+        if "디엠에이씨" in all_m_sellers:
+            all_m_sellers.add("dmac")
         
         def norm_mall_name(raw):
             n = normalize_for_match(raw)
-            if n == "디엠에이씨": n = "dmac"
+            if n == "디엠에이씨" or n == "dmac": return "dmac"
             return n
         
-        # 셀러+카테고리+상품ID 조합별로 최신 레코드를 수집 (target_name 기반이 아닌 실제 데이터 기반)
-        # 이렇게 하면 특정 수집 회차에 셀러가 빠져도 이전 데이터가 유지됨
+        # 셀러+카테고리+상품ID 조합별로 최신 레코드를 수집
         latest_records = []
         by_seller_cat = {}
         for r in records:
@@ -537,18 +547,29 @@ class GoogleSheetStore:
         
         latest_records = list(by_seller_cat.values())
 
-        # 카테고리/몰별 그룹화 및 필터링
+        # 카테고리/몰별 그룹화
         report = {}
         
-        # [수정] 0개여도 노출되도록 사전 초기화
+        # [수정] 0개여도 노출되도록 사전 초기화 (카테고리 정보 활용)
         if monitored_sellers:
-            # 보장해야 할 기본 카테고리와 데이터에 존재하는 카테고리 합치기
+            # 데이터에 존재하는 카테고리 + 기본 보장 카테고리
             cats_in_data = set(r.get("category") or "기타" for r in records)
-            target_cats = list(cats_in_data | {"버즈", "워치"}) # 버즈, 워치는 데이터 없어도 노출 보장
+            target_cats = cats_in_data | {"버즈", "워치"}
+            if m_sellers_map:
+                target_cats |= set(m_sellers_map.keys())
             
             for c in target_cats:
                 if c not in report: report[c] = {}
-                for s in monitored_sellers:
+                
+                # 해당 카테고리에 노출할 셀러 목록 결정
+                if m_sellers_map:
+                    # 맵이 있으면 해당 카테고리에 지정된 셀러만
+                    current_m_list = m_sellers_map.get(c, [])
+                else:
+                    # 맵이 없으면 전체 리스트를 모든 카테고리에 (하위 호환)
+                    current_m_list = monitored_sellers or []
+                
+                for s in current_m_list:
                     ns = norm_mall_name(s)
                     if ns not in report[c]:
                         report[c][ns] = {
@@ -562,34 +583,33 @@ class GoogleSheetStore:
             raw_mall = r.get("mall_name", "")
             if not raw_mall: continue
             
-            # 몰 이름 정규화 (필터링 및 그룹화 목적)
             norm_mall = norm_mall_name(raw_mall)
+            cat = r.get("category") or "기타"
             
-            # 필터링 로직 (monitored_sellers가 지정된 경우)
+            # 필터링 로직: 명시적으로 감시 대상인 경우만 최종 레코드에 포함
+            # 1. 시트나 YAML에서 지정된 '전체 감시 셀러' 집합에 포함되어야 함
             if monitored_sellers:
-                if norm_mall not in m_sellers_norm:
-                    # 원본 이름에 포함되는지 한 번 더 확인 (예: "dmac 네이버 스마트스토어" 등 대응)
-                    is_contained = any(s in norm_mall for s in m_sellers_norm)
-                    if not is_contained:
+                if norm_mall not in all_m_sellers:
+                    # 부분 일치 확인 (예: "dmac 네이버 스마트스토어" -> "dmac")
+                    if not any(s in norm_mall for s in all_m_sellers):
                         continue
 
-            cat = r.get("category") or "기타"
-            display_mall = norm_mall
-
             if cat not in report: report[cat] = {}
-            if display_mall not in report[cat]: 
-                report[cat][display_mall] = {
+            if norm_mall not in report[cat]: 
+                report[cat][norm_mall] = {
                     "total_products": 0,
                     "price_decreased_count": 0,
                     "last_updated": r.get("collected_at") or utc_now_iso(),
                     "products": []
                 }
             
-            # 더 최신 정보가 있다면 업데이트
-            if r.get("collected_at", "") > report[cat][display_mall].get("last_updated", ""):
-                report[cat][display_mall]["last_updated"] = r.get("collected_at")
-            
+            display_mall = norm_mall
             mall = display_mall
+            
+            # 더 최신 정보가 있다면 업데이트
+            if r.get("collected_at", "") > report[cat][mall].get("last_updated", ""):
+                report[cat][mall]["last_updated"] = r.get("collected_at")
+            
             title = r.get("title", "")
             p_id = str(r.get("product_id", "")) if r.get("product_id") else ""
             
@@ -603,11 +623,7 @@ class GoogleSheetStore:
             # 이전 기록 찾기
             def is_same_mall(m1, m2):
                 if not m1 or not m2: return False
-                n1 = normalize_for_match(m1)
-                n2 = normalize_for_match(m2)
-                if n1 == "디엠에이씨": n1 = "dmac"
-                if n2 == "디엠에이씨": n2 = "dmac"
-                return n1 == n2
+                return norm_mall_name(m1) == norm_mall_name(m2)
             
             if p_id:
                 history = [h for h in records if is_same_mall(h.get("mall_name"), mall) and str(h.get("product_id")) == p_id and h["collected_at"] < r["collected_at"]]
