@@ -75,6 +75,8 @@ jobs:
             echo "No dashboard.html found"
           fi
           [ -f "dashboard_data.json" ] && cp dashboard_data.json public/ || echo "No dashboard_data.json found"
+          [ -f "dashboard.css" ] && cp dashboard.css public/ || echo "No dashboard.css found"
+          [ -f "dashboard.js" ] && cp dashboard.js public/ || echo "No dashboard.js found"
           [ -f "logo.png" ] && cp logo.png public/ || echo "No logo.png found"
 
 
