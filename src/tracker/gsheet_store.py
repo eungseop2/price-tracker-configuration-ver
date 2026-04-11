@@ -567,6 +567,7 @@ class GoogleSheetStore:
             
             mall = display_mall
             title = r.get("title", "")
+            p_id = str(r.get("product_id", "")) if r.get("product_id") else ""
             
             try:
                 curr_price = int(r.get("price") or 0)
