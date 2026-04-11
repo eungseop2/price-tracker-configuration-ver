@@ -325,7 +325,7 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
             
             for itm in all_peeked_items:
                 # 1. 제외 키워드 필터링 (쿠팡 실리콘/케이스 등 방지용)
-                exclude_keywords = getattr(m_target, "exclude_keywords", [])
+                exclude_keywords = m_target.exclude_keywords
                 if exclude_keywords:
                     title = itm.get("title", "")
                     if any(k in title for k in exclude_keywords):

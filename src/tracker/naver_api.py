@@ -189,10 +189,21 @@ def collect_mall_inventory(client: NaverShoppingSearchClient, app_config: AppCon
 
     candidates = []
     target_mall = clean_text(target.mall_name)
+    exclude_kws = getattr(target, "exclude_keywords", [])
+
     for item in items:
         seller = clean_text(item.get("mallName"))
-        if target_mall in seller:
-            candidates.append(_normalized_item(item))
+        title = clean_text(item.get("title"))
+
+        # 1. 셀러명 일치 확인
+        if target_mall not in seller:
+            continue
+        
+        # 2. 제외 키워드 확인
+        if exclude_kws and any(k in title for k in exclude_kws):
+            continue
+
+        candidates.append(_normalized_item(item))
 
     return candidates
 

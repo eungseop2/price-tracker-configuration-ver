@@ -65,6 +65,7 @@ class MallTargetConfig:
     query: str
     mall_name: str
     category: str = "기타"
+    exclude_keywords: list[str] = field(default_factory=list) # 추가
     request: RequestConfig = field(default_factory=RequestConfig)
 
 
@@ -288,6 +289,7 @@ def load_config(path: str | Path) -> AppConfig:
                 query=str(item.get("query", "")),
                 mall_name=str(item.get("mall_name", "")),
                 category=str(item.get("category", "기타")),
+                exclude_keywords=list(item.get("exclude_keywords", []) or []),
                 request=_to_request(item.get("request"))
             )
             app.mall_targets.append(target)
