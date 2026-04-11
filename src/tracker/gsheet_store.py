@@ -542,9 +542,11 @@ class GoogleSheetStore:
         
         # [수정] 0개여도 노출되도록 사전 초기화
         if monitored_sellers:
-            # 모든 카테고리에 대해 셀러를 초기화 (데이터에 존재하는 카테고리들 우선)
+            # 보장해야 할 기본 카테고리와 데이터에 존재하는 카테고리 합치기
             cats_in_data = set(r.get("category") or "기타" for r in records)
-            for c in cats_in_data:
+            target_cats = list(cats_in_data | {"버즈", "워치"}) # 버즈, 워치는 데이터 없어도 노출 보장
+            
+            for c in target_cats:
                 if c not in report: report[c] = {}
                 for s in monitored_sellers:
                     ns = norm_mall_name(s)

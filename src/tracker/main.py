@@ -500,11 +500,15 @@ def main() -> None:
             active_sellers = store.get_active_sellers()
             if active_sellers:
                 # 시트 기반 활성 셀러만 사용 (is_active=false인 셀러 제외)
-                effective_sellers = active_sellers.get("monitored", []) + active_sellers.get("authorized", [])
-                logger.info(f"seller_config 시트 기반 활성 셀러 {len(effective_sellers)}개 적용")
+                # monitored와 authorized 중복 제거 및 이름 정규화 정합성 유지
+                eff_set = set(active_sellers.get("monitored", []) + active_sellers.get("authorized", []))
+                effective_sellers = list(eff_set)
+                logger.info(f"seller_config 시트 기반 활성 셀러 {len(effective_sellers)}개 적용: {', '.join(effective_sellers[:10])}...")
             else:
                 # 시트 조회 실패 시 YAML 기본값 사용
                 effective_sellers = app_config.monitored_sellers
+                logger.info("seller_config 시트 조회 실패로 YAML monitored_sellers를 사용합니다.")
+            
             mall_raw = store.get_mall_report_data(monitored_sellers=effective_sellers)
             mall_reports = {"categories": mall_raw}
             
