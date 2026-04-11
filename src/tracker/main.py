@@ -322,22 +322,30 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
             top_10 = rq_items[:10]
             
             for idx, item in enumerate(top_10, 1):
+                # ranking_history 스키마에 맞춰 필드명 수정 및 정보 추가
                 rank_batch.append({
                     "query": rq,
                     "rank": idx,
                     "title": item.get("title"),
                     "price": item.get("price"),
-                    "seller": item.get("seller_name"),
+                    "seller_name": item.get("seller_name"), # seller -> seller_name
                     "product_id": item.get("product_id"),
+                    "product_type": item.get("product_type"),
+                    "product_url": item.get("product_url"),
+                    "image_url": item.get("image_url"),
+                    "is_ad": itm.get("is_ad", False),
                     "collected_at": now_ts
                 })
         
         if rank_batch:
+            logger.info(f"📊 {len(rank_batch)}건의 랭킹 히스토리 데이터를 수집했습니다.")
             try:
                 store.insert_ranking_batch(rank_batch)
                 logger.info(f"랭킹 히스토리 저장 완료 ({len(unique_rank_queries)}개 키워드, 총 {len(rank_batch)}개 항목)")
             except Exception as e:
                 logger.error(f"랭킹 히스토리 저장 실패: {e}")
+        else:
+            logger.warning("⚠️ 수집된 랭킹 히스토리 데이터가 없습니다.")
 
     # ---------- [셀러 트래킹: 최저가 데이터 재활용] ----------
     if app_config.mall_targets:
