@@ -354,25 +354,17 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
             candidates = []
             
             for itm in all_peeked_items:
-                # 1. 제외 키워드 필터링 (쿠팡 실리콘/케이스 등 방지용)
-                exclude_keywords = m_target.exclude_keywords
-                if exclude_keywords:
-                    title = itm.get("title", "")
-                    if any(k in title for k in exclude_keywords):
-                        continue
-
-                # 2. 카테고리가 일치하거나 쿼리 키워드가 포함된 경우 필터링
-                if itm.get("category") == m_target.category or m_target.query in itm.get("title", ""):
-                    curr_itm_mall_norm = normalize_for_match(itm.get("seller_name", ""))
+                # [해제] 감시 셀러의 상품이라면 어떤 키워드 기준도 따지지 않고 수입합니다.
+                curr_itm_mall_norm = normalize_for_match(itm.get("seller_name", ""))
+                
+                if curr_itm_mall_norm == target_mall_norm:
+                    p_id = str(itm.get("product_id") or itm.get("product_url", ""))
+                    dup_key = f"{target_mall_norm}|{p_id}"
                     
-                    if curr_itm_mall_norm == target_mall_norm:
-                        p_id = str(itm.get("product_id") or itm.get("product_url", ""))
-                        dup_key = f"{target_mall_norm}|{p_id}"
-                        
-                        if dup_key not in global_seen:
-                            itm["collected_at"] = utc_now_iso()
-                            candidates.append(itm)
-                            global_seen.add(dup_key)
+                    if dup_key not in global_seen:
+                        itm["collected_at"] = utc_now_iso()
+                        candidates.append(itm)
+                        global_seen.add(dup_key)
             
             if candidates:
                 batch_payloads.append({
