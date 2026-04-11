@@ -83,6 +83,7 @@ class AppConfig:
     monitored_sellers: list[str] = field(default_factory=list)
     mall_targets: list[MallTargetConfig] = field(default_factory=list)
     authorized_sellers: list[str] = field(default_factory=list)
+    seller_filters: dict[str, list[str]] = field(default_factory=dict) # 판매자별 허용 상품 ID (화이트리스트)
 
 
 def _to_match(raw: dict[str, Any] | None) -> MatchConfig:
@@ -246,7 +247,8 @@ def load_config(path: str | Path) -> AppConfig:
         gsheet_id=gsheet_id,
         targets=[],
         monitored_sellers=list(common.get("monitored_sellers", []) or []),
-        authorized_sellers=common.get("authorized_sellers", [])
+        authorized_sellers=common.get("authorized_sellers", []),
+        seller_filters=common.get("seller_filters", {}) or {}
     )
 
     # 2. targets 섹션 파싱 (에러 누적)

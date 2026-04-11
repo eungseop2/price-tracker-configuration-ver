@@ -110,6 +110,11 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
     # 최저가 수집 데이터를 재활용하기 위한 전체 상품 저장소
     all_peeked_items = []
     
+    # [추가] 판매자별 상품 ID 필터 사전 정규화 (매칭 효율성)
+    from .util import normalize_for_match
+    norm_seller_filters = {normalize_for_match(k): set(str(v_id) for v_id in v_list) 
+                           for k, v_list in (app_config.seller_filters or {}).items()}
+
     service_account_json = os.getenv("GCP_SA_KEY") or os.getenv("GOOGLE_SERVICE_ACCOUNT_KEY")
     if not service_account_json:
         logger.error("구글 서비스 계정 키 환경변수(GCP_SA_KEY 또는 GOOGLE_SERVICE_ACCOUNT_KEY)가 설정되지 않았습니다.")
@@ -161,6 +166,14 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                 for itm in items:
                     # itm은 이제 naver_api.py에서 반환된 정규화된 데이터 리스트임
                     seller_norm = normalize_for_match(itm.get("seller_name", ""))
+                    p_id = str(itm.get("product_id") or "")
+                    
+                    # [추가] 판매자별 상품 ID 필터링 (화이트리스트)
+                    if seller_norm in norm_seller_filters:
+                        if p_id not in norm_seller_filters[seller_norm]:
+                            # 허용되지 않은 상품 ID인 경우 제외
+                            continue
+
                     rank = itm.get("search_rank") or 999
                     
                     # 선별 조건:
