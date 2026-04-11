@@ -496,8 +496,16 @@ def main() -> None:
                 if latest:
                     rankings[rq] = latest
             
-            # 셀러별 쇼핑몰 리포트 데이터 수집
-            mall_raw = store.get_mall_report_data(monitored_sellers=app_config.monitored_sellers)
+            # 셀러별 쇼핑몰 리포트 데이터 수집 (seller_config 시트의 is_active 반영)
+            active_sellers = store.get_active_sellers_from_sheet()
+            if active_sellers:
+                # 시트 기반 활성 셀러만 사용 (is_active=false인 셀러 제외)
+                effective_sellers = active_sellers.get("monitored", []) + active_sellers.get("authorized", [])
+                logger.info(f"seller_config 시트 기반 활성 셀러 {len(effective_sellers)}개 적용")
+            else:
+                # 시트 조회 실패 시 YAML 기본값 사용
+                effective_sellers = app_config.monitored_sellers
+            mall_raw = store.get_mall_report_data(monitored_sellers=effective_sellers)
             mall_reports = {"categories": mall_raw}
             
             # [카탈로그 매칭 안내] 카탈로그 판매처는 이제 수집 시점(run_once)에 확정되어 저장됩니다.
