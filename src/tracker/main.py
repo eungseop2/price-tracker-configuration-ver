@@ -497,7 +497,7 @@ def main() -> None:
                     rankings[rq] = latest
             
             # 셀러별 쇼핑몰 리포트 데이터 수집 (seller_config 시트의 is_active 반영)
-            active_sellers = store.get_active_sellers_from_sheet()
+            active_sellers = store.get_active_sellers()
             if active_sellers:
                 # 시트 기반 활성 셀러만 사용 (is_active=false인 셀러 제외)
                 effective_sellers = active_sellers.get("monitored", []) + active_sellers.get("authorized", [])
