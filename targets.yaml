@@ -39,6 +39,10 @@ common:
   - 쿠팡
   - 디엠에이씨
   - dmac
+  - 달리모바일
+  - 스마트마켓 85
+  - 빅스모바일
+  - 다람쥐창고A
 targets:
 - name: 갤럭시 버즈3 화이트
   mode: api_query
