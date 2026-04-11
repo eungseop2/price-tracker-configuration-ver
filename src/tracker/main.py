@@ -313,9 +313,12 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
     if unique_rank_queries:
         rank_batch = []
         now_ts = utc_now_iso()
+        from .util import normalize_for_match
+        
         for rq in unique_rank_queries:
-            # 해당 쿼리의 상품들 중 상위 10개 추출 (수집 순서가 원래 검색 순서임)
-            rq_items = [itm for itm in all_peeked_items if itm.get("rank_query") == rq]
+            # 띄어쓰기 차이로 인한 매칭 실패를 방지하기 위해 공백 제거 후 비교
+            rq_norm = str(rq).replace(" ", "")
+            rq_items = [itm for itm in all_peeked_items if str(itm.get("rank_query", "")).replace(" ", "") == rq_norm]
             top_10 = rq_items[:10]
             
             for idx, item in enumerate(top_10, 1):
