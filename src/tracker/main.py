@@ -533,11 +533,21 @@ def main() -> None:
             if active_sellers:
                 # 시트 기반 활성 셀러만 필터링하여 맵 재구성
                 eff_set = set(active_sellers.get("monitored", []) + active_sellers.get("authorized", []))
+                # 이미 카테고리에 할당된 셀러들 추적
+                assigned_sellers = set()
                 filtered_cat_map = {}
                 for cat, slist in cat_seller_map.items():
                     filtered_list = [s for s in slist if s in eff_set]
                     if filtered_list:
                         filtered_cat_map[cat] = filtered_list
+                        assigned_sellers.update(filtered_list)
+                
+                # 매핑되지 않은 나머지 활성 셀러들을 '기타' 카테고리에 배정
+                remaining_sellers = [s for s in (active_sellers.get("monitored", []) + active_sellers.get("authorized", [])) if s not in assigned_sellers]
+                if remaining_sellers:
+                    if "기타" not in filtered_cat_map:
+                        filtered_cat_map["기타"] = []
+                    filtered_cat_map["기타"].extend(remaining_sellers)
                 
                 effective_sellers = filtered_cat_map if filtered_cat_map else eff_set
                 logger.info(f"seller_config 시트 기반 활성 셀러 필터링 적용 (카테고리 맵핑 완료)")
