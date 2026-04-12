@@ -1,38 +1,56 @@
-# Price Tracker (Configuration Version) 🚀
+# 🚀 네이버 최저가 트래커 (Price Tracker - Config Ver.)
 
-네이버 쇼핑 최저가 추적 및 랭킹 수집 자동화 시스템입니다.  
-`targets.yaml`에 원하는 상품을 등록하는 것만으로 24시간 나만의 가격 대시보드를 소유할 수 있습니다. 📊✨
+네이버 쇼핑의 상품 가격 및 검색 순위를 자동으로 추적하고, 시각화된 대시보드를 통해 한눈에 관리할 수 있는 **구성 중심(Configuration-driven) 최저가 추적 시스템**입니다.
 
----
-
-## 📖 초보자용 가이드 (1부터 100까지!)
-이 프로그램을 처음 접하시나요? **아래 가이드를 클릭해서 5분 만에 나만의 트래커를 설치해 보세요.** 
-- **[👉 나만의 대시보드 만들기 (MASTER GUIDE)](docs/MASTER_GUIDE_KO.md)**
+현재 **삼성 갤럭시 웨어러블(워치8, 워치 울트라, 버즈4, 버즈3, 핏3 등)** 라인업에 최적화된 설정을 포함하고 있습니다.
 
 ---
 
-## ✨ 핵심 기능
-- **🌳 계층형 사이드바**: [셀러 > 상품] 트리 구조로 수많은 품목도 빠르고 정확하게 탐색!
-- **⏳ 누적 히스토리 타임라인**: 과거부터 현재까지 쌓인 모든 가격 기록을 리스트로 확인!
-- **📈 동적 시계열 그래프**: 최근 50개 수집 포인트의 변동 추이를 시각적으로 분석!
-- **🤖 완전 자동화**: GitHub Actions를 통해 매일 정해진 시간에 데이터를 수집하고 대시보드를 갱신!
+## 🌟 핵심 기능
+
+-   **📊 실시간 대시보드**: GitHub Pages를 통해 배포되는 미려한 웹 대시보드 제공.
+    -   **계층형 사이드바**: [셀러 > 상품] 트리 구조로 수많은 품목도 한눈에 탐색.
+    -   **누적 히스토리**: 과거부터 현재까지 모든 가격 변화를 테이블로 확인.
+    -   **동적 시각화**: 최근 50개 수집 데이터의 가격 변동 추이를 그래프로 분석.
+-   **🤖 완전 자동화된 수집**: GitHub Actions를 통해 매일 정해진 시간(또는 수동)에 데이터를 수집.
+-   **🔍 정밀 필터링**:
+    -   **API + Browser 하이브리드 수집**: 네이버 검색 API와 브라우저 크롤링을 결합한 정확한 데이터 확보.
+    -   **셀러별 맞춤 필터**: 쿠팡 상품 ID 필터링, 공식 인증점 우선 추적 등 강력한 매칭 로직.
+    -   **카테고리 매칭**: 워치, 버즈 등 카테고리별 오분류 방지 필터 적용.
+-   **☁️ 데이터 동기화**: Google Sheets API를 연동하여 데이터를 안전하고 영구적으로 저장 및 관리.
 
 ---
 
-## 🛠️ 개발자용 빠른 시작 (Quick Start)
+## 🎯 현재 추적 대상 (Target Line-up)
+
+프로그램은 현재 `targets.yaml` 설정을 통해 다음 제품군을 중점적으로 추적하고 있습니다:
+-   **Galaxy Watch**: 워치8 (40mm/44mm), 워치8 클래식, 워치 울트라
+-   **Galaxy Buds**: 버즈4 프로, 버즈4, 버즈3 프로, 버즈3, 버즈3 FE
+-   **Galaxy Fit**: 핏3
+-   **주요 추적 셀러**: 쿠팡, 공식 인증점 및 각 카테고리별 주요 오픈마켓 판매처 20여 곳
+
+---
+
+## 🛠️ 시작하기 (Quick Start)
+
+이 프로그램을 처음 사용하신다면 **마스터 가이드**를 꼭 먼저 읽어주세요!
+
+1.  **[👉 나만의 대시보드 만들기 (MASTER GUIDE)](docs/MASTER_GUIDE_KO.md)**: 5분 만에 설치하고 자동화를 시작하는 방법.
+2.  **API 설정**: `.env.example` 파일을 참고하여 네이버/구글 API 키를 설정하세요.
+3.  **타겟 수정**: `targets.yaml` 파일을 편집하여 추적하고 싶은 상품을 추가/제거하세요.
 
 ```bash
+# 로컬 테스트 실행 방법
 pip install -r requirements.txt
-cp .env.example .env          # API 키 설정
-vi targets.yaml               # 추적 타겟 편집
-python -m tracker.main once --config targets.yaml
+python -m src.main --config targets.yaml
 ```
 
-## 📚 상세 문서
-- **[상세 가이드 (MASTER_GUIDE_KO.md)](docs/MASTER_GUIDE_KO.md)**
-- **[한국어 README](docs/README_ko.md)**
-- **[설정 필드 명세서 (configs/SCHEMA.md)](configs/SCHEMA.md)**
-- **[설정 예시 파일 (configs/targets.example.yaml)](configs/targets.example.yaml)**
+---
+
+## 📚 관련 문서
+-   **[상세 가이드 (MASTER_GUIDE_KO.md)](docs/MASTER_GUIDE_KO.md)**
+-   **[설정 필드 명세서 (configs/SCHEMA.md)](configs/SCHEMA.md)**
+-   **[설정 예시 파일 (configs/targets.example.yaml)](configs/targets.example.yaml)**
 
 ---
 
