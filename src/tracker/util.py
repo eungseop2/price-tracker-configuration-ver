@@ -39,7 +39,10 @@ def clean_text(value: Any) -> str:
 
 
 def normalize_for_match(value: Any) -> str:
-    return clean_text(value).lower()
+    """매칭을 위해 텍스트를 정규화합니다. (소문자 변환, 공백 및 특수문자 제거)"""
+    text = clean_text(value).lower()
+    # 알파벳, 숫자, 한글만 남기고 모두 제거 (매칭 견고함 향상)
+    return re.sub(r'[^a-z0-9가-힣]', '', text)
 
 
 def parse_int(value: Any, default: int = 0) -> int:
