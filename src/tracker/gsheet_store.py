@@ -818,7 +818,7 @@ class GoogleSheetStore:
                 "search_rank": int(latest.get("search_rank") or 0) if latest.get("search_rank") else None,
                 "product_code": latest.get("product_code"),
                 "is_unauthorized": int(latest.get("is_unauthorized") or 0),
-                "rank_query": getattr(t_config, "rank_query", None) or name,
+                "rank_query": (t_config.rank_queries[0] if t_config.rank_queries else name),
                 "mall_link": mall_link, # 복구된 mall_link 정보
                 "all_time_low": all_time_low,
                 "all_time_high": all_time_high,

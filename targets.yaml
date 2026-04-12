@@ -64,7 +64,7 @@ targets:
 - name: 갤럭시 버즈3 화이트
   mode: api_query
   query: 갤럭시 버즈3 화이트
-  rank_query: 갤럭시 버즈3
+  rank_queries: ["갤럭시 버즈3", "버즈3"]
   category: 버즈
   request:
     pages: 1
@@ -128,7 +128,7 @@ targets:
 - name: 갤럭시 버즈3프로 화이트
   mode: api_query
   query: 갤럭시 버즈3프로 화이트
-  rank_query: 갤럭시 버즈3프로
+  rank_queries: ["갤럭시 버즈3프로", "버즈3프로"]
   category: 버즈
   request:
     pages: 1
@@ -192,7 +192,7 @@ targets:
 - name: 갤럭시 버즈4프로 블랙
   mode: api_query
   query: 갤럭시 버즈4프로 블랙
-  rank_query: 갤럭시 버즈4프로
+  rank_queries: ["갤럭시 버즈4프로", "버즈4프로"]
   category: 버즈
   request:
     pages: 1
@@ -256,7 +256,7 @@ targets:
 - name: 갤럭시 버즈4 블랙
   mode: api_query
   query: 갤럭시 버즈4 블랙
-  rank_query: 갤럭시 버즈4
+  rank_queries: ["갤럭시 버즈4", "버즈4"]
   category: 버즈
   request:
     pages: 1
@@ -318,7 +318,7 @@ targets:
 - name: 갤럭시 워치8 40mm 실버
   mode: api_query
   query: 갤럭시워치8 40mm 실버
-  rank_query: 갤럭시 워치8
+  rank_queries: ["갤럭시 워치8", "워치8"]
   category: 워치
   request:
     pages: 1
@@ -438,7 +438,7 @@ targets:
 - name: 갤럭시 워치8 클래식 블랙
   mode: api_query
   query: 갤럭시워치8 클래식 블랙
-  rank_query: 갤럭시 워치8 클래식
+  rank_queries: ["갤럭시 워치8 클래식", "워치8 클래식"]
   category: 워치
   request:
     pages: 1
@@ -498,7 +498,7 @@ targets:
 - name: 갤럭시 핏3
   mode: api_query
   query: 갤럭시 핏3
-  rank_query: 갤럭시 핏3
+  rank_queries: ["갤럭시 핏3", "핏3"]
   category: 핏
   request:
     pages: 1
@@ -527,7 +527,7 @@ targets:
 - name: 갤럭시 버즈3FE 그레이
   mode: api_query
   query: 갤럭시 버즈3FE 그레이
-  rank_query: 갤럭시 버즈3FE
+  rank_queries: ["갤럭시 버즈3FE", "버즈3FE"]
   category: 버즈
   request:
     pages: 1
@@ -589,7 +589,7 @@ targets:
 - name: 갤럭시 워치 울트라 티타늄 실버
   mode: api_query
   query: 갤럭시워치 울트라 티타늄 실버
-  rank_query: 갤럭시 워치 울트라
+  rank_queries: ["갤럭시 워치 울트라", "워치 울트라"]
   category: 워치
   request:
     pages: 1

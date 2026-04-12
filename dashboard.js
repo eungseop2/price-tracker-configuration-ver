@@ -419,32 +419,83 @@ function renderTable() {
     renderPagination();
 }
 
+let selectedRankingCategory = null;
+
 function renderRankingView(kw) {
     const container = document.getElementById('ranking-list-container');
     const tabContainer = document.getElementById('ranking-keyword-tabs');
     if (!container) return;
 
-    // 1. 키워드 탭 렌더링 (동적으로 선택 가능한 키워드 목록 추출)
-    if (tabContainer && dashboardData?.rankings) {
-        const keywords = Object.keys(dashboardData.rankings);
-        if (keywords.length > 0) {
-            tabContainer.innerHTML = keywords.map(k => `
-                <div class="keyword-tab ${k === kw ? 'active' : ''}" onclick="renderRankingView('${k}')">
-                    ${k}
-                </div>
-            `).join('');
-        } else {
-            tabContainer.innerHTML = '';
-        }
+    if (!dashboardData?.rankings) {
+        container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 40px;">랭킹 데이터가 없습니다.</div>';
+        return;
     }
 
-    // 2. 랭킹 리스트 렌더링
-    if (!dashboardData?.rankings || !dashboardData.rankings[kw]) {
+    // 1. 키워드별 카테고리 맵핑 생성 (상품 데이터를 기반으로)
+    const keywordToCat = {};
+    if (dashboardData.products) {
+        dashboardData.products.forEach(p => {
+            if (p.rank_query) keywordToCat[p.rank_query] = p.category;
+            // '갤럭시' 키워드가 포함된 키워드와 미포함 키워드 모두 같은 카테고리로 맵핑 (단어 포함 여부로 보정)
+            const baseKw = p.rank_query.replace('갤럭시 ', '');
+            keywordToCat[baseKw] = p.category;
+            keywordToCat['갤럭시 ' + baseKw] = p.category;
+        });
+    }
+
+    const allKeywords = Object.keys(dashboardData.rankings);
+    const catToKeywords = {};
+    allKeywords.forEach(k => {
+        let cat = keywordToCat[k] || '기타';
+        if (!catToKeywords[cat]) catToKeywords[cat] = [];
+        catToKeywords[cat].push(k);
+    });
+
+    const categories = Object.keys(catToKeywords).sort();
+    if (!selectedRankingCategory && categories.length > 0) {
+        selectedRankingCategory = categories[0];
+    }
+
+    // 2. 카테고리 상단 탭 렌더링
+    let html = `<div class="ranking-category-tabs" style="display: flex; gap: 10px; margin-bottom: 12px; border-bottom: 1px solid var(--glass-border); padding-bottom: 12px;">`;
+    categories.forEach(cat => {
+        const isActive = selectedRankingCategory === cat;
+        html += `<div class="rank-cat-tab ${isActive ? 'active' : ''}" 
+                      style="cursor: pointer; padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 700; background: ${isActive ? 'var(--toss-blue)' : '#f2f4f6'}; color: ${isActive ? 'white' : 'var(--text-muted)'};"
+                      onclick="selectedRankingCategory='${cat}'; renderRankingView('${catToKeywords[cat][0]}')">
+                    ${cat}
+                 </div>`;
+    });
+    html += `</div>`;
+
+    // 3. 세부 키워드 탭 (갤럭시 포함/미포함 등) 렌더링
+    const currentKeywords = catToKeywords[selectedRankingCategory] || [];
+    if (currentKeywords.length > 1) {
+        html += `<div class="ranking-sub-tabs" style="display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap;">`;
+        currentKeywords.forEach(k => {
+            const isSubActive = k === kw;
+            html += `<div class="keyword-pill ${isSubActive ? 'active' : ''}" 
+                          style="cursor: pointer; padding: 4px 12px; border-radius: 8px; font-size: 12px; background: ${isSubActive ? 'rgba(49,130,247,0.1)' : 'white'}; border: 1px solid ${isSubActive ? 'var(--toss-blue)' : 'var(--glass-border)'}; color: ${isSubActive ? 'var(--toss-blue)' : 'var(--text-muted)'}; font-weight: 600;"
+                          onclick="renderRankingView('${k}')">
+                        ${k}
+                     </div>`;
+        });
+        html += `</div>`;
+    }
+
+    if (tabContainer) tabContainer.innerHTML = html;
+
+    // 만약 현재 kw가 해당 카테고리에 없으면 첫번째 키워드로 변경
+    if (kw && !currentKeywords.includes(kw)) {
+        kw = currentKeywords[0];
+    }
+    if (!kw && currentKeywords.length > 0) kw = currentKeywords[0];
+
+    // 4. 랭킹 리스트 렌더링
+    if (!kw || !dashboardData.rankings[kw]) {
         container.innerHTML = `
             <div style="text-align: center; color: var(--text-muted); padding: 60px 20px;">
-                <div style="font-size: 40px; margin-bottom: 20px;">🔍</div>
-                데이터를 불러오는 중이거나 현재 선택된 타겟("${kw}")의 랭킹 기록이 없습니다.<br>
-                <span style="font-size: 13px; margin-top: 8px; display: block;">(방금 수정한 한글 설정으로 수집기가 1회 완료되어야 데이터가 나타납니다.)</span>
+                검색 데이터가 없습니다.
             </div>
         `;
         return;
@@ -452,14 +503,15 @@ function renderRankingView(kw) {
 
     const rankings = dashboardData.rankings[kw].slice(0, 10);
     container.innerHTML = rankings.map((item, idx) => `
-        <div class="ranking-card" onclick="window.open('${item.url}', '_blank')">
-            <div class="rank-num ${idx === 0 ? 'top1' : (idx < 3 ? 'top3' : '')}">${idx + 1}</div>
-            <img src="${item.image_url || ''}" class="thumb" onerror="this.src='https://search.shopping.naver.com/static/img/catalog/no_image.png'">
-            <div class="ranking-card-body">
-                <div class="mall">${item.seller_name}</div>
-                <div class="title">${item.title}</div>
-                <div class="price">${formatPrice(item.price)}</div>
+        <div class="ranking-card" style="display: flex; align-items: center; gap: 16px; padding: 16px; border-bottom: 1px solid var(--glass-border); cursor: pointer; transition: background 0.2s;" onclick="window.open('${item.product_url || item.url}', '_blank')">
+            <div class="rank-num ${idx === 0 ? 'top1' : (idx < 3 ? 'top3' : '')}" style="width: 24px; text-align: center; font-weight: 800; color: ${idx === 0 ? '#ffb800' : (idx < 3 ? 'var(--toss-blue)' : 'var(--text-muted)')}; font-size: 18px;">${idx + 1}</div>
+            <img src="${item.image_url || ''}" style="width: 60px; height: 60px; object-fit: contain; border-radius: 8px; border: 1px solid var(--glass-border);" onerror="this.src='https://search.shopping.naver.com/static/img/catalog/no_image.png'">
+            <div class="ranking-card-body" style="flex: 1;">
+                <div class="mall" style="font-size: 11px; color: var(--toss-blue); font-weight: 700;">${item.seller_name}</div>
+                <div class="title" style="font-size: 13px; font-weight: 600; color: var(--text-main); margin: 2px 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;">${item.title}</div>
+                <div class="price" style="font-size: 14px; font-weight: 700; color: var(--text-main);">${formatPrice(item.price)}</div>
             </div>
+            <div style="color: var(--glass-border); font-size: 12px;">↗</div>
         </div>
     `).join('');
 }

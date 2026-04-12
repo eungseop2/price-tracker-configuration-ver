@@ -347,44 +347,47 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
             logger.error(f"GSheet 배치 저장 최종 실패: {e}")
 
     # ---------- [랭킹 TOP 10 수집 및 저장 추가] ----------
-    # 각 상품 타겟 별로 정의된 rank_query 기반으로 상위 10개 상품 저장
-    unique_rank_queries = {t.rank_query for t in app_config.targets if t.rank_query}
+    # 각 상품 타겟 별로 정의된 rank_queries 기반으로 상위 10개 상품 저장
+    unique_rank_queries = set()
+    for t in app_config.targets:
+        if t.rank_queries:
+            unique_rank_queries.update(t.rank_queries)
+            
     if unique_rank_queries:
         rank_batch = []
         now_ts = utc_now_iso()
-        from .util import normalize_for_match
         
         for rq in unique_rank_queries:
-            # 띄어쓰기 차이로 인한 매칭 실패를 방지하기 위해 공백 제거 후 비교
-            rq_norm = str(rq).replace(" ", "")
-            rq_items = [itm for itm in all_peeked_items if str(itm.get("rank_query", "")).replace(" ", "") == rq_norm]
-            top_10 = rq_items[:10]
-            
-            for idx, item in enumerate(top_10, 1):
-                # ranking_history 스키마에 맞춰 필드명 수정 및 정보 추가
-                rank_batch.append({
-                    "query": rq,
-                    "rank": idx,
-                    "title": item.get("title"),
-                    "price": item.get("price"),
-                    "seller_name": item.get("seller_name"), # seller -> seller_name
-                    "product_id": item.get("product_id"),
-                    "product_type": item.get("product_type"),
-                    "product_url": item.get("product_url"),
-                    "image_url": item.get("image_url"),
-                    "is_ad": item.get("is_ad", False),
-                    "collected_at": now_ts
-                })
+            logger.info(f"🔍 랭킹 키워드 검색 중: {rq}")
+            try:
+                # 정확한 '노출 결과'를 위해 해당 키워드로 직접 검색 (1페이지)
+                # collect_mall_items는 sim 순으로 1페이지 수집에 적합함
+                raw_items = collect_mall_items(client, app_config, rq, pages=1)
+                top_10 = raw_items[:10]
+                
+                for idx, item in enumerate(top_10, 1):
+                    rank_batch.append({
+                        "query": rq,
+                        "rank": idx,
+                        "title": item.get("title"),
+                        "price": item.get("price"),
+                        "seller_name": item.get("seller_name"),
+                        "product_id": item.get("product_id"),
+                        "product_type": item.get("product_type"),
+                        "product_url": item.get("product_url"),
+                        "image_url": item.get("image_url"),
+                        "is_ad": item.get("is_ad", False),
+                        "collected_at": now_ts
+                    })
+            except Exception as e:
+                logger.error(f"키워드 '{rq}' 랭킹 수집 중 오류: {e}")
         
         if rank_batch:
             logger.info(f"📊 {len(rank_batch)}건의 랭킹 히스토리 데이터를 수집했습니다.")
             try:
                 store.insert_ranking_batch(rank_batch)
-                logger.info(f"랭킹 히스토리 저장 완료 ({len(unique_rank_queries)}개 키워드, 총 {len(rank_batch)}개 항목)")
             except Exception as e:
                 logger.error(f"랭킹 히스토리 저장 실패: {e}")
-        else:
-            logger.warning("⚠️ 수집된 랭킹 히스토리 데이터가 없습니다.")
 
     # ---------- [셀러 트래킹: 최저가 데이터 재활용] ----------
     if app_config.mall_targets:
@@ -506,7 +509,10 @@ def main() -> None:
             
             # 고유 랭킹 키워드별 최신 데이터 수집
             rankings = {}
-            unique_rank_queries = {t.rank_query for t in app_config.targets if t.rank_query}
+            unique_rank_queries = set()
+            for t in app_config.targets:
+                if t.rank_queries:
+                    unique_rank_queries.update(t.rank_queries)
             
             for rq in unique_rank_queries:
                 latest = store.get_latest_rankings(rq)

@@ -50,7 +50,7 @@ class TargetConfig:
     name: str
     mode: str
     query: str | None = None
-    rank_query: str | None = None
+    rank_queries: list[str] = field(default_factory=list)
     url: str | None = None
     fallback_url: str | None = None
     category: str = "기타"  # 상품 카테고리 (분류용)
@@ -265,7 +265,7 @@ def load_config(path: str | Path) -> AppConfig:
                 name=str(name),
                 mode=str(mode),
                 query=item.get("query"),
-                rank_query=item.get("rank_query") or str(name),
+                rank_queries=list(item.get("rank_queries", []) or ([item.get("rank_query")] if item.get("rank_query") else [str(name)])),
                 url=item.get("url"),
                 fallback_url=item.get("fallback_url"),
                 category=str(item.get("category", "기타")),
