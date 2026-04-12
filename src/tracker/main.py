@@ -28,7 +28,7 @@ from .naver_api import (
 from .notifier import send_price_alert
 from .report import send_daily_report
 from .util import (
-    calc_change_metrics, clean_text, dump_json, utc_now_iso, 
+    all_keywords_present, calc_change_metrics, clean_text, dump_json, utc_now_iso, 
     is_night_time_kst, normalize_for_match
 )
 
