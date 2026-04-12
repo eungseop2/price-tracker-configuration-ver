@@ -394,39 +394,39 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
             now_ts = utc_now_iso()
             
             for rq in unique_rank_queries:
-            logger.info(f"📊 랭킹 데이터 정리 중: {rq}")
-            try:
-                # [최적화] 이미 앞에서 수집한 캐시 데이터가 있다면 재활용 (API 호출 절감)
-                if rq in broad_search_cache:
-                    raw_items = broad_search_cache[rq]
-                else:
-                    raw_items = collect_mall_items(client, app_config, rq, pages=1)
-                
-                top_10 = raw_items[:10]
-                
-                for idx, item in enumerate(top_10, 1):
-                    rank_batch.append({
-                        "query": rq,
-                        "rank": idx,
-                        "title": item.get("title"),
-                        "price": item.get("price"),
-                        "seller_name": item.get("seller_name"),
-                        "product_id": item.get("product_id"),
-                        "product_type": item.get("product_type"),
-                        "product_url": item.get("product_url"),
-                        "image_url": item.get("image_url"),
-                        "is_ad": item.get("is_ad", False),
-                        "collected_at": now_ts
-                    })
-            except Exception as e:
-                logger.error(f"키워드 '{rq}' 랭킹 수집 중 오류: {e}")
-        
-        if rank_batch:
-            logger.info(f"📊 {len(rank_batch)}건의 랭킹 히스토리 데이터를 수집했습니다.")
-            try:
-                store.insert_ranking_batch(rank_batch)
-            except Exception as e:
-                logger.error(f"랭킹 히스토리 저장 실패: {e}")
+                logger.info(f"📊 랭킹 데이터 정리 중: {rq}")
+                try:
+                    # [최적화] 이미 앞에서 수집한 캐시 데이터가 있다면 재활용 (API 호출 절감)
+                    if rq in broad_search_cache:
+                        raw_items = broad_search_cache[rq]
+                    else:
+                        raw_items = collect_mall_items(client, app_config, rq, pages=1)
+                    
+                    top_10 = raw_items[:10]
+                    
+                    for idx, item in enumerate(top_10, 1):
+                        rank_batch.append({
+                            "query": rq,
+                            "rank": idx,
+                            "title": item.get("title"),
+                            "price": item.get("price"),
+                            "seller_name": item.get("seller_name"),
+                            "product_id": item.get("product_id"),
+                            "product_type": item.get("product_type"),
+                            "product_url": item.get("product_url"),
+                            "image_url": item.get("image_url"),
+                            "is_ad": item.get("is_ad", False),
+                            "collected_at": now_ts
+                        })
+                except Exception as e:
+                    logger.error(f"키워드 '{rq}' 랭킹 수집 중 오류: {e}")
+            
+            if rank_batch:
+                logger.info(f"📊 {len(rank_batch)}건의 랭킹 히스토리 데이터를 수집했습니다.")
+                try:
+                    store.insert_ranking_batch(rank_batch)
+                except Exception as e:
+                    logger.error(f"랭킹 히스토리 저장 실패: {e}")
 
     # ---------- [셀러 트래킹: 최저가 데이터 재활용] ----------
     if app_config.mall_targets:
