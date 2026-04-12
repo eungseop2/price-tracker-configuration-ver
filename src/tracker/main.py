@@ -563,26 +563,41 @@ def main() -> None:
                     cat_seller_map[cat].append(mt.mall_name)
             
             if active_sellers:
-                # 시트 기반 활성 셀러만 필터링하여 맵 재구성
-                eff_set = set(active_sellers.get("monitored", []) + active_sellers.get("authorized", []))
+                # 시트 기반 활성 셀러만 필터링하여 맵 재구성 (정규화 매칭 적용)
+                from .util import normalize_for_match
+                # [개선] 정규화된 활성 셀러 집합 생성
+                active_norm_map = {normalize_for_match(s): s for s in 
+                                   (active_sellers.get("monitored", []) + active_sellers.get("authorized", []))}
+                
                 # 이미 카테고리에 할당된 셀러들 추적
-                assigned_sellers = set()
+                assigned_sellers_norm = set()
                 filtered_cat_map = {}
+                
                 for cat, slist in cat_seller_map.items():
-                    filtered_list = [s for s in slist if s in eff_set]
+                    # YAML의 셀러명(s)이 정규화된 활성 셀러 맵에 존재하는지 확인
+                    filtered_list = []
+                    for s in slist:
+                        ns = normalize_for_match(s)
+                        if ns in active_norm_map:
+                            filtered_list.append(active_norm_map[ns]) # 시트에 있는 실제 이름 사용
+                            assigned_sellers_norm.add(ns)
+                    
                     if filtered_list:
                         filtered_cat_map[cat] = filtered_list
-                        assigned_sellers.update(filtered_list)
                 
-                # 매핑되지 않은 나머지 활성 셀러들을 '기타' 카테고리에 배정
-                remaining_sellers = [s for s in (active_sellers.get("monitored", []) + active_sellers.get("authorized", [])) if s not in assigned_sellers]
+                # 매핑되지 않은 나머지 활성 셀러들을 '기타' 카테고리에 배정 (정규화 기준)
+                remaining_sellers = []
+                for ns, original_name in active_norm_map.items():
+                    if ns not in assigned_sellers_norm:
+                        remaining_sellers.append(original_name)
+                        
                 if remaining_sellers:
                     if "기타" not in filtered_cat_map:
                         filtered_cat_map["기타"] = []
                     filtered_cat_map["기타"].extend(remaining_sellers)
                 
-                effective_sellers = filtered_cat_map if filtered_cat_map else eff_set
-                logger.info(f"seller_config 시트 기반 활성 셀러 필터링 적용 (카테고리 맵핑 완료)")
+                effective_sellers = filtered_cat_map if filtered_cat_map else active_norm_map.values()
+                logger.info(f"seller_config 시트 기반 활성 셀러 필터링 적용 (정규화 매칭 완료)")
             else:
                 # 시트 조회 실패 시 생성된 맵 그대로 사용
                 effective_sellers = cat_seller_map
