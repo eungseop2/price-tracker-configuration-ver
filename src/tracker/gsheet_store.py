@@ -415,6 +415,42 @@ class GoogleSheetStore:
         except Exception as e:
             logger.error(f"랭킹 히스토리 저장 실패 (ranking_history): {e}")
 
+    def exists_ranking_today(self) -> bool:
+        """한국 시간(KST) 기준으로 오늘 이미 랭킹 데이터가 시트에 저장되었는지 확인합니다."""
+        try:
+            ws = self._get_worksheet("ranking_history")
+            # 전체 데이터를 가져와 마지막 행 확인 (캐시 활용)
+            records = self._get_all_records_safe(ws)
+            if not records:
+                return False
+                
+            last_record = records[-1]
+            last_at = last_record.get("collected_at")
+            if not last_at:
+                return False
+                
+            # 시각 파싱 및 KST 변환
+            from datetime import datetime, timedelta, timezone
+            try:
+                # ISO 문자열 파싱 (Z나 +00:00 처리)
+                ts = datetime.fromisoformat(last_at.replace("Z", "+00:00"))
+                if ts.tzinfo is None:
+                    ts = ts.replace(tzinfo=timezone.utc)
+                
+                # KST로 변환
+                kst = timezone(timedelta(hours=9))
+                last_kst_date = ts.astimezone(kst).strftime("%Y-%m-%d")
+                
+                # 현재 KST 날짜
+                today_kst = datetime.now(kst).strftime("%Y-%m-%d")
+                
+                return last_kst_date == today_kst
+            except Exception:
+                return False
+        except Exception as e:
+            logger.error(f"오늘 랭킹 존재 확인 중 오류: {e}")
+            return False
+
     def sync_seller_config(self, app_config):
         """YAML의 셀러 목록과 구글 시트의 설정을 동기화합니다."""
         try:

@@ -383,10 +383,17 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
             unique_rank_queries.update(t.rank_queries)
             
     if unique_rank_queries:
-        rank_batch = []
-        now_ts = utc_now_iso()
-        
-        for rq in unique_rank_queries:
+        # [추가] 하루 1회 전송 제한 (이미 오늘 수집된 데이터가 있으면 건너뜀)
+        if hasattr(store, "exists_ranking_today") and store.exists_ranking_today():
+            from datetime import datetime, timedelta, timezone
+            kst = timezone(timedelta(hours=9))
+            today_kst = datetime.now(kst).strftime("%Y-%m-%d")
+            logger.info(f"📊 오늘은 이미 랭킹 데이터가 수집되었습니다 (KST {today_kst}). 저장을 건너뜁니다.")
+        else:
+            rank_batch = []
+            now_ts = utc_now_iso()
+            
+            for rq in unique_rank_queries:
             logger.info(f"📊 랭킹 데이터 정리 중: {rq}")
             try:
                 # [최적화] 이미 앞에서 수집한 캐시 데이터가 있다면 재활용 (API 호출 절감)
