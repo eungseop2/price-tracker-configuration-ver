@@ -42,10 +42,13 @@ def generate_daily_report_html(store: "GoogleSheetStore", targets: list[TargetCo
         
         try:
             price_val = int(r["price"])
+            seller_val = r.get("seller_name") or ""
+            
             if t_name not in daily_min[d_str]:
-                daily_min[d_str][t_name] = price_val
+                daily_min[d_str][t_name] = {"price": price_val, "seller": seller_val}
             else:
-                daily_min[d_str][t_name] = min(daily_min[d_str][t_name], price_val)
+                if price_val < daily_min[d_str][t_name]["price"]:
+                    daily_min[d_str][t_name] = {"price": price_val, "seller": seller_val}
         except:
             continue
     
@@ -60,13 +63,17 @@ def generate_daily_report_html(store: "GoogleSheetStore", targets: list[TargetCo
         row_cells = []
         prev_price = None
         for i, d in enumerate(dates_kst):
-            price_val = daily_min.get(d, {}).get(name)
-            if price_val is not None:
+            p_info = daily_min.get(d, {}).get(name)
+            if p_info:
+                price_val = p_info["price"]
+                seller_name = p_info["seller"]
                 color = "#000"
                 if prev_price is not None:
                     if price_val < prev_price: color = "#2563eb" # 하락(파란색)
                     elif price_val > prev_price: color = "#dc2626" # 상승(빨간색)
-                row_cells.append(f'<td style="padding:10px;text-align:right;border:1px solid #ddd;color:{color};">{format_price(price_val)}</td>')
+                
+                seller_html = f'<br/><span style="font-size:10px;color:#6b7280">({seller_name})</span>' if seller_name else ""
+                row_cells.append(f'<td style="padding:10px;text-align:right;border:1px solid #ddd;color:{color};line-height:1.4;">{format_price(price_val)}{seller_html}</td>')
                 prev_price = price_val
             else:
                 row_cells.append('<td style="padding:10px;text-align:right;border:1px solid #ddd;color:#aaa;">-</td>')

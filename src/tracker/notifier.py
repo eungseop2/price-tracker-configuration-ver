@@ -68,15 +68,19 @@ def _build_html(downs: list, ups: list) -> str:
         result = ""
         for item in items:
             name = item.get("target_name", "")
+            seller = item.get("seller_name", "")
             price = item.get("price", 0)
             prev = item.get("prev_price") or 0
             url = item.get("product_url", "#")
             pct = item.get("price_delta_pct")
             pct_str = f"{pct:+.1f}%" if pct is not None else ""
+            
+            display_name = f"{name} ({seller})" if seller else name
+            
             result += f"""
             <tr>
                 <td style="padding:8px;border-bottom:1px solid #eee">
-                    <a href="{url}" style="text-decoration:none;color:#1e293b">{icon} {name}</a>
+                    <a href="{url}" style="text-decoration:none;color:#1e293b">{icon} {display_name}</a>
                 </td>
                 <td style="padding:8px;border-bottom:1px solid #eee;text-align:right">
                     <s style="color:#999">{prev:,}원</s> →
