@@ -187,7 +187,7 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                     if is_best or is_top_rank or is_tracked_seller:
                         itm["category"] = target.category
                         itm["product_code"] = target.name
-                        itm["rank_query"] = target.rank_query # 랭킹 매칭용 태그 추가
+                        itm["rank_query"] = target.rank_queries[0] # 랭킹 매칭용 태그 추가
                         all_peeked_items.append(itm)
                 
             result["collected_at"] = utc_now_iso()
