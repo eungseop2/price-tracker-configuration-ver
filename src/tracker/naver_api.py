@@ -103,11 +103,11 @@ def _normalized_item(item: dict[str, Any]) -> dict[str, Any]:
 
 
 
-def collect_lowest_offer_via_api(client: NaverShoppingSearchClient, app_config: AppConfig, target: TargetConfig) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+def collect_lowest_offer_via_api(client: NaverShoppingSearchClient, app_config: AppConfig, target: TargetConfig, broad_items: list[dict[str, Any]] | None = None) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     if not target.query:
         raise ValueError(f"target '{target.name}' 에 query 가 없습니다.")
 
-    # 만약 product_id가 지정되어 있다면, 정확한 카탈로그를 찾기 위해 정렬을 'sim'으로 강제하고 검색 범위를 넓힘
+    # 1. 상세 쿼리 수집 (기존 로직)
     search_sort = target.request.sort
     display_limit = app_config.display or 30
     pages = max(1, target.request.pages)
@@ -135,7 +135,30 @@ def collect_lowest_offer_via_api(client: NaverShoppingSearchClient, app_config: 
             itm["_search_rank"] = i
         items.extend(page_items)
 
+    # 2. 후보군 추출 (상세 검색 결과)
     candidates = [_normalized_item(item) for item in items if _item_matches(target, item)]
+    
+    # 3. 브로드 아이템(캐시) 병합 및 완화된 매칭 적용
+    if broad_items:
+        # 핵심 키워드(상위 2개)만 사용한 완화된 필터링
+        main_keywords = target.match.required_keywords[:2] if target.match.required_keywords else []
+        
+        merged_count = 0
+        for b_item in broad_items:
+            # 이미 상세 결과에 있는 ID는 무시
+            b_id = str(b_item.get("productId", ""))
+            if any(str(c.get("product_id")) == b_id for c in candidates):
+                continue
+                
+            # 완화된 매칭 조건: 핵심 키워드가 포함되어 있는가?
+            b_title = clean_text(b_item.get("title"))
+            if main_keywords and all_keywords_present(b_title, main_keywords):
+                candidates.append(_normalized_item(b_item))
+                merged_count += 1
+        
+        if merged_count > 0:
+            logger.debug(f"  └─ [{target.name}] 확장 검색(Broad Search) 결과 병합 중... {merged_count}건 추가 발견")
+
     candidates = [c for c in candidates if c["price"] > 0]
 
     if not candidates:

@@ -64,14 +64,14 @@ def setup_logging(verbose: bool = False) -> None:
     )
 
 
-async def _collect_one(client: NaverShoppingSearchClient, target: TargetConfig, app_config, artifacts_dir: str) -> tuple[dict, list[dict]]:
-    """단일 타겟 수집 및 NO_MATCH 시 자동 폴백 로직"""
+async def _collect_one(client: NaverShoppingSearchClient, target: TargetConfig, app_config, artifacts_dir: str, broad_items: list[dict] | None = None) -> tuple[dict, list[dict]]:
+    """단일 타겟 수집 및 NO_MATCH 시 자동 폴백 로직 (확장 수집 지원)"""
     result = None
     items = []
     
     if target.mode == "api_query":
         try:
-            result, items = collect_lowest_offer_via_api(client, app_config, target)
+            result, items = collect_lowest_offer_via_api(client, app_config, target, broad_items=broad_items)
         except Exception as e:
             raise e
 
@@ -149,13 +149,36 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
     except Exception as e:
         logger.error(f"셀러 동기화 중 오류 발생 (YAML 설정으로 계속 진행): {e}")
 
+    # ---------- [2단계 확장 수집을 위한 대표 키워드 사전 수집] ----------
+    broad_search_cache = {}
+    unique_rank_queries = set()
+    for t in app_config.targets:
+        if t.rank_queries:
+            # 첫 번째 대표 키워드를 '판매처 복구용' 브로드 쿼리로 사용
+            unique_rank_queries.add(t.rank_queries[0])
+    
+    if unique_rank_queries:
+        logger.info(f"확장 수집을 위한 대표 키워드 검색 시작 ({len(unique_rank_queries)}개 키워드)")
+        for rq in unique_rank_queries:
+            try:
+                # 랭킹 수집용 함수를 사용하여 100건(기본) 수집
+                broad_items = collect_mall_items(client, app_config, rq, pages=1)
+                broad_search_cache[rq] = broad_items
+                logger.debug(f"  └─ [{rq}] 캐싱 완료 ({len(broad_items)}건)")
+            except Exception as e:
+                logger.warning(f"  └─ [{rq}] 캐싱 실패: {e}")
+
     for target in app_config.targets:
         logger.info("수집 시작 | %s | mode=%s", target.name, target.mode)
         try:
             prev_success = store.get_latest_success(target.name)
             prev_price = prev_success["price"] if prev_success else None
 
-            result, items = await _collect_one(client, target, app_config, artifacts_dir)
+            # [개선] 캐시된 브로드 아이템 전달
+            target_rq = target.rank_queries[0] if target.rank_queries else None
+            target_broad_items = broad_search_cache.get(target_rq)
+            
+            result, items = await _collect_one(client, target, app_config, artifacts_dir, broad_items=target_broad_items)
             
             # 수집된 모든 상품 중 유용한 것만 선별하여 저장 (데이터 폭발 방지)
             if items:
@@ -364,11 +387,14 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
         now_ts = utc_now_iso()
         
         for rq in unique_rank_queries:
-            logger.info(f"🔍 랭킹 키워드 검색 중: {rq}")
+            logger.info(f"📊 랭킹 데이터 정리 중: {rq}")
             try:
-                # 정확한 '노출 결과'를 위해 해당 키워드로 직접 검색 (1페이지)
-                # collect_mall_items는 sim 순으로 1페이지 수집에 적합함
-                raw_items = collect_mall_items(client, app_config, rq, pages=1)
+                # [최적화] 이미 앞에서 수집한 캐시 데이터가 있다면 재활용 (API 호출 절감)
+                if rq in broad_search_cache:
+                    raw_items = broad_search_cache[rq]
+                else:
+                    raw_items = collect_mall_items(client, app_config, rq, pages=1)
+                
                 top_10 = raw_items[:10]
                 
                 for idx, item in enumerate(top_10, 1):
