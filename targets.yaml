@@ -887,6 +887,8 @@ mall_targets:
   - 단품
   - 왼쪽
   - 오른쪽
+  - 워치
+  - watch
   request:
     pages: 7
 - name: 쿠팡 갤럭시 워치
@@ -899,5 +901,7 @@ mall_targets:
   - 단품
   - 왼쪽
   - 오른쪽
+  - 버즈
+  - buds
   request:
     pages: 7
