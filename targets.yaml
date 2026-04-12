@@ -6,20 +6,13 @@ common:
   authorized_sellers:
   - 제이유
   - 포디아이
-  - 웰디
-  - 엘마시타
-  - 더인스
   - 엠디텍
   - 올인포
   - 쇼마젠시
-  - 나노랩
-  - 윤심컴퍼니
   monitored_sellers:
   - 제이유
   - 포디아이
   - 웰디
-  - 더인스
-  - 엘마시타
   - 유피시스템
   - 갤러리몰
   - 이심컴퍼니
@@ -903,5 +896,53 @@ mall_targets:
   - 오른쪽
   - 버즈
   - buds
+  request:
+    pages: 7
+- name: 달리모바일 갤럭시 버즈
+  query: 갤럭시 버즈
+  mall_name: 달리모바일
+  category: 버즈
+  request:
+    pages: 7
+- name: 달리모바일 갤럭시 워치
+  query: 갤럭시 워치
+  mall_name: 달리모바일
+  category: 워치
+  request:
+    pages: 7
+- name: 스마트마켓 85 갤럭시 버즈
+  query: 갤럭시 버즈
+  mall_name: 스마트마켓 85
+  category: 버즈
+  request:
+    pages: 7
+- name: 스마트마켓 85 갤럭시 워치
+  query: 갤럭시 워치
+  mall_name: 스마트마켓 85
+  category: 워치
+  request:
+    pages: 7
+- name: 빅스모바일 갤럭시 버즈
+  query: 갤럭시 버즈
+  mall_name: 빅스모바일
+  category: 버즈
+  request:
+    pages: 7
+- name: 빅스모바일 갤럭시 워치
+  query: 갤럭시 워치
+  mall_name: 빅스모바일
+  category: 워치
+  request:
+    pages: 7
+- name: 다람쥐창고A 갤럭시 버즈
+  query: 갤럭시 버즈
+  mall_name: 다람쥐창고A
+  category: 버즈
+  request:
+    pages: 7
+- name: 다람쥐창고A 갤럭시 워치
+  query: 갤럭시 워치
+  mall_name: 다람쥐창고A
+  category: 워치
   request:
     pages: 7
