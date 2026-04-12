@@ -316,21 +316,20 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                     except (ValueError, TypeError):
                         continue
             
-            # 2순위: 상품 제목(title)에 타겟 명칭이 포함되어 있고 가격 매칭 (완화된 매칭)
-            if not found_mall and t_name:
-                # 해당 타겟의 키워드 설정 가져오기
+                # 해당 타겟의 키워드 설정 가져오기 (상위 2개 핵심 키워드만 사용)
                 target_obj = next((t for t in app_config.targets if t.name == t_name), None)
                 target_keywords = target_obj.match.required_keywords if target_obj else []
+                main_keywords = target_keywords[:2] if target_keywords else []
                 
                 for itm in all_peeked_items:
                     try:
                         itm_t_name = itm.get("product_code") or ""
                         itm_title = itm.get("title") or ""
                         
-                        # [개선] 타겟명이 같거나, 모든 키워드가 제목에 포함되어 있는 경우
+                        # [개선] 타겟명이 같거나, 핵심 키워드군이 제목에 포함되어 있는 경우
                         is_title_match = (itm_t_name == t_name)
-                        if not is_title_match and target_keywords:
-                            is_title_match = all_keywords_present(itm_title, target_keywords)
+                        if not is_title_match and main_keywords:
+                            is_title_match = all_keywords_present(itm_title, main_keywords)
                         
                         if is_title_match or t_name in itm_title:
                             m_price = int(itm.get("price") or 0)
