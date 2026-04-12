@@ -114,10 +114,9 @@ def collect_lowest_offer_via_api(client: NaverShoppingSearchClient, app_config: 
     
     if target.match.product_id:
         search_sort = "sim"
-        # [수정] 카탈로그 판매처 복구(Market Match)를 위해 검색 범위를 최소 60건으로 강제 확장
-        display_limit = 60
+        display_limit = 100
         pages = 1 
-        logger.info(f"  └─ [{target.name}] ID 기반 매칭 모드: 내부 수집 범위 확장(60건) - 판매처 매칭용")
+        logger.info(f"  └─ [{target.name}] ID 기반 매칭 모드: 내부 수집 범위 확장(100건) - 판매처 매칭용")
 
     items: list[dict[str, Any]] = []
 
