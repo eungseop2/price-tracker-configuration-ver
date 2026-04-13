@@ -469,7 +469,7 @@ function renderRankingView(kw) {
     html += `</div>`;
 
     // 3. 세부 키워드 탭 (갤럭시 포함/미포함 등) 렌더링
-    const currentKeywords = catToKeywords[selectedRankingCategory] || [];
+    const currentKeywords = (catToKeywords[selectedRankingCategory] || []).sort((a, b) => a.localeCompare(b));
     if (currentKeywords.length > 1) {
         html += `<div class="ranking-sub-tabs" style="display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap;">`;
         currentKeywords.forEach(k => {

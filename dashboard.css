@@ -1323,3 +1323,48 @@ td {
     background: var(--text-main);
     color: white;
 }
+
+/* Pagination Styling */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+}
+
+.page-btn {
+    min-width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: 1px solid var(--glass-border);
+    background: #ffffff;
+    color: var(--text-subtitle);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.page-btn:hover:not([disabled]) {
+    background: #f2f4f6;
+    color: var(--text-main);
+    transform: translateY(-1px);
+}
+
+.page-btn.active {
+    background: var(--toss-blue);
+    color: #ffffff;
+    border-color: var(--toss-blue);
+    box-shadow: 0 4px 12px rgba(49, 130, 247, 0.2);
+}
+
+.page-btn[disabled] {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: #f9fafb;
+}
