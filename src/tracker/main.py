@@ -149,6 +149,33 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
     except Exception as e:
         logger.error(f"셀러 동기화 중 오류 발생 (YAML 설정으로 계속 진행): {e}")
 
+    # ---------- [1.5단계 셀러+상품명 명시적 호출 수집 (선행 루크업)] ----------
+    # 메인 타겟 매칭 전에 각 셀러 전용 상품을 먼저 수집하여 후보군(Pool)을 확보합니다.
+    global_mall_pool = [] 
+    if app_config.mall_targets:
+        logger.info(f"선행 셀러+상품명 명시적 검색 시작 (총 {len(app_config.mall_targets)}개 타겟)")
+        tracked_sellers_norm = {normalize_for_match(s) for s in 
+            (app_config.monitored_sellers or []) + (app_config.authorized_sellers or [])}
+            
+        unique_mall_queries = {}
+        for mt in app_config.mall_targets:
+            q = f"{mt.mall_name} {mt.query}"
+            if q not in unique_mall_queries:
+                unique_mall_queries[q] = mt
+                
+        for q, mt in unique_mall_queries.items():
+            try:
+                mall_spec_items = collect_mall_items(client, app_config, q, pages=1)
+                for itm in mall_spec_items:
+                    seller_norm = normalize_for_match(itm.get("seller_name", ""))
+                    if seller_norm in tracked_sellers_norm:
+                        itm["category"] = mt.category
+                        itm["#source"] = "mall_direct" # 추적용 태그
+                        global_mall_pool.append(itm)
+                logger.debug(f"  └─ [{q}] 선행 수집 완료")
+            except Exception as e:
+                logger.warning(f"  └─ [{q}] 선행 수집 실패: {e}")
+
     # ---------- [2단계 확장 수집을 위한 대표 키워드 사전 수집] ----------
     broad_search_cache = {}
     unique_rank_queries = set()
@@ -174,11 +201,15 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
             prev_success = store.get_latest_success(target.name)
             prev_price = prev_success["price"] if prev_success else None
 
-            # [개선] 캐시된 브로드 아이템 전달
+            # [개선] 캐시된 브로드 아이템 + 선행 수집된 셀러 상품 전달
             target_rq = target.rank_queries[0] if target.rank_queries else None
-            target_broad_items = broad_search_cache.get(target_rq)
+            target_broad_items = broad_search_cache.get(target_rq) or []
             
-            result, items = await _collect_one(client, target, app_config, artifacts_dir, broad_items=target_broad_items)
+            # 해당 카테고리에 맞는 선행 수집 셀러 상품들도 후보군에 병합
+            category_mall_items = [itm for itm in global_mall_pool if itm.get("category") == target.category]
+            combined_broad_items = list(target_broad_items) + category_mall_items
+            
+            result, items = await _collect_one(client, target, app_config, artifacts_dir, broad_items=combined_broad_items)
             
             # 수집된 모든 상품 중 유용한 것만 선별하여 저장 (데이터 폭발 방지)
             if items:
@@ -428,34 +459,7 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                 except Exception as e:
                     logger.error(f"랭킹 히스토리 저장 실패: {e}")
 
-    # ---------- [2.5단계 셀러+상품명 명시적 호출 수집 (강제 룩업)] ----------
-    if app_config.mall_targets:
-        logger.info(f"셀러+상품명 명시적 검색을 통한 심층 수집 시작")
-        tracked_sellers_norm = {normalize_for_match(s) for s in 
-            (app_config.monitored_sellers or []) + (app_config.authorized_sellers or [])}
-            
-        unique_mall_queries = {}
-        for mt in app_config.mall_targets:
-            q = f"{mt.mall_name} {mt.query}"
-            if q not in unique_mall_queries:
-                unique_mall_queries[q] = mt
-                
-        for q, mt in unique_mall_queries.items():
-            try:
-                mall_spec_items = collect_mall_items(client, app_config, q, pages=1)
-                
-                added_count = 0
-                for itm in mall_spec_items:
-                    seller_norm = normalize_for_match(itm.get("seller_name", ""))
-                    if seller_norm in tracked_sellers_norm:
-                        itm["category"] = mt.category
-                        itm["product_code"] = f"{mt.mall_name}_direct"
-                        itm["rank_query"] = q
-                        all_peeked_items.append(itm)
-                        added_count += 1
-                logger.debug(f"  └─ [{q}] 명시적 호출 완료 ({added_count}건 추가)")
-            except Exception as e:
-                logger.warning(f"  └─ [{q}] 명시적 호출 실패: {e}")
+    # [삭제됨] 이전 2.5단계 명시적 호출 수집 (앞으로 이동됨)
 
     # ---------- [셀러 트래킹: 최저가 데이터 재활용] ----------
     if app_config.mall_targets:
@@ -471,7 +475,9 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
             target_mall_norm = normalize_for_match(m_target.mall_name)
             candidates = []
             
-            for itm in all_peeked_items:
+            # global_mall_pool과 상시 수집된 all_peeked_items를 모두 확인
+            search_pool = all_peeked_items + global_mall_pool
+            for itm in search_pool:
                 # [해제] 감시 셀러의 상품이라면 어떤 키워드 기준도 따지지 않고 수입합니다.
                 curr_itm_mall_norm = normalize_for_match(itm.get("seller_name", ""))
                 

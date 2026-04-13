@@ -201,6 +201,7 @@ targets:
     required_keywords:
     - 버즈4
     - 프로
+    - 블랙
     exclude_keywords:
     - 중고
     - 리퍼
@@ -232,6 +233,7 @@ targets:
     required_keywords:
     - 버즈4
     - 프로
+    - 화이트
     exclude_keywords:
     - 중고
     - 리퍼
@@ -264,6 +266,8 @@ targets:
   match:
     required_keywords:
     - 버즈4
+    - 블랙
+    - R540N
     exclude_keywords:
     - 중고
     - 리퍼
@@ -294,6 +298,8 @@ targets:
   match:
     required_keywords:
     - 버즈4
+    - 화이트
+    - R540N
     exclude_keywords:
     - 중고
     - 리퍼
