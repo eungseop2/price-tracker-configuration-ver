@@ -28,7 +28,7 @@ from .naver_api import (
 from .notifier import send_price_alert
 from .report import send_daily_report
 from .util import (
-    all_keywords_present, calc_change_metrics, clean_text, dump_json, utc_now_iso, 
+    all_keywords_present, any_keyword_present, calc_change_metrics, clean_text, dump_json, utc_now_iso, 
     is_night_time_kst, normalize_for_match
 )
 
@@ -428,6 +428,35 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                 except Exception as e:
                     logger.error(f"랭킹 히스토리 저장 실패: {e}")
 
+    # ---------- [2.5단계 셀러+상품명 명시적 호출 수집 (강제 룩업)] ----------
+    if app_config.mall_targets:
+        logger.info(f"셀러+상품명 명시적 검색을 통한 심층 수집 시작")
+        tracked_sellers_norm = {normalize_for_match(s) for s in 
+            (app_config.monitored_sellers or []) + (app_config.authorized_sellers or [])}
+            
+        unique_mall_queries = {}
+        for mt in app_config.mall_targets:
+            q = f"{mt.mall_name} {mt.query}"
+            if q not in unique_mall_queries:
+                unique_mall_queries[q] = mt
+                
+        for q, mt in unique_mall_queries.items():
+            try:
+                mall_spec_items = collect_mall_items(client, app_config, q, pages=1)
+                
+                added_count = 0
+                for itm in mall_spec_items:
+                    seller_norm = normalize_for_match(itm.get("seller_name", ""))
+                    if seller_norm in tracked_sellers_norm:
+                        itm["category"] = mt.category
+                        itm["product_code"] = f"{mt.mall_name}_direct"
+                        itm["rank_query"] = q
+                        all_peeked_items.append(itm)
+                        added_count += 1
+                logger.debug(f"  └─ [{q}] 명시적 호출 완료 ({added_count}건 추가)")
+            except Exception as e:
+                logger.warning(f"  └─ [{q}] 명시적 호출 실패: {e}")
+
     # ---------- [셀러 트래킹: 최저가 데이터 재활용] ----------
     if app_config.mall_targets:
         logger.info(f"최저가 수집 데이터를 활용한 셀러 필터링 시작 ({len(app_config.mall_targets)}개 몰 타겟, {len(all_peeked_items)}개 수집 상품 분석)")
@@ -447,6 +476,12 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                 curr_itm_mall_norm = normalize_for_match(itm.get("seller_name", ""))
                 
                 if target_mall_norm in curr_itm_mall_norm and itm.get("category") == m_target.category:
+                    # [추가] 제한 키워드 확인 (mall_targets의 exclude_keywords)
+                    exclude_kws = getattr(m_target, "exclude_keywords", [])
+                    title = str(itm.get("title") or "")
+                    if exclude_kws and any_keyword_present(title, exclude_kws):
+                        continue
+                        
                     p_id = str(itm.get("product_id") or itm.get("product_url", ""))
                     dup_key = f"{target_mall_norm}|{p_id}"
                     

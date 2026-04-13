@@ -69,12 +69,13 @@ targets:
     exclude_keywords:
     - 중고
     - 리퍼
-    - 케이스
     - 커버
     - 필름
     - 스킨
     - 스티커
     - 프로
+    - FE
+    - fe
     product_id: '53507707536'
     allowed_product_types:
     - 1
@@ -101,12 +102,13 @@ targets:
     exclude_keywords:
     - 중고
     - 리퍼
-    - 케이스
     - 커버
     - 필름
     - 스킨
     - 스티커
     - 프로
+    - FE
+    - fe
     product_id: '53507707537'
     allowed_product_types:
     - 1
@@ -134,7 +136,6 @@ targets:
     exclude_keywords:
     - 중고
     - 리퍼
-    - 케이스
     - 커버
     - 필름
     - 스킨
@@ -166,7 +167,6 @@ targets:
     exclude_keywords:
     - 중고
     - 리퍼
-    - 케이스
     - 커버
     - 필름
     - 스킨
@@ -198,7 +198,6 @@ targets:
     exclude_keywords:
     - 중고
     - 리퍼
-    - 케이스
     - 커버
     - 필름
     - 스킨
@@ -230,7 +229,6 @@ targets:
     exclude_keywords:
     - 중고
     - 리퍼
-    - 케이스
     - 커버
     - 필름
     - 스킨
@@ -261,7 +259,6 @@ targets:
     exclude_keywords:
     - 중고
     - 리퍼
-    - 케이스
     - 커버
     - 필름
     - 스킨
@@ -292,7 +289,6 @@ targets:
     exclude_keywords:
     - 중고
     - 리퍼
-    - 케이스
     - 커버
     - 필름
     - 스킨
@@ -326,7 +322,6 @@ targets:
     - 리퍼
     - 스트랩
     - 필름
-    - 케이스
     product_id: '55668557960'
     allowed_product_types:
     - 1
@@ -356,7 +351,6 @@ targets:
     - 리퍼
     - 스트랩
     - 필름
-    - 케이스
     product_id: '55727496882'
     allowed_product_types:
     - 1
@@ -386,7 +380,6 @@ targets:
     - 리퍼
     - 스트랩
     - 필름
-    - 케이스
     product_id: '55668557962'
     allowed_product_types:
     - 1
@@ -416,7 +409,6 @@ targets:
     - 리퍼
     - 스트랩
     - 필름
-    - 케이스
     product_id: '55727496884'
     allowed_product_types:
     - 1
@@ -446,7 +438,6 @@ targets:
     - 리퍼
     - 스트랩
     - 필름
-    - 케이스
     product_id: '55727507152'
     allowed_product_types:
     - 1
@@ -476,7 +467,6 @@ targets:
     - 리퍼
     - 스트랩
     - 필름
-    - 케이스
     product_id: '55668573794'
     allowed_product_types:
     - 1
@@ -505,7 +495,6 @@ targets:
     - 리퍼
     - 스트랩
     - 필름
-    - 케이스
     product_id: '55900277515'
     allowed_product_types:
     - 1
@@ -533,7 +522,6 @@ targets:
     exclude_keywords:
     - 중고
     - 리퍼
-    - 케이스
     - 커버
     - 필름
     - 스킨
@@ -564,7 +552,6 @@ targets:
     exclude_keywords:
     - 중고
     - 리퍼
-    - 케이스
     - 커버
     - 필름
     - 스킨
@@ -597,7 +584,6 @@ targets:
     - 리퍼
     - 스트랩
     - 필름
-    - 케이스
     product_id: '55727792362'
     allowed_product_types:
     - 1
@@ -627,7 +613,6 @@ targets:
     - 리퍼
     - 스트랩
     - 필름
-    - 케이스
     product_id: '55727789525'
     allowed_product_types:
     - 1
@@ -657,7 +642,6 @@ targets:
     - 리퍼
     - 스트랩
     - 필름
-    - 케이스
     product_id: '55727555801'
     allowed_product_types:
     - 1
@@ -687,7 +671,6 @@ targets:
     - 리퍼
     - 스트랩
     - 필름
-    - 케이스
     product_id: '55727792338'
     allowed_product_types:
     - 1
