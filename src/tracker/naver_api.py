@@ -67,6 +67,11 @@ def _item_matches(target: TargetConfig, item: dict[str, Any], global_excludes: l
     product_id = str(item.get("productId", "") or "").strip()
     target_id = str(target.match.product_id or "").strip()
     product_type = int(item.get("productType", 0) or 0)
+    price = int(item.get("lprice", 0) or 0)
+
+    # 0. 최소 가격 필터링 (min_price)
+    if target.match.min_price and price < target.match.min_price:
+        return False
 
     # 1. productId가 지정된 경우 (플레이스홀더인 '[숫자_ID]' 등은 제외)
     is_placeholder = "[" in target_id or "ID" in target_id or not target_id

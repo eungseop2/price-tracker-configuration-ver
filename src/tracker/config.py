@@ -17,6 +17,7 @@ class StoreType(Enum):
 class MatchConfig:
     required_keywords: list[str] = field(default_factory=list)
     exclude_keywords: list[str] = field(default_factory=list)
+    min_price: int | None = None
     product_id: str | None = None
     allowed_product_types: list[int] = field(default_factory=list)
 
@@ -92,6 +93,7 @@ def _to_match(raw: dict[str, Any] | None) -> MatchConfig:
     return MatchConfig(
         required_keywords=list(raw.get("required_keywords", []) or []),
         exclude_keywords=list(raw.get("exclude_keywords", []) or []),
+        min_price=(int(raw["min_price"]) if raw.get("min_price") is not None else None),
         product_id=(str(raw["product_id"]) if raw.get("product_id") is not None else None),
         allowed_product_types=[int(x) for x in (raw.get("allowed_product_types", []) or [])],
     )

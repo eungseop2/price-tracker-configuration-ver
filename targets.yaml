@@ -54,14 +54,43 @@ common:
     - '55726266456'
     - '55726458010'
   global_exclude_keywords:
-  - 중고
-  - 리퍼
-  - 커버
   - 필름
+  - 어댑터
+  - 방지
+  - 키링
   - 스킨
-  - 스티커
-  - 케이스
   - 스트랩
+  - 링
+  - 스티커
+  - 커버
+  - 보호필름
+  - 충전독
+  - 펜
+  - 케이블
+  - 실리콘
+  - 리퍼
+  - 악세사리
+  - 액정
+  - 충전기
+  - 액세서리
+  - 가방
+  - 유막
+  - 벌크
+  - 패키지
+  - 참
+  - 강화유리
+  - 투명
+  - 스탠드
+  - 철가루
+  - 하드
+  - 거치대
+  - 청소
+  - 케이스
+  - 펜슬
+  - 그립톡
+  - 박스
+  - 중고
+  - 먼지
 targets:
 - name: 갤럭시 버즈3 화이트
   mode: api_query
@@ -86,6 +115,7 @@ targets:
     - 1
     - 2
     - 3
+    min_price: 80000
   url: https://search.shopping.naver.com/catalog/53507707536
   browser:
     wait_until: domcontentloaded
@@ -114,6 +144,7 @@ targets:
     - 1
     - 2
     - 3
+    min_price: 80000
   url: https://search.shopping.naver.com/catalog/53507707537
   browser:
     wait_until: domcontentloaded
@@ -142,6 +173,7 @@ targets:
     - 1
     - 2
     - 3
+    min_price: 120000
   url: https://search.shopping.naver.com/catalog/53508451504
   browser:
     wait_until: domcontentloaded
@@ -168,6 +200,7 @@ targets:
     - 1
     - 2
     - 3
+    min_price: 120000
   url: https://search.shopping.naver.com/catalog/53508451505
   browser:
     wait_until: domcontentloaded
@@ -196,6 +229,7 @@ targets:
     - 1
     - 2
     - 3
+    min_price: 120000
   url: https://search.shopping.naver.com/catalog/59061283797
   browser:
     wait_until: domcontentloaded
@@ -222,6 +256,7 @@ targets:
     - 1
     - 2
     - 3
+    min_price: 120000
   url: https://search.shopping.naver.com/catalog/59061283798
   browser:
     wait_until: domcontentloaded
@@ -249,6 +284,7 @@ targets:
     - 1
     - 2
     - 3
+    min_price: 80000
   url: https://search.shopping.naver.com/catalog/59061250873
   browser:
     wait_until: domcontentloaded
@@ -274,6 +310,7 @@ targets:
     - 1
     - 2
     - 3
+    min_price: 80000
   url: https://search.shopping.naver.com/catalog/59061250874
   browser:
     wait_until: domcontentloaded
@@ -302,6 +339,7 @@ targets:
     - 1
     - 2
     - 3
+    min_price: 150000
   url: https://search.shopping.naver.com/catalog/55668557960
   browser:
     wait_until: domcontentloaded
@@ -328,6 +366,7 @@ targets:
     - 1
     - 2
     - 3
+    min_price: 150000
   url: https://search.shopping.naver.com/catalog/55727496882
   browser:
     wait_until: domcontentloaded
@@ -354,6 +393,7 @@ targets:
     - 1
     - 2
     - 3
+    min_price: 150000
   url: https://search.shopping.naver.com/catalog/55668557962
   browser:
     wait_until: domcontentloaded
@@ -380,6 +420,7 @@ targets:
     - 1
     - 2
     - 3
+    min_price: 150000
   url: https://search.shopping.naver.com/catalog/55727496884
   browser:
     wait_until: domcontentloaded
@@ -408,6 +449,7 @@ targets:
     - 1
     - 2
     - 3
+    min_price: 150000
   url: https://search.shopping.naver.com/catalog/55727507152
   browser:
     wait_until: domcontentloaded
@@ -434,6 +476,7 @@ targets:
     - 1
     - 2
     - 3
+    min_price: 150000
   url: https://search.shopping.naver.com/catalog/55668573794
   browser:
     wait_until: domcontentloaded
@@ -489,6 +532,7 @@ targets:
     - 1
     - 2
     - 3
+    min_price: 80000
   url: https://search.shopping.naver.com/catalog/56796984706
   browser:
     wait_until: domcontentloaded
@@ -515,6 +559,7 @@ targets:
     - 1
     - 2
     - 3
+    min_price: 80000
   url: https://search.shopping.naver.com/catalog/56796983823
   browser:
     wait_until: domcontentloaded
@@ -543,6 +588,7 @@ targets:
     - 1
     - 2
     - 3
+    min_price: 450000
   url: https://search.shopping.naver.com/catalog/55727792362
   browser:
     wait_until: domcontentloaded
@@ -569,6 +615,7 @@ targets:
     - 1
     - 2
     - 3
+    min_price: 450000
   url: https://search.shopping.naver.com/catalog/55727789525
   browser:
     wait_until: domcontentloaded
@@ -595,6 +642,7 @@ targets:
     - 1
     - 2
     - 3
+    min_price: 450000
   url: https://search.shopping.naver.com/catalog/55727555801
   browser:
     wait_until: domcontentloaded
@@ -621,6 +669,7 @@ targets:
     - 1
     - 2
     - 3
+    min_price: 450000
   url: https://search.shopping.naver.com/catalog/55727792338
   browser:
     wait_until: domcontentloaded
