@@ -149,10 +149,13 @@ def collect_lowest_offer_via_api(client: NaverShoppingSearchClient, app_config: 
         
         merged_count = 0
         for b_item in broad_items:
-            # 이미 상세 결과에 있는 ID는 무시
             b_id = str(b_item.get("productId", ""))
-            if any(str(c.get("product_id")) == b_id for c in candidates):
-                continue
+            
+            # 기존 상세 결과에 동일한 ID가 있는 경우, 이를 제거하고 몰 전용 결과로 교체 (몰 이름 보존)
+            existing_indices = [i for i, c in enumerate(candidates) if str(c.get("product_id")) == b_id]
+            if existing_indices:
+                for idx in reversed(existing_indices):
+                    candidates.pop(idx)
                 
             # 완화된 매칭 조건: 핵심 키워드가 포함되어 있는가?
             b_title = clean_text(b_item.get("title"))
