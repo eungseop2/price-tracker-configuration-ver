@@ -10,15 +10,14 @@ from .util import any_keyword_present, normalize_for_match
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("tracker.cleanup")
 
-# 제외 키워드 리스트 (targets.yaml에 적용한 것과 동일)
+# 제외 키워드 리스트 (사용자 피드백 반영: 미개봉, 강화유리, 스트랩, 케이스, 구형 모델 제외에서 제거)
 KEYWORDS_TO_EXCLUDE = [
-    "강화유리", "패키지", "스트랩", "시계줄", "밴드", "충전독", "거치대", "케이스", "파우치", 
+    "패키지", "시계줄", "밴드", "충전독", "거치대", "파우치", 
     "스탠드", "스킨", "커버", "필름", "보호막", "어댑터", "젠더", "이어팁", "청소키트", 
     "공구", "헤드폰", "이어캡", "버클", "브레이슬릿", "이용권", "보이스캐디", "증정", 
     "사은품", "학생전용", "쿠폰", "갤럭시S", "S25", "S26", "퀀텀", "버디", "와이드", 
     "갤럭시탭", "탭A", "갤럭시북", "아이폰", "에어팟", "갤럭시핏", "핏3", "핏e", 
-    "그랑데AI", "중고", "리퍼", "가개통", "미개봉", 
-    "워치4", "워치5", "워치6", "워치3", "액티브", "기어", "버즈2", "버즈+", "버즈라이브"
+    "그랑데AI", "중고", "리퍼", "가개통"
 ]
 
 def cleanup():
@@ -35,11 +34,10 @@ def cleanup():
     if not credential_json and os.path.exists("temp_gcp_key.json"):
         with open("temp_gcp_key.json", "rb") as f:
             raw_data = f.read()
-            # BOM 혹은 인코딩 문제에 유연하게 대응
             for encoding in ["utf-8-sig", "latin-1", "cp1252"]:
                 try:
                     credential_json = raw_data.decode(encoding)
-                    json.loads(credential_json) # 검증
+                    json.loads(credential_json)
                     break
                 except (UnicodeDecodeError, json.JSONDecodeError):
                     continue
@@ -68,10 +66,9 @@ def cleanup():
                 
             headers = all_values[0]
             title_idx = headers.index("title") if "title" in headers else -1
-            category_idx = headers.index("category") if "category" in headers else -1
             
             if title_idx == -1:
-                logger.warning(f"시트 '{sheet_name}'에 'title' 컬럼이 없어 건너뜁니다.")
+                logger.warning(f"시트 '{sheet_name}'에 'title' 컬럼이 없어 건너뜜")
                 continue
                 
             new_rows = [headers]
@@ -81,39 +78,26 @@ def cleanup():
                 if title_idx >= len(row): continue
                 title = row[title_idx]
                 
-                # 1. 제외 키워드 체크
+                # 제외 키워드 체크
                 if any_keyword_present(title, KEYWORDS_TO_EXCLUDE):
                     removed_count += 1
                     continue
                 
-                # 2. 카테고리별 필수 키워드 체크 (mall_observations 전용)
-                if sheet_name == "mall_observations" and category_idx != -1 and category_idx < len(row):
-                    category = row[category_idx]
-                    valid_kws = []
-                    if category == "버즈": valid_kws = ["버즈", "buds"]
-                    elif category == "워치": valid_kws = ["워치", "watch"]
-                    
-                    if valid_kws and not any_keyword_present(title, valid_kws):
-                        removed_count += 1
-                        continue
-                
                 new_rows.append(row)
             
             if removed_count > 0:
-                logger.info(f"시트 '{sheet_name}': {removed_count}개의 불필요한 데이터를 발견했습니다. 정리 중...")
+                logger.info(f"시트 '{sheet_name}': {removed_count}건의 불필요 데이터 정리 중...")
                 ws.clear()
-                # 1000줄씩 나누어 업데이트
                 chunk_size = 1000
                 for i in range(0, len(new_rows), chunk_size):
-                    end_idx = i + chunk_size
-                    chunk = new_rows[i:end_idx]
+                    chunk = new_rows[i:i + chunk_size]
                     ws.update(f'A{i+1}', chunk)
                 logger.info(f"시트 '{sheet_name}' 정리 완료 ({removed_count}건 삭제됨)")
             else:
                 logger.info(f"시트 '{sheet_name}'에 삭제할 데이터가 없습니다.")
                 
         except Exception as e:
-            logger.error(f"시트 '{sheet_name}' 정리 중 오류 발생: {e}")
+            logger.error(f"시트 '{sheet_name}' 정리 중 오류: {e}")
 
 if __name__ == "__main__":
     cleanup()

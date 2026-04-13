@@ -478,16 +478,7 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                 if target_mall_norm in curr_itm_mall_norm and itm.get("category") == m_target.category:
                     title = str(itm.get("title") or "")
                     
-                    # [핵심] 이상한 악세사리/잡동사니 유입 방지: 카테고리 명칭(버즈/워치 등)이 제목에 필수로 있어야 함
-                    main_kw = m_target.category
-                    if main_kw != "기타":
-                        # 카테고리가 '버즈'면 제목에 '버즈'나 'buds'가 무조건 있어야 함
-                        valid_kws = [main_kw]
-                        if main_kw == "버즈": valid_kws.append("buds")
-                        elif main_kw == "워치": valid_kws.append("watch")
-                        
-                        if not any_keyword_present(title, valid_kws):
-                            continue
+                    # [수정] 카테고리 필수 키워드 체크 로직 제거 (사용자 피드백 반영)
 
                     # [추가] 제한 키워드 확인 (mall_targets의 exclude_keywords)
                     exclude_kws = getattr(m_target, "exclude_keywords", [])
