@@ -62,7 +62,7 @@ class NaverShoppingSearchClient:
 
 
 
-def _item_matches(target: TargetConfig, item: dict[str, Any]) -> bool:
+def _item_matches(target: TargetConfig, item: dict[str, Any], global_excludes: list[str] = None) -> bool:
     title = clean_text(item.get("title"))
     product_id = str(item.get("productId", "") or "").strip()
     target_id = str(target.match.product_id or "").strip()
@@ -84,6 +84,9 @@ def _item_matches(target: TargetConfig, item: dict[str, Any]) -> bool:
     if target.match.required_keywords and not all_keywords_present(title, target.match.required_keywords):
         return False
     if target.match.exclude_keywords and any_keyword_present(title, target.match.exclude_keywords):
+        return False
+    # 추가: 글로벌 제외 키워드 체크
+    if global_excludes and any_keyword_present(title, global_excludes):
         return False
     return True
 
@@ -136,7 +139,8 @@ def collect_lowest_offer_via_api(client: NaverShoppingSearchClient, app_config: 
         items.extend(page_items)
 
     # 2. 후보군 추출 (상세 검색 결과)
-    candidates = [_normalized_item(item) for item in items if _item_matches(target, item)]
+    global_excludes = getattr(app_config, "global_exclude_keywords", [])
+    candidates = [_normalized_item(item) for item in items if _item_matches(target, item, global_excludes=global_excludes)]
     
     # 3. 브로드 아이템(캐시) 병합 및 완화된 매칭 적용
     if broad_items:

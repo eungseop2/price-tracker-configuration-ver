@@ -83,6 +83,7 @@ class AppConfig:
     monitored_sellers: list[str] = field(default_factory=list)
     mall_targets: list[MallTargetConfig] = field(default_factory=list)
     authorized_sellers: list[str] = field(default_factory=list)
+    global_exclude_keywords: list[str] = field(default_factory=list) # 추가: 전역 제외 키워드
     seller_filters: dict[str, list[str]] = field(default_factory=dict) # 판매자별 허용 상품 ID (화이트리스트)
 
 
@@ -247,7 +248,8 @@ def load_config(path: str | Path) -> AppConfig:
         gsheet_id=gsheet_id,
         targets=[],
         monitored_sellers=list(common.get("monitored_sellers", []) or []),
-        authorized_sellers=common.get("authorized_sellers", []),
+        authorized_sellers=list(common.get("authorized_sellers", []) or []),
+        global_exclude_keywords=list(common.get("global_exclude_keywords", []) or []),
         seller_filters=common.get("seller_filters", {}) or {}
     )
 
