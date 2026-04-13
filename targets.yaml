@@ -84,6 +84,7 @@ targets:
     product_id: '53507707536'
     allowed_product_types:
     - 1
+    - 2
     - 3
   url: https://search.shopping.naver.com/catalog/53507707536
   browser:
@@ -111,6 +112,7 @@ targets:
     product_id: '53507707537'
     allowed_product_types:
     - 1
+    - 2
     - 3
   url: https://search.shopping.naver.com/catalog/53507707537
   browser:
@@ -138,6 +140,7 @@ targets:
     product_id: '53508451504'
     allowed_product_types:
     - 1
+    - 2
     - 3
   url: https://search.shopping.naver.com/catalog/53508451504
   browser:
@@ -163,6 +166,7 @@ targets:
     product_id: '53508451505'
     allowed_product_types:
     - 1
+    - 2
     - 3
   url: https://search.shopping.naver.com/catalog/53508451505
   browser:
@@ -190,6 +194,7 @@ targets:
     product_id: '59061283797'
     allowed_product_types:
     - 1
+    - 2
     - 3
   url: https://search.shopping.naver.com/catalog/59061283797
   browser:
@@ -215,6 +220,7 @@ targets:
     product_id: '59061283798'
     allowed_product_types:
     - 1
+    - 2
     - 3
   url: https://search.shopping.naver.com/catalog/59061283798
   browser:
@@ -241,6 +247,7 @@ targets:
     product_id: '59061250873'
     allowed_product_types:
     - 1
+    - 2
     - 3
   url: https://search.shopping.naver.com/catalog/59061250873
   browser:
@@ -265,6 +272,7 @@ targets:
     product_id: '59061250874'
     allowed_product_types:
     - 1
+    - 2
     - 3
   url: https://search.shopping.naver.com/catalog/59061250874
   browser:
@@ -292,6 +300,7 @@ targets:
     product_id: '55668557960'
     allowed_product_types:
     - 1
+    - 2
     - 3
   url: https://search.shopping.naver.com/catalog/55668557960
   browser:
@@ -317,6 +326,7 @@ targets:
     product_id: '55727496882'
     allowed_product_types:
     - 1
+    - 2
     - 3
   url: https://search.shopping.naver.com/catalog/55727496882
   browser:
@@ -342,6 +352,7 @@ targets:
     product_id: '55668557962'
     allowed_product_types:
     - 1
+    - 2
     - 3
   url: https://search.shopping.naver.com/catalog/55668557962
   browser:
@@ -367,6 +378,7 @@ targets:
     product_id: '55727496884'
     allowed_product_types:
     - 1
+    - 2
     - 3
   url: https://search.shopping.naver.com/catalog/55727496884
   browser:
@@ -394,6 +406,7 @@ targets:
     product_id: '55727507152'
     allowed_product_types:
     - 1
+    - 2
     - 3
   url: https://search.shopping.naver.com/catalog/55727507152
   browser:
@@ -419,6 +432,7 @@ targets:
     product_id: '55668573794'
     allowed_product_types:
     - 1
+    - 2
     - 3
   url: https://search.shopping.naver.com/catalog/55668573794
   browser:
@@ -445,6 +459,7 @@ targets:
     product_id: '55900277515'
     allowed_product_types:
     - 1
+    - 2
     - 3
   url: https://search.shopping.naver.com/catalog/55900277515
   browser:
@@ -472,6 +487,7 @@ targets:
     product_id: '56796984706'
     allowed_product_types:
     - 1
+    - 2
     - 3
   url: https://search.shopping.naver.com/catalog/56796984706
   browser:
@@ -497,6 +513,7 @@ targets:
     product_id: '56796983823'
     allowed_product_types:
     - 1
+    - 2
     - 3
   url: https://search.shopping.naver.com/catalog/56796983823
   browser:
@@ -524,6 +541,7 @@ targets:
     product_id: '55727792362'
     allowed_product_types:
     - 1
+    - 2
     - 3
   url: https://search.shopping.naver.com/catalog/55727792362
   browser:
@@ -549,6 +567,7 @@ targets:
     product_id: '55727789525'
     allowed_product_types:
     - 1
+    - 2
     - 3
   url: https://search.shopping.naver.com/catalog/55727789525
   browser:
@@ -574,6 +593,7 @@ targets:
     product_id: '55727555801'
     allowed_product_types:
     - 1
+    - 2
     - 3
   url: https://search.shopping.naver.com/catalog/55727555801
   browser:
@@ -599,6 +619,7 @@ targets:
     product_id: '55727792338'
     allowed_product_types:
     - 1
+    - 2
     - 3
   url: https://search.shopping.naver.com/catalog/55727792338
   browser:

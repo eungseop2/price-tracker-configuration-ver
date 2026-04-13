@@ -76,7 +76,7 @@ def _item_matches(target: TargetConfig, item: dict[str, Any], global_excludes: l
             if target.match.allowed_product_types and product_type not in target.match.allowed_product_types:
                 return False
             return True
-        return False
+        # ID가 다르더라도 즉시 False를 반환하지 않고 키워드 검사로 넘어가도록 수정
 
     # 2. product_id가 없는 경우 기존 키워드 기반 매칭 유지
     if target.match.allowed_product_types and product_type not in target.match.allowed_product_types:
