@@ -370,34 +370,41 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                     except (ValueError, TypeError):
                         continue
             
-                # 해당 타겟의 키워드 설정 가져오기 (상위 2개 핵심 키워드만 사용)
+            # 2순위: 1순위 실패 시, 키워드 및 제외 키워드 기반 정밀 매칭
+            if not found_mall:
                 target_obj = next((t for t in app_config.targets if t.name == t_name), None)
-                target_keywords = target_obj.match.required_keywords if target_obj else []
-                main_keywords = target_keywords[:2] if target_keywords else []
-                
-                for itm in all_peeked_items:
-                    try:
-                        itm_t_name = itm.get("product_code") or ""
-                        itm_title = itm.get("title") or ""
-                        
-                        # [개선] 타겟명이 같거나, 핵심 키워드군이 제목에 포함되어 있는 경우
-                        is_title_match = (itm_t_name == t_name)
-                        if not is_title_match and main_keywords:
-                            is_title_match = all_keywords_present(itm_title, main_keywords)
-                        
-                        if is_title_match or t_name in itm_title:
+                if target_obj:
+                    required_kws = target_obj.match.required_keywords or []
+                    exclude_kws = target_obj.match.exclude_keywords or []
+                    
+                    for itm in all_peeked_items:
+                        try:
+                            itm_title = itm.get("title") or ""
                             m_price = int(itm.get("price") or 0)
-                            if m_price == int_price and m_price > 0:
-                                m_seller = itm.get("seller_name")
-                                if m_seller and m_seller not in ["네이버", "Naver"]:
-                                    found_mall = m_seller
-                                    break
-                    except (ValueError, TypeError):
-                        continue
+                            
+                            if m_price != int_price or m_price <= 0:
+                                continue
+                                
+                            # 필수 키워드가 모두 포함되어 있는지 확인
+                            if not all_keywords_present(itm_title, required_kws):
+                                continue
+                                
+                            # 배제 키워드가 하나라도 포함되어 있는지 확인
+                            if exclude_kws and any_keyword_present(itm_title, exclude_kws):
+                                continue
+                                
+                            # 모든 조건 만족 시 매칭
+                            m_seller = itm.get("seller_name")
+                            if m_seller and m_seller not in ["네이버", "Naver"]:
+                                found_mall = m_seller
+                                break
+                        except (ValueError, TypeError):
+                            continue
             
             if found_mall:
                 logger.info(f"  [MARKET MATCH] {t_name} -> {found_mall} (Price: {price})")
                 payload["seller_name"] = found_mall
+
 
     # 루프 종료 후 한 번에 저장 (Batch Insert)
     if collected_payloads:

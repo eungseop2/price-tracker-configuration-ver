@@ -99,6 +99,30 @@ function downloadExcel() {
     const ws = XLSX.utils.aoa_to_sheet(combinedData);
     XLSX.utils.book_append_sheet(wb, ws, "가격_추적_데이터");
 
+    // [추가] 키워드 랭킹 데이터 시트 추가
+    if (dashboardData.rankings && Object.keys(dashboardData.rankings).length > 0) {
+        const rankingData = [
+            ["키워드", "순위", "쇼핑몰명", "상품명", "가격", "링크"]
+        ];
+
+        Object.keys(dashboardData.rankings).sort().forEach(kw => {
+            const items = dashboardData.rankings[kw];
+            items.forEach((item, idx) => {
+                rankingData.push([
+                    kw,
+                    idx + 1,
+                    item.seller_name,
+                    item.title,
+                    item.price,
+                    item.product_url || item.url
+                ]);
+            });
+        });
+
+        const wsRank = XLSX.utils.aoa_to_sheet(rankingData);
+        XLSX.utils.book_append_sheet(wb, wsRank, "키워드_랭킹_데이터");
+    }
+
     XLSX.writeFile(wb, `price_tracker_combined_${new Date().toISOString().split('T')[0]}.xlsx`);
 }
 
