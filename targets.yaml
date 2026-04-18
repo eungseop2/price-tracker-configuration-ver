@@ -9,6 +9,12 @@ common:
   - 엠디텍
   - 올인포
   - 쇼마젠시
+  - 하이마트
+  - 11번가
+  - 옥션
+  - G마켓
+  - SSG.COM
+  - Gmarket
   monitored_sellers:
   - 제이유
   - 포디아이
@@ -36,6 +42,12 @@ common:
   - 스마트마켓 85
   - 빅스모바일
   - 다람쥐창고A
+  - 하이마트
+  - 11번가
+  - 옥션
+  - G마켓
+  - SSG.COM
+  - Gmarket
   seller_filters:
     쿠팡:
     - '57322532391'

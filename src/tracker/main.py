@@ -232,10 +232,10 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                     
                     # 선별 조건:
                     # 1. 이번 회차 최저가로 선정된 상품
-                    # 2. 검색 순위가 10위 이내인 인기 상품
+                    # 2. 검색 순위가 30위 이내인 인기 상품
                     # 3. 우리가 직접 모니터링 대상으로 지정한 셀러의 상품
                     is_best = (result.get("success") and str(itm.get("product_id")) == str(result.get("product_id")))
-                    is_top_rank = rank <= 10
+                    is_top_rank = rank <= 30
                     is_tracked_seller = seller_norm in tracked_sellers_norm
                     
                     if is_best or is_top_rank or is_tracked_seller:
