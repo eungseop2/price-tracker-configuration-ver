@@ -345,6 +345,12 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                 payload["is_unauthorized"] = 0
 
     # 4. [사용자 요청] 카탈로그 판매처('네이버')를 실판매처로 매칭 (수집 시점 확정)
+    matched_mall_records = []
+    # 신뢰할 수 있는 대형몰 (가격 오차 허용 대상)
+    TRUSTED_SELLERS = ["하이마트", "11번가", "옥션", "G마켓", "SSG.COM", "Gmarket", "인터파크", "Lotte ON", "롯데 ON"]
+    from .util import normalize_for_match
+    trusted_sellers_norm = {normalize_for_match(s) for s in TRUSTED_SELLERS}
+
     for payload in collected_payloads:
         if payload.get("success") and payload.get("seller_name") in ["네이버", "Naver", None]:
             price = payload.get("price")
@@ -353,7 +359,9 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
             if not price: continue
             
             found_mall = None
+            found_item = None
             int_price = int(price)
+            target_obj = next((t for t in app_config.targets if t.name == t_name), None)
             
             # 1순위: 같은 product_id + 같은 가격인 실제 판매처 (정확한 매칭)
             if p_id:
@@ -366,44 +374,87 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                             m_seller = itm.get("seller_name")
                             if m_seller and m_seller not in ["네이버", "Naver"]:
                                 found_mall = m_seller
+                                found_item = itm
                                 break
                     except (ValueError, TypeError):
                         continue
             
             # 2순위: 1순위 실패 시, 키워드 및 제외 키워드 기반 정밀 매칭
-            if not found_mall:
-                target_obj = next((t for t in app_config.targets if t.name == t_name), None)
-                if target_obj:
-                    required_kws = target_obj.match.required_keywords or []
-                    exclude_kws = target_obj.match.exclude_keywords or []
-                    
-                    for itm in all_peeked_items:
-                        try:
-                            itm_title = itm.get("title") or ""
-                            m_price = int(itm.get("price") or 0)
-                            
-                            if m_price != int_price or m_price <= 0:
-                                continue
-                                
-                            # 필수 키워드가 모두 포함되어 있는지 확인
-                            if not all_keywords_present(itm_title, required_kws):
-                                continue
-                                
-                            # 배제 키워드가 하나라도 포함되어 있는지 확인
-                            if exclude_kws and any_keyword_present(itm_title, exclude_kws):
-                                continue
-                                
-                            # 모든 조건 만족 시 매칭
-                            m_seller = itm.get("seller_name")
-                            if m_seller and m_seller not in ["네이버", "Naver"]:
-                                found_mall = m_seller
-                                break
-                        except (ValueError, TypeError):
+            if not found_mall and target_obj:
+                required_kws = target_obj.match.required_keywords or []
+                exclude_kws = target_obj.match.exclude_keywords or []
+                
+                for itm in all_peeked_items:
+                    try:
+                        itm_title = itm.get("title") or ""
+                        m_price = int(itm.get("price") or 0)
+                        
+                        if m_price != int_price or m_price <= 0:
                             continue
+                            
+                        # 필수 키워드가 모두 포함되어 있는지 확인
+                        if not all_keywords_present(itm_title, required_kws):
+                            continue
+                            
+                        # 배제 키워드가 하나라도 포함되어 있는지 확인
+                        if exclude_kws and any_keyword_present(itm_title, exclude_kws):
+                            continue
+                            
+                        # 모든 조건 만족 시 매칭
+                        m_seller = itm.get("seller_name")
+                        if m_seller and m_seller not in ["네이버", "Naver"]:
+                            found_mall = m_seller
+                            found_item = itm
+                            break
+                    except (ValueError, TypeError):
+                        continue
+
+            # 3순위 [추가]: 대형몰(Trusted) 대상 1.2% 가격 오차 허용 유연 매칭
+            if not found_mall and target_obj:
+                required_kws = target_obj.match.required_keywords or []
+                exclude_kws = target_obj.match.exclude_keywords or []
+                
+                for itm in all_peeked_items:
+                    try:
+                        m_seller = itm.get("seller_name")
+                        if not m_seller or normalize_for_match(m_seller) not in trusted_sellers_norm:
+                            continue
+                            
+                        m_price = int(itm.get("price") or 0)
+                        if m_price <= 0: continue
+                        
+                        # 오차 범위 계산 (1.2%)
+                        diff_ratio = abs(m_price - int_price) / int_price
+                        if diff_ratio > 0.012:
+                            continue
+                        
+                        itm_title = itm.get("title") or ""
+                        # 필수 키워드/배제 키워드 검증은 동일하게 수행
+                        if not all_keywords_present(itm_title, required_kws):
+                            continue
+                        if exclude_kws and any_keyword_present(itm_title, exclude_kws):
+                            continue
+                            
+                        found_mall = m_seller
+                        found_item = itm
+                        logger.info(f"  [FLEXIBLE MATCH] {t_name} -> {found_mall} (Price Diff: {int_price} vs {m_price})")
+                        break
+                    except (ValueError, TypeError):
+                        continue
             
             if found_mall:
                 logger.info(f"  [MARKET MATCH] {t_name} -> {found_mall} (Price: {price})")
                 payload["seller_name"] = found_mall
+                # 자동 매칭된 셀러 정보를 쇼핑몰 리포트(mall_observations)에도 남기기 위해 저장
+                if target_obj and found_item:
+                    m_item = found_item.copy()
+                    m_item["category"] = target_obj.category # 타겟 카테고리 강제 할당 (분류 문제 해결)
+                    m_item["collected_at"] = utc_now_iso()
+                    matched_mall_records.append({
+                        "mall_name": found_mall,
+                        "category": target_obj.category,
+                        "item": m_item
+                    })
 
 
     # 루프 종료 후 한 번에 저장 (Batch Insert)
@@ -469,15 +520,32 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
     # [삭제됨] 이전 2.5단계 명시적 호출 수집 (앞으로 이동됨)
 
     # ---------- [셀러 트래킹: 최저가 데이터 재활용] ----------
+    # 1. 자동 매칭된(Market Match) 셀러 기록 먼저 배치에 추가
+    batch_payloads = []
+    global_seen = set()
+
+    if matched_mall_records:
+        for rec in matched_mall_records:
+            m_name = rec["mall_name"]
+            cat = rec["category"]
+            itm = rec["item"]
+            p_id = str(itm.get("product_id") or itm.get("product_url", ""))
+            
+            dup_key = f"{normalize_for_match(m_name)}|{p_id}"
+            if dup_key not in global_seen:
+                batch_payloads.append({
+                    "target_name": f"[AUTO] {itm.get('product_code', 'Matched')}",
+                    "query": "MARKET_MATCH",
+                    "mall_name": m_name,
+                    "category": cat,
+                    "items": [itm]
+                })
+                global_seen.add(dup_key)
+
+    # 2. 명시적으로 정의된 mall_targets 처리
     if app_config.mall_targets:
         logger.info(f"최저가 수집 데이터를 활용한 셀러 필터링 시작 ({len(app_config.mall_targets)}개 몰 타겟, {len(all_peeked_items)}개 수집 상품 분석)")
         
-        # 중복 저장 방지를 위한 배치 구성
-        batch_payloads = []
-        
-        # 상품별 중복 방지를 위한 셋 (한 회차 내에서 동일 몰의 동일 상품은 한 번만 저장)
-        global_seen = set()
-
         for m_target in app_config.mall_targets:
             target_mall_norm = normalize_for_match(m_target.mall_name)
             candidates = []
@@ -485,15 +553,10 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
             # global_mall_pool과 상시 수집된 all_peeked_items를 모두 확인
             search_pool = all_peeked_items + global_mall_pool
             for itm in search_pool:
-                # [해제] 감시 셀러의 상품이라면 어떤 키워드 기준도 따지지 않고 수입합니다.
                 curr_itm_mall_norm = normalize_for_match(itm.get("seller_name", ""))
                 
                 if target_mall_norm in curr_itm_mall_norm and itm.get("category") == m_target.category:
                     title = str(itm.get("title") or "")
-                    
-                    # [수정] 카테고리 필수 키워드 체크 로직 제거 (사용자 피드백 반영)
-
-                    # [추가] 제한 키워드 확인 (mall_targets의 exclude_keywords)
                     exclude_kws = getattr(m_target, "exclude_keywords", [])
                     if exclude_kws and any_keyword_present(title, exclude_kws):
                         continue
@@ -515,11 +578,12 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                     "items": candidates
                 })
                 logger.info(f"  └─ [{m_target.name}] 필터링 완료: {len(candidates)}개 상품 저장 대기")
-            else:
-                logger.warning(f"  └─ [{m_target.name}] 해당 셀러 상품을 찾을 수 없음 (카탈로그 결과 내)")
 
-        if batch_payloads:
+    if batch_payloads:
+        try:
             store.insert_mall_records_batch(batch_payloads)
+        except Exception as e:
+            logger.error(f"쇼핑몰 리포트 저장 중 오류: {e}")
 
     store.close()
 
