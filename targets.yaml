@@ -15,7 +15,10 @@ common:
   - G마켓
   - SSG.COM
   - Gmarket
+  - 롯데온
+  - Lotte ON
   monitored_sellers:
+  - 한국스마트폰거래소
   - 제이유
   - 포디아이
   - 웰디
@@ -2392,3 +2395,4 @@ mall_targets:
   - 핏e
   - 학생전용
   - 헤드폰
+$newContent
