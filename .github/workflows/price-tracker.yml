@@ -53,10 +53,10 @@ jobs:
           
           if [ -f "summary.json" ]; then
             echo "### 📊 Collection Summary" >> $GITHUB_STEP_SUMMARY
-            echo "```json" >> $GITHUB_STEP_SUMMARY
+            echo '```json' >> $GITHUB_STEP_SUMMARY
             cat summary.json >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "```" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
           fi
 
       - name: Export and Package UI
