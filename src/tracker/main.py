@@ -111,7 +111,7 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
     all_peeked_items = []
     
     # [추가] 판매자별 상품 ID 필터 사전 정규화 (매칭 효율성)
-    from .util import normalize_for_match
+    from .util import normalize_for_match, all_keywords_present, any_keyword_present
     norm_seller_filters = {normalize_for_match(k): set(str(v_id) for v_id in v_list) 
                            for k, v_list in (app_config.seller_filters or {}).items()}
 
@@ -228,13 +228,11 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                         continue
 
                     # (2) 시리즈 매칭 필터: 타겟의 필수 키워드가 제목에 포함되어 있는지 확인
-                    from .util import all_keywords_present
                     title = itm.get("title") or ""
-                    if not all_keywords_present(title, target.match.get("required_keywords", [])):
+                    if not all_keywords_present(title, target.match.required_keywords or []):
                         continue
 
                     # (3) 수동 등록된 전역 제외 키워드 체크
-                    from .util import any_keyword_present
                     if any_keyword_present(title, app_config.global_exclude_keywords):
                         continue
 
