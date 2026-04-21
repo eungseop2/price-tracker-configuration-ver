@@ -222,9 +222,10 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                     seller_norm = normalize_for_match(itm.get("seller_name", ""))
                     p_id = str(itm.get("product_id") or "")
                     
-                    # (1) 가격 필터: 100,000원 미만(케이스류 등) 제외
+                    # (1) 가격 필터: 100,000원 미만 제외 (단, '핏3'/'Fit3' 상품은 예외)
                     price = itm.get("price") or 0
-                    if price < 100000:
+                    title = itm.get("title") or ""
+                    if price < 100000 and not any_keyword_present(title, ["핏3", "Fit3"]):
                         continue
 
                     # (2) 시리즈 매칭 필터: 타겟의 필수 키워드가 제목에 포함되어 있는지 확인
@@ -588,11 +589,11 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                 curr_itm_mall_norm = normalize_for_match(itm.get("seller_name", ""))
                 
                 if target_mall_norm in curr_itm_mall_norm and itm.get("category") == m_target.category:
-                    # [추가] 가격 필터: 100,000원 미만 제외
-                    if (itm.get("price") or 0) < 100000:
-                        continue
-                        
+                    # [추가] 가격 필터: 100,000원 미만 제외 (단, '핏3'/'Fit3' 상품은 예외)
+                    price = itm.get("price") or 0
                     title = str(itm.get("title") or "")
+                    if price < 100000 and not any_keyword_present(title, ["핏3", "Fit3"]):
+                        continue
                     exclude_kws = getattr(m_target, "exclude_keywords", [])
                     if exclude_kws and any_keyword_present(title, exclude_kws):
                         continue
@@ -626,8 +627,10 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
             curr_itm_mall_norm = normalize_for_match(itm.get("seller_name", ""))
             
             if target_mall_norm in curr_itm_mall_norm:
-                # [추가] 가격 필터: 100,000원 미만 제외
-                if (itm.get("price") or 0) < 100000:
+                # [추가] 가격 필터: 100,000원 미만 제외 (단, '핏3'/'Fit3' 상품은 예외)
+                price = itm.get("price") or 0
+                title = str(itm.get("title") or "")
+                if price < 100000 and not any_keyword_present(title, ["핏3", "Fit3"]):
                     continue
 
                 cat = itm.get("category")
