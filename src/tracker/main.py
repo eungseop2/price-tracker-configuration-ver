@@ -588,6 +588,10 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                 curr_itm_mall_norm = normalize_for_match(itm.get("seller_name", ""))
                 
                 if target_mall_norm in curr_itm_mall_norm and itm.get("category") == m_target.category:
+                    # [추가] 가격 필터: 100,000원 미만 제외
+                    if (itm.get("price") or 0) < 100000:
+                        continue
+                        
                     title = str(itm.get("title") or "")
                     exclude_kws = getattr(m_target, "exclude_keywords", [])
                     if exclude_kws and any_keyword_present(title, exclude_kws):
@@ -622,6 +626,10 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
             curr_itm_mall_norm = normalize_for_match(itm.get("seller_name", ""))
             
             if target_mall_norm in curr_itm_mall_norm:
+                # [추가] 가격 필터: 100,000원 미만 제외
+                if (itm.get("price") or 0) < 100000:
+                    continue
+
                 cat = itm.get("category")
                 if not cat: continue
                 
