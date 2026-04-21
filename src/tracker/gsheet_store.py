@@ -829,10 +829,11 @@ class GoogleSheetStore:
                 })
 
             latest_seller = latest.get("seller_name")
-            if not latest_seller or latest_seller == "네이버":
+            # [수정] 이미 실제 판매처 이름이 있다면 소급 매칭(m_idx)을 건너뛰어 로직 충돌 방지
+            if not latest_seller or latest_seller in ["네이버", "Naver"]:
                 t_at_latest = str(latest.get("collected_at") or "")[:16]
                 p_latest = str(parse_int(latest.get("price")))
-                latest_seller = m_idx.get(f"{name}|{t_at_latest}|{p_latest}") or "네이버"
+                latest_seller = m_idx.get(f"{name}|{t_at_latest}|{p_latest}") or latest_seller or "네이버"
 
             # [공통] 몰 리포트 이동을 위한 mall_link 구성
             mall_link = None
