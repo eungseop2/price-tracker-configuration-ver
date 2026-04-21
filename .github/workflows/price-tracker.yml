@@ -1,5 +1,8 @@
 name: Naver Price Tracker (Automated)
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   schedule:
     - cron: '21 */2 * * *'  # Every 2 hours at minute 21

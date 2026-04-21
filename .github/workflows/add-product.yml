@@ -1,5 +1,8 @@
 name: 상품 추가 (Add Product)
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   workflow_dispatch:
     inputs:
