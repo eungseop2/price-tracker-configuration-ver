@@ -542,16 +542,36 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                 })
                 global_seen.add(dup_key)
 
-    # 2. 명시적으로 정의된 mall_targets 처리
+    # 2. 명시적으로 정의된 mall_targets 및 암시적 셀러(나머지 모니터링 셀러) 동시 처리
+    from .util import normalize_for_match
+    
+    # 추적 대상 셀러 전체 수집 (시트 정의 또는 YAML 설정)
+    active_malls = set()
+    if 'active_sellers' in locals() and active_sellers:
+        active_malls.update(active_sellers["authorized"])
+        active_malls.update(active_sellers["monitored"])
+    else:
+        active_malls.update(app_config.authorized_sellers or [])
+        active_malls.update(app_config.monitored_sellers or [])
+
+    # 명시적 mall_targets에 정의된 패턴 파악
+    target_mall_patterns = {}
     if app_config.mall_targets:
-        logger.info(f"최저가 수집 데이터를 활용한 셀러 필터링 시작 ({len(app_config.mall_targets)}개 몰 타겟, {len(all_peeked_items)}개 수집 상품 분석)")
-        
+        for m_target in app_config.mall_targets:
+            n = normalize_for_match(m_target.mall_name)
+            if n not in target_mall_patterns:
+                target_mall_patterns[n] = []
+            target_mall_patterns[n].append(m_target)
+
+    logger.info(f"최저가 수집 데이터를 활용한 셀러 필터링 시작 (수집 상품 분석: {len(all_peeked_items)}개 + 선행 {len(global_mall_pool)}개)")
+    search_pool = all_peeked_items + global_mall_pool
+
+    # 2.1. 명시적 mall_targets 우선 처리
+    if app_config.mall_targets:
         for m_target in app_config.mall_targets:
             target_mall_norm = normalize_for_match(m_target.mall_name)
             candidates = []
             
-            # global_mall_pool과 상시 수집된 all_peeked_items를 모두 확인
-            search_pool = all_peeked_items + global_mall_pool
             for itm in search_pool:
                 curr_itm_mall_norm = normalize_for_match(itm.get("seller_name", ""))
                 
@@ -578,6 +598,42 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                     "items": candidates
                 })
                 logger.info(f"  └─ [{m_target.name}] 필터링 완료: {len(candidates)}개 상품 저장 대기")
+
+    # 2.2. 암시적 셀러 트래킹 처리 (하이마트, 11번가 등 명시적 mall target이 없는 셀러들 자동 분류)
+    for mall_name in active_malls:
+        target_mall_norm = normalize_for_match(mall_name)
+        if target_mall_norm in target_mall_patterns:
+            continue # 이미 명시적으로 처리된 셀러는 제외
+            
+        candidates_by_cat = {}
+        for itm in search_pool:
+            curr_itm_mall_norm = normalize_for_match(itm.get("seller_name", ""))
+            
+            if target_mall_norm in curr_itm_mall_norm:
+                cat = itm.get("category")
+                if not cat: continue
+                
+                p_id = str(itm.get("product_id") or itm.get("product_url", ""))
+                dup_key = f"{target_mall_norm}|{p_id}"
+                
+                if dup_key not in global_seen:
+                    itm["collected_at"] = utc_now_iso()
+                    
+                    if cat not in candidates_by_cat:
+                        candidates_by_cat[cat] = []
+                    candidates_by_cat[cat].append(itm)
+                    global_seen.add(dup_key)
+                    
+        for cat, candidates in candidates_by_cat.items():
+            if candidates:
+                batch_payloads.append({
+                    "target_name": f"{mall_name} {cat} 자동수집",
+                    "query": f"{mall_name} {cat}",
+                    "mall_name": mall_name,
+                    "category": cat,
+                    "items": candidates
+                })
+                logger.info(f"  └─ [AUTO {mall_name}] {cat} 필터링 완료: {len(candidates)}개 상품 저장 대기")
 
     if batch_payloads:
         try:
