@@ -594,6 +594,15 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                     title = str(itm.get("title") or "")
                     if price < 100000 and not any_keyword_present(title, ["핏3", "Fit3"]):
                         continue
+
+                    # [추가] 쿠팡 전용 상품 ID 필터링 (화이트리스트)
+                    seller_norm_itm = normalize_for_match(itm.get("seller_name", ""))
+                    p_id = str(itm.get("product_id") or "")
+                    if seller_norm_itm == normalize_for_match("쿠팡") or seller_norm_itm == "coupang":
+                        coupang_filters = norm_seller_filters.get(normalize_for_match("쿠팡")) or norm_seller_filters.get("coupang")
+                        if not coupang_filters or p_id not in coupang_filters:
+                            continue
+
                     exclude_kws = getattr(m_target, "exclude_keywords", [])
                     if exclude_kws and any_keyword_present(title, exclude_kws):
                         continue
@@ -632,6 +641,13 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                 title = str(itm.get("title") or "")
                 if price < 100000 and not any_keyword_present(title, ["핏3", "Fit3"]):
                     continue
+                
+                # [추가] 쿠팡 전용 상품 ID 필터링 (AUTO 수집 단계)
+                p_id = str(itm.get("product_id") or "")
+                if curr_itm_mall_norm == normalize_for_match("쿠팡") or curr_itm_mall_norm == "coupang":
+                    coupang_filters = norm_seller_filters.get(normalize_for_match("쿠팡")) or norm_seller_filters.get("coupang")
+                    if not coupang_filters or p_id not in coupang_filters:
+                        continue
 
                 cat = itm.get("category")
                 if not cat: continue
