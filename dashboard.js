@@ -91,7 +91,7 @@ function downloadExcel() {
                 dateStr,
                 timeStr,
                 Number(h.p), // 가격을 숫자로 강제하여 엑셀에서 연산 가능하게 함
-                formatSellerName(p.seller) || "네이버"
+                formatSellerName(h.s || p.seller) || "네이버"
             ]);
         });
     });
