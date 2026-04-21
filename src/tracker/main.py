@@ -740,17 +740,30 @@ def main() -> None:
         try:
             dashboard_raw = store.get_dashboard_data(app_config.targets)
             
-            # 고유 랭킹 키워드별 최신 데이터 수집
+            # 고유 랭킹 키워드별 최신 데이터 수집 (API 최적화: 시트 전체를 한 번만 읽어서 메모리에서 매칭)
             rankings = {}
             unique_rank_queries = set()
             for t in app_config.targets:
                 if t.rank_queries:
-                    unique_rank_queries.update(t.rank_queries)
+                    unique_rank_queries.update(str(rq).strip() for rq in t.rank_queries)
             
-            for rq in unique_rank_queries:
-                latest = store.get_latest_rankings(rq)
-                if latest:
-                    rankings[rq] = latest
+            if unique_rank_queries:
+                ranking_ws = store._get_worksheet("ranking_history")
+                all_ranking_records = store._get_all_records_safe(ranking_ws)
+                
+                # 쿼리별로 그룹화
+                from collections import defaultdict
+                grouped_rankings = defaultdict(list)
+                for r in all_ranking_records:
+                    q = str(r.get("query", "")).strip()
+                    if q in unique_rank_queries:
+                        grouped_rankings[q].append(r)
+                
+                # 각 쿼리별 최신 데이터 추출
+                for rq, matches in grouped_rankings.items():
+                    if matches:
+                        latest_time = max(m["collected_at"] for m in matches)
+                        rankings[rq] = [m for m in matches if m["collected_at"] == latest_time]
             
             # 셀러별 쇼핑몰 리포트 데이터 수집 (seller_config 시트의 is_active 반영 + 카테고리 맵핑)
             active_sellers = store.get_active_sellers()
