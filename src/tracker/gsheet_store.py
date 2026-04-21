@@ -810,30 +810,29 @@ class GoogleSheetStore:
                 except Exception:
                     pass
             
-            # 히스토리 포인트 구성 (판매처 정보 포함 및 소급 매칭 적용)
+            # 이력 포인트 구성 (판매처 정보 포함 및 소급 매칭 적용)
             history_points = []
             for r in p_history_sorted[-1000:]:
                 s_name = r.get("seller_name")
-                # [복구] 시트에 '네이버'라고 되어 있거나 이름이 없는 경우, 소급 매칭(m_idx) 시도
-                if not s_name or s_name in ["네이버", "Naver"]:
+                if not s_name or s_name == "네이버":
                     t_at = str(r.get("collected_at") or "")[:16]
                     price = str(parse_int(r.get("price")))
                     key = f"{name}|{t_at}|{price}"
-                    s_name = m_idx.get(key) or s_name or "네이버"
+                    # 매칭 안될 시 전후 1분 오차 대응을 위해 추가 시도 (분 단위 반올림 등은 복잡하므로 단순[:16] 유지하되 util.parse_int 적용)
+                    s_name = m_idx.get(key) or "네이버"
                 
                 history_points.append({
                     "t": r["collected_at"],
                     "p": int(r.get("price") or 0),
                     "s": s_name,
-                    "u": r.get("product_url", "")
+                    "u": r.get("product_url", "") # 개별 판매처 URL 추가
                 })
 
             latest_seller = latest.get("seller_name")
-            # [복구] 최신 판매처 정보도 '네이버'인 경우 소급 매칭 수행
-            if not latest_seller or latest_seller in ["네이버", "Naver"]:
+            if not latest_seller or latest_seller == "네이버":
                 t_at_latest = str(latest.get("collected_at") or "")[:16]
                 p_latest = str(parse_int(latest.get("price")))
-                latest_seller = m_idx.get(f"{name}|{t_at_latest}|{p_latest}") or latest_seller or "네이버"
+                latest_seller = m_idx.get(f"{name}|{t_at_latest}|{p_latest}") or "네이버"
 
             # [공통] 몰 리포트 이동을 위한 mall_link 구성
             mall_link = None
