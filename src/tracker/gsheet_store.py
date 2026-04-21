@@ -568,7 +568,9 @@ class GoogleSheetStore:
         by_seller_cat = {}
         for r in records:
             raw_mall = r.get("mall_name", "")
-            cat = r.get("category") or "기타"
+            cat = r.get("category")
+            if not cat or cat == "기타":
+                continue
             p_id = str(r.get("product_id", "")) if r.get("product_id") else r.get("title", "")
             if not raw_mall: continue
             
@@ -589,7 +591,7 @@ class GoogleSheetStore:
         # [수정] 0개여도 노출되도록 사전 초기화 (카테고리 정보 활용)
         if monitored_sellers:
             # 데이터에 존재하는 카테고리 + 기본 보장 카테고리
-            cats_in_data = set(r.get("category") or "기타" for r in records)
+            cats_in_data = set(r.get("category") for r in records if r.get("category") and r.get("category") != "기타")
             target_cats = cats_in_data | {"버즈", "워치"}
             if m_sellers_map:
                 target_cats |= set(m_sellers_map.keys())
@@ -620,7 +622,9 @@ class GoogleSheetStore:
             if not raw_mall: continue
             
             norm_mall = norm_mall_name(raw_mall)
-            cat = r.get("category") or "기타"
+            cat = r.get("category")
+            if not cat or cat == "기타":
+                continue
             
             # 필터링 로직: 명시적으로 감시 대상인 경우만 최종 레코드에 포함
             # 1. 시트나 YAML에서 지정된 '전체 감시 셀러' 집합에 포함되어야 함

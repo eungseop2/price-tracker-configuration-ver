@@ -707,16 +707,19 @@ def main() -> None:
                     if filtered_list:
                         filtered_cat_map[cat] = filtered_list
                 
-                # 매핑되지 않은 나머지 활성 셀러들을 '기타' 카테고리에 배정 (정규화 기준)
+
+                # 매핑되지 않은 나머지 활성 셀러들을 '워치'와 '버즈' 카테고리에 모두 배정
                 remaining_sellers = []
                 for ns, original_name in active_norm_map.items():
                     if ns not in assigned_sellers_norm:
                         remaining_sellers.append(original_name)
                         
                 if remaining_sellers:
-                    if "기타" not in filtered_cat_map:
-                        filtered_cat_map["기타"] = []
-                    filtered_cat_map["기타"].extend(remaining_sellers)
+                    for target_cat in ["워치", "버즈"]:
+                        if target_cat not in filtered_cat_map:
+                            filtered_cat_map[target_cat] = []
+                        filtered_cat_map[target_cat].extend(remaining_sellers)
+
                 
                 effective_sellers = filtered_cat_map if filtered_cat_map else active_norm_map.values()
                 logger.info(f"seller_config 시트 기반 활성 셀러 필터링 적용 (정규화 매칭 완료)")
