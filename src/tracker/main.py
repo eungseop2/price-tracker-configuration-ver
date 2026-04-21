@@ -111,7 +111,7 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
     all_peeked_items = []
     
     # [추가] 판매자별 상품 ID 필터 사전 정규화 (매칭 효율성)
-    from .util import normalize_for_match, all_keywords_present, any_keyword_present
+    from .util import normalize_for_match
     norm_seller_filters = {normalize_for_match(k): set(str(v_id) for v_id in v_list) 
                            for k, v_list in (app_config.seller_filters or {}).items()}
 
@@ -222,31 +222,18 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                     seller_norm = normalize_for_match(itm.get("seller_name", ""))
                     p_id = str(itm.get("product_id") or "")
                     
-                    # (1) 가격 필터: 100,000원 미만 제외 (단, '핏3'/'Fit3' 상품은 예외)
-                    price = itm.get("price") or 0
-                    title = itm.get("title") or ""
-                    if price < 100000 and not any_keyword_present(title, ["핏3", "Fit3"]):
-                        continue
-
-                    # (2) 시리즈 매칭 필터: 타겟의 필수 키워드가 제목에 포함되어 있는지 확인
-                    title = itm.get("title") or ""
-                    if not all_keywords_present(title, target.match.required_keywords or []):
-                        continue
-
-                    # (3) 수동 등록된 전역 제외 키워드 체크
-                    if any_keyword_present(title, app_config.global_exclude_keywords):
-                        continue
-
-                    # (4) 쿠팡 전용 상품 ID 필터링
-                    if seller_norm == normalize_for_match("쿠팡") or seller_norm == "coupang":
-                        if seller_norm in norm_seller_filters:
-                            if p_id not in norm_seller_filters[seller_norm]:
-                                continue
-                        else:
+                    # [추가] 판매자별 상품 ID 필터링 (화이트리스트)
+                    if seller_norm in norm_seller_filters:
+                        if p_id not in norm_seller_filters[seller_norm]:
+                            # 허용되지 않은 상품 ID인 경우 제외
                             continue
 
                     rank = itm.get("search_rank") or 999
                     
+                    # 선별 조건:
+                    # 1. 이번 회차 최저가로 선정된 상품
+                    # 2. 검색 순위가 30위 이내인 인기 상품
+                    # 3. 우리가 직접 모니터링 대상으로 지정한 셀러의 상품
                     is_best = (result.get("success") and str(itm.get("product_id")) == str(result.get("product_id")))
                     is_top_rank = rank <= 30
                     is_tracked_seller = seller_norm in tracked_sellers_norm
@@ -254,7 +241,7 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                     if is_best or is_top_rank or is_tracked_seller:
                         itm["category"] = target.category
                         itm["product_code"] = target.name
-                        itm["rank_query"] = target.rank_queries[0]
+                        itm["rank_query"] = target.rank_queries[0] # 랭킹 매칭용 태그 추가
                         all_peeked_items.append(itm)
                 
             result["collected_at"] = utc_now_iso()
@@ -589,11 +576,7 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                 curr_itm_mall_norm = normalize_for_match(itm.get("seller_name", ""))
                 
                 if target_mall_norm in curr_itm_mall_norm and itm.get("category") == m_target.category:
-                    # [추가] 가격 필터: 100,000원 미만 제외 (단, '핏3'/'Fit3' 상품은 예외)
-                    price = itm.get("price") or 0
                     title = str(itm.get("title") or "")
-                    if price < 100000 and not any_keyword_present(title, ["핏3", "Fit3"]):
-                        continue
                     exclude_kws = getattr(m_target, "exclude_keywords", [])
                     if exclude_kws and any_keyword_present(title, exclude_kws):
                         continue
@@ -627,12 +610,6 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
             curr_itm_mall_norm = normalize_for_match(itm.get("seller_name", ""))
             
             if target_mall_norm in curr_itm_mall_norm:
-                # [추가] 가격 필터: 100,000원 미만 제외 (단, '핏3'/'Fit3' 상품은 예외)
-                price = itm.get("price") or 0
-                title = str(itm.get("title") or "")
-                if price < 100000 and not any_keyword_present(title, ["핏3", "Fit3"]):
-                    continue
-
                 cat = itm.get("category")
                 if not cat: continue
                 
@@ -740,30 +717,17 @@ def main() -> None:
         try:
             dashboard_raw = store.get_dashboard_data(app_config.targets)
             
-            # 고유 랭킹 키워드별 최신 데이터 수집 (API 최적화: 시트 전체를 한 번만 읽어서 메모리에서 매칭)
+            # 고유 랭킹 키워드별 최신 데이터 수집
             rankings = {}
             unique_rank_queries = set()
             for t in app_config.targets:
                 if t.rank_queries:
-                    unique_rank_queries.update(str(rq).strip() for rq in t.rank_queries)
+                    unique_rank_queries.update(t.rank_queries)
             
-            if unique_rank_queries:
-                ranking_ws = store._get_worksheet("ranking_history")
-                all_ranking_records = store._get_all_records_safe(ranking_ws)
-                
-                # 쿼리별로 그룹화
-                from collections import defaultdict
-                grouped_rankings = defaultdict(list)
-                for r in all_ranking_records:
-                    q = str(r.get("query", "")).strip()
-                    if q in unique_rank_queries:
-                        grouped_rankings[q].append(r)
-                
-                # 각 쿼리별 최신 데이터 추출
-                for rq, matches in grouped_rankings.items():
-                    if matches:
-                        latest_time = max(m["collected_at"] for m in matches)
-                        rankings[rq] = [m for m in matches if m["collected_at"] == latest_time]
+            for rq in unique_rank_queries:
+                latest = store.get_latest_rankings(rq)
+                if latest:
+                    rankings[rq] = latest
             
             # 셀러별 쇼핑몰 리포트 데이터 수집 (seller_config 시트의 is_active 반영 + 카테고리 맵핑)
             active_sellers = store.get_active_sellers()
