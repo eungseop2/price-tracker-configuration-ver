@@ -222,18 +222,32 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                     seller_norm = normalize_for_match(itm.get("seller_name", ""))
                     p_id = str(itm.get("product_id") or "")
                     
-                    # [추가] 판매자별 상품 ID 필터링 (화이트리스트)
-                    if seller_norm in norm_seller_filters:
-                        if p_id not in norm_seller_filters[seller_norm]:
-                            # 허용되지 않은 상품 ID인 경우 제외
+                    # (1) 가격 필터: 100,000원 미만(케이스류 등) 제외
+                    price = itm.get("price") or 0
+                    if price < 100000:
+                        continue
+
+                    # (2) 시리즈 매칭 필터: 타겟의 필수 키워드가 제목에 포함되어 있는지 확인
+                    from .util import all_keywords_present
+                    title = itm.get("title") or ""
+                    if not all_keywords_present(title, target.match.get("required_keywords", [])):
+                        continue
+
+                    # (3) 수동 등록된 전역 제외 키워드 체크
+                    from .util import any_keyword_present
+                    if any_keyword_present(title, app_config.global_exclude_keywords):
+                        continue
+
+                    # (4) 쿠팡 전용 상품 ID 필터링
+                    if seller_norm == normalize_for_match("쿠팡") or seller_norm == "coupang":
+                        if seller_norm in norm_seller_filters:
+                            if p_id not in norm_seller_filters[seller_norm]:
+                                continue
+                        else:
                             continue
 
                     rank = itm.get("search_rank") or 999
                     
-                    # 선별 조건:
-                    # 1. 이번 회차 최저가로 선정된 상품
-                    # 2. 검색 순위가 30위 이내인 인기 상품
-                    # 3. 우리가 직접 모니터링 대상으로 지정한 셀러의 상품
                     is_best = (result.get("success") and str(itm.get("product_id")) == str(result.get("product_id")))
                     is_top_rank = rank <= 30
                     is_tracked_seller = seller_norm in tracked_sellers_norm
@@ -241,7 +255,7 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
                     if is_best or is_top_rank or is_tracked_seller:
                         itm["category"] = target.category
                         itm["product_code"] = target.name
-                        itm["rank_query"] = target.rank_queries[0] # 랭킹 매칭용 태그 추가
+                        itm["rank_query"] = target.rank_queries[0]
                         all_peeked_items.append(itm)
                 
             result["collected_at"] = utc_now_iso()
