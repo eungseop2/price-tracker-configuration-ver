@@ -457,6 +457,7 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
             
             if found_mall:
                 logger.info(f"  [MARKET MATCH] {t_name} -> {found_mall} (Price: {price})")
+                # [확정] 엑셀/데이터베이스에 저장될 판매처 이름을 실제 업체명으로 치환합니다.
                 payload["seller_name"] = found_mall
                 # 자동 매칭된 셀러 정보를 쇼핑몰 리포트(mall_observations)에도 남기기 위해 저장
                 if target_obj and found_item:
