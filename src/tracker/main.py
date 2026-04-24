@@ -11,11 +11,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from .alert import check_and_alert
-from .browser_scraper import (
-    BrowserScrapeError,
-    collect_lowest_offer_via_browser,
-    collect_current_offer_via_browser
-)
+
 from .config import StoreType, TargetConfig, load_config
 from .gsheet_store import GoogleSheetStore
 from .naver_api import (
@@ -75,24 +71,6 @@ async def _collect_one(client: NaverShoppingSearchClient, target: TargetConfig, 
         except Exception as e:
             raise e
 
-        if result.get("status") == "NO_MATCH" and target.fallback_url:
-            logger.info("API NO_MATCH -> Browser 폴백 실행 | %s", target.name)
-            fallback_target = TargetConfig(
-                name=target.name,
-                mode="browser_url",
-                url=target.fallback_url,
-                browser=target.browser,
-                match=target.match,
-            )
-            fallback_result, fallback_items = await collect_lowest_offer_via_browser(fallback_target, artifacts_dir)
-            fallback_result["fallback_used"] = 1
-            fallback_result["status"] = "OK"
-            return fallback_result, fallback_items
-            
-        return result, items
-
-    elif target.mode == "browser_url":
-        result, items = await collect_lowest_offer_via_browser(target, artifacts_dir)
         return result, items
 
     else:

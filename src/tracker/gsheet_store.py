@@ -330,8 +330,8 @@ class GoogleSheetStore:
         try:
             ws.append_rows(rows, value_input_option='RAW')
             logger.info(f"데이터 배치 저장 완료 (observations): {len(rows)}건")
-            # 저장 후 일일 정리 체크
-            self._maybe_cleanup()
+            # 저장 후 일일 정리 체크 (과도한 API 호출 원인이므로 비활성화)
+            # self._maybe_cleanup()
         except Exception as e:
             logger.error(f"데이터 배치 저장 실패 (observations): {e}")
 
@@ -383,8 +383,8 @@ class GoogleSheetStore:
         try:
             ws.append_rows(rows, value_input_option='RAW')
             logger.info(f"쇼핑몰 데이터 배치 저장 완료 (mall_observations): {len(rows)}건")
-            # 저장 후 일일 정리 체크
-            self._maybe_cleanup()
+            # 저장 후 일일 정리 체크 (과도한 API 호출 원인이므로 비활성화)
+            # self._maybe_cleanup()
         except Exception as e:
             logger.error(f"쇼핑몰 데이터 배치 저장 실패 (mall_observations): {e}")
 
@@ -410,8 +410,8 @@ class GoogleSheetStore:
         try:
             ws.append_rows(rows, value_input_option='RAW')
             logger.info(f"랭킹 히스토리 저장 완료: {len(rows)}건")
-            # 저장 후 일일 정리 체크
-            self._maybe_cleanup()
+            # 저장 후 일일 정리 체크 (과도한 API 호출 원인이므로 비활성화)
+            # self._maybe_cleanup()
         except Exception as e:
             logger.error(f"랭킹 히스토리 저장 실패 (ranking_history): {e}")
 

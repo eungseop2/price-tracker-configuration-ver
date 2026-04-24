@@ -69,7 +69,11 @@ def _item_matches(target: TargetConfig, item: dict[str, Any], global_excludes: l
     product_type = int(item.get("productType", 0) or 0)
     price = int(item.get("lprice", 0) or 0)
 
-    # 0. 최소 가격 필터링 (min_price)
+    # 0. 필수 필터링: 5만원 미만의 본품 아닌 제품 필터링 방어 코드
+    if price > 0 and price < 50000:
+        return False
+
+    # 0-1. 최소 가격 필터링 (min_price 설정된 경우)
     if target.match.min_price and price < target.match.min_price:
         return False
 
