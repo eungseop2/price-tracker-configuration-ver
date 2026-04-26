@@ -1,7 +1,8 @@
 import json
 import logging
+import time
 from datetime import datetime, timedelta, timezone
-from typing import Any, Iterable
+from typing import Any, Iterable, Callable
 
 import gspread
 from google.oauth2.service_account import Credentials
@@ -91,47 +92,43 @@ class GoogleSheetStore:
             logger.error(f"구글 스프레드시트 연결 중 최종 실패: {e}")
             raise
 
+    def _call_with_retry(self, func: Callable, *args, **kwargs):
+        """API 호출 실패(특히 429 Quota Exceeded) 시 지수 백오프로 재시도합니다."""
+        max_retries = 3
+        retry_delay = 2
+        for i in range(max_retries):
+            try:
+                return func(*args, **kwargs)
+            except gspread.exceptions.APIError as e:
+                if i < max_retries - 1 and (e.response.status_code == 429 or e.response.status_code >= 500):
+                    logger.warning(f"Google API 호출 중 에러 발생 ({e.response.status_code}), {retry_delay}초 후 재시도... ({i+1}/{max_retries})")
+                    time.sleep(retry_delay)
+                    retry_delay *= 2
+                    continue
+                raise e
+            except Exception as e:
+                raise e
+
     def _get_worksheet(self, name: str):
         self._connect()
         if name in self._worksheets:
             return self._worksheets[name]
         
         try:
-            ws = self._sh.worksheet(name)
-            # 마이그레이션: 기존 시트의 헤더가 로컬의 HEADERS와 일치하는지 확인
-            expected_headers = HEADERS.get(name)
-            current_headers = ws.row_values(1)
-            
-            if expected_headers:
-                # 컬럼 수가 부족하거나 헤더가 비어 있으면 최신화
-                if len(current_headers) < len(expected_headers):
-                    try:
-                        # 첫 번째 행을 전체 HEADERS로 업데이트 (A1 섹션)
-                        ws.update('A1', [expected_headers])
-                        logger.info(f"시트 '{name}'의 헤더를 최신 버전으로 업데이트했습니다.")
-                        current_headers = expected_headers
-                    except Exception as e:
-                        logger.warning(f"시트 '{name}' 헤더 자동 업데이트 중 경고: {e}")
-            
+            ws = self._call_with_retry(self._sh.worksheet, name)
             self._worksheets[name] = ws
-            # 헤더 정보 캐싱 (성능 최적화)
-            if not hasattr(self, '_headers_cache'):
-                self._headers_cache = {}
-            self._headers_cache[name] = current_headers
+            return ws
             
         except gspread.exceptions.WorksheetNotFound:
             cols = HEADERS.get(name, ["data"])
-            ws = self._sh.add_worksheet(title=name, rows=1000, cols=len(cols))
-            ws.append_row(cols)
+            ws = self._call_with_retry(self._sh.add_worksheet, title=name, rows=1000, cols=len(cols))
+            self._call_with_retry(ws.append_row, cols)
             logger.info(f"새 시트 생성됨: {name}")
             self._worksheets[name] = ws
             if not hasattr(self, '_headers_cache'):
                 self._headers_cache = {}
             self._headers_cache[name] = cols
-            
-        # 작업 시트 로드 시 자동으로 하단 빈 행 정리 (셀 제한 방지)
-        self.resize_to_content(name)
-        return ws
+            return ws
 
     def resize_to_content(self, name: str):
         """시트의 하단 빈 행을 삭제하여 셀 사용량을 최적화합니다."""
@@ -258,26 +255,31 @@ class GoogleSheetStore:
         if hasattr(self, '_headers_cache') and name in self._headers_cache:
             return self._headers_cache[name]
         
+        # 헤더가 캐시에 없으면 전체 데이터를 읽어와서 캐싱 (최적화: row_values(1) 대신 전체 읽기 활용)
         ws = self._get_worksheet(name)
-        # _get_worksheet에서 이미 캐싱을 시도하지만, 안전을 위해 보장
-        return getattr(self, '_headers_cache', {}).get(name, ws.row_values(1))
+        self._get_all_records_safe(ws)
+        return getattr(self, '_headers_cache', {}).get(name, HEADERS.get(name, []))
 
     def _get_all_records_safe(self, ws):
         """gspread의 get_all_records()가 빈 헤더 중복 시 에러를 내는 문제를 해결한 안전한 버전.
         동일 시트 반복 조회 시 캐시를 사용하여 API 할당량 초과를 방지합니다."""
         if not hasattr(self, '_records_cache'):
             self._records_cache = {}
+        if not hasattr(self, '_headers_cache'):
+            self._headers_cache = {}
         
         cache_key = ws.title
         if cache_key in self._records_cache:
             return self._records_cache[cache_key]
         
-        all_values = ws.get_all_values()
+        all_values = self._call_with_retry(ws.get_all_values)
         if not all_values:
             self._records_cache[cache_key] = []
             return []
         
         headers = all_values[0]
+        # 읽어온 헤더 정보를 캐시에 업데이트
+        self._headers_cache[cache_key] = headers
         
         records = []
         for row in all_values[1:]:
@@ -328,7 +330,7 @@ class GoogleSheetStore:
             rows.append(row)
             
         try:
-            ws.append_rows(rows, value_input_option='RAW')
+            self._call_with_retry(ws.append_rows, rows, value_input_option='RAW')
             logger.info(f"데이터 배치 저장 완료 (observations): {len(rows)}건")
             # 저장 후 일일 정리 체크 (과도한 API 호출 원인이므로 비활성화)
             # self._maybe_cleanup()
@@ -381,7 +383,7 @@ class GoogleSheetStore:
             return
             
         try:
-            ws.append_rows(rows, value_input_option='RAW')
+            self._call_with_retry(ws.append_rows, rows, value_input_option='RAW')
             logger.info(f"쇼핑몰 데이터 배치 저장 완료 (mall_observations): {len(rows)}건")
             # 저장 후 일일 정리 체크 (과도한 API 호출 원인이므로 비활성화)
             # self._maybe_cleanup()
@@ -408,7 +410,7 @@ class GoogleSheetStore:
             rows.append(row)
         
         try:
-            ws.append_rows(rows, value_input_option='RAW')
+            self._call_with_retry(ws.append_rows, rows, value_input_option='RAW')
             logger.info(f"랭킹 히스토리 저장 완료: {len(rows)}건")
             # 저장 후 일일 정리 체크 (과도한 API 호출 원인이므로 비활성화)
             # self._maybe_cleanup()
@@ -455,17 +457,15 @@ class GoogleSheetStore:
         """YAML의 셀러 목록과 구글 시트의 설정을 동기화합니다."""
         try:
             ws = self._get_worksheet("seller_config")
-            all_rows = ws.get_all_values()
+            all_records = self._get_all_records_safe(ws)
             
             headers = ["seller_name", "type", "is_active", "updated_at"]
-            if not all_rows or not all_rows[0] or all_rows[0][0] != "seller_name":
-                ws.update('A1', [headers])
-                all_rows = [headers]
-                
+            # 헤더 정보 및 기존 데이터 확인
             existing_sellers = set()
-            for row in all_rows[1:]:
-                if row:
-                    existing_sellers.add(row[0])
+            for r in all_records:
+                s_name = r.get("seller_name")
+                if s_name:
+                    existing_sellers.add(s_name)
                     
             # YAML에서 새로운 셀러 추출
             yaml_sellers = []
@@ -487,8 +487,11 @@ class GoogleSheetStore:
                     new_rows.append([s_info["name"], s_info["type"], "TRUE", now])
                     
             if new_rows:
-                ws.append_rows(new_rows)
+                self._call_with_retry(ws.append_rows, new_rows)
                 logger.info(f"새로운 셀러 {len(new_rows)}개를 seller_config 시트에 추가했습니다.")
+                # 캐시 무효화 (데이터 변경됨)
+                if hasattr(self, '_records_cache'):
+                    self._records_cache.pop("seller_config", None)
         except Exception as e:
             logger.error(f"셀러 설정 동기화 실패: {e}")
 
