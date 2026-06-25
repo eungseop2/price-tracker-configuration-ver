@@ -149,103 +149,70 @@ class GoogleSheetStore:
             logger.warning(f"시트 '{name}' 크기 축소 중 오류: {e}")
 
     def cleanup_old_records(self, name: str, days: int = 14):
-        """지정된 일수보다 오래된 데이터를 삭제하거나 통합하여 용량을 관리합니다."""
+        """지정된 일수보다 오래된 데이터를 고속으로 삭제합니다.
+        
+        [최적화] 전체 데이터를 다운로드하지 않고, 날짜 컬럼만 읽어서
+        오래된 행의 범위를 파악한 뒤 delete_rows API로 서버사이드 삭제합니다.
+        이 방식은 데이터 전송량을 최소화하여 대용량 시트에서도 멈추지 않습니다.
+        """
         try:
             ws = self._get_worksheet(name)
-            all_values = ws.get_all_values()
-            if len(all_values) <= 1:
-                return
-
-            headers = all_values[0]
-            if "collected_at" not in headers:
-                return
-                
-            date_idx = headers.index("collected_at")
-            target_idx = headers.index("target_name") if "target_name" in headers else (headers.index("query") if "query" in headers else -1)
-            price_idx = headers.index("price") if "price" in headers else -1
-            seller_idx = headers.index("seller_name") if "seller_name" in headers else -1
             
+            # 1단계: 헤더에서 collected_at 컬럼 위치 파악 (1행만 읽음)
+            headers = self._call_with_retry(ws.row_values, 1)
+            if not headers or "collected_at" not in headers:
+                return
+            
+            date_col_idx = headers.index("collected_at") + 1  # gspread는 1-indexed
+            
+            # 2단계: 날짜 컬럼만 읽어옴 (전체 데이터 대비 매우 가벼움)
+            date_values = self._call_with_retry(ws.col_values, date_col_idx)
+            total_rows = len(date_values)
+            
+            if total_rows <= 1:  # 헤더만 있는 경우
+                logger.info(f"시트 '{name}' 정리 불필요 (데이터 없음)")
+                return
+            
+            # 3단계: 기준 날짜 계산
             now = datetime.now(timezone.utc)
             history_threshold = now - timedelta(days=days)
-            recent_threshold = now - timedelta(days=3) # 최근 3일은 모든 데이터 유지
+            threshold_iso = history_threshold.isoformat()
             
-            # mall_observations는 용량이 너무 커서 단순 날짜 삭제만 수행
-            if name == "mall_observations":
-                new_rows = [headers]
-                count = 0
-                for row in all_values[1:]:
-                    try:
-                        ts = datetime.fromisoformat(row[date_idx].replace("Z", "+00:00"))
-                        if ts.tzinfo is None: ts = ts.replace(tzinfo=timezone.utc)
-                        if ts >= history_threshold: new_rows.append(row)
-                        else: count += 1
-                    except: new_rows.append(row)
-                if count > 0:
-                    ws.clear()
-                    ws.update('A1', new_rows)
-                    logger.info(f"시트 '{name}' 단순 정리 완료: {count}건 삭제")
+            # 4단계: 오래된 데이터의 마지막 행 번호 찾기
+            # (시트 데이터는 시간순으로 적재되므로, 위에서부터 순차 탐색)
+            last_old_row = 0  # 삭제할 마지막 행 (0이면 삭제 대상 없음)
+            for row_idx in range(1, total_rows):  # 0은 헤더이므로 1부터
+                ts_str = date_values[row_idx]
+                if not ts_str:
+                    continue
+                try:
+                    ts = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
+                    if ts.tzinfo is None:
+                        ts = ts.replace(tzinfo=timezone.utc)
+                    if ts < history_threshold:
+                        last_old_row = row_idx + 1  # gspread 행 번호는 1-indexed
+                    else:
+                        break  # 시간순이므로 이후는 모두 최신 데이터
+                except (ValueError, TypeError):
+                    continue
+            
+            if last_old_row <= 1:
+                logger.info(f"시트 '{name}' 정리 불필요 (오래된 데이터 없음, 총 {total_rows - 1}건)")
                 return
-
-            # observations, ranking_history 등을 위한 지능형 통합 로직
-            # 1. 타겟별 그룹화
-            groups = {}
-            for row in all_values[1:]:
-                key = row[target_idx] if target_idx != -1 else "default"
-                if key not in groups: groups[key] = []
-                groups[key].append(row)
             
-            new_rows = [headers]
-            total_deleted = 0
+            # 5단계: 오래된 행 일괄 삭제 (서버사이드 고속 처리)
+            delete_count = last_old_row - 1  # 헤더(1행)를 제외한 삭제 대상 수
+            logger.info(f"시트 '{name}' 고속 정리 시작: {delete_count}건 삭제 예정 (2행~{last_old_row}행)")
+            self._call_with_retry(ws.delete_rows, 2, last_old_row)
             
-            for key, rows in groups.items():
-                # 시간순 정렬
-                rows.sort(key=lambda x: x[date_idx])
-                
-                last_kept_price = None
-                last_kept_seller = None
-                last_kept_date = None
-                
-                for row in rows:
-                    try:
-                        ts_str = row[date_idx]
-                        ts = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
-                        if ts.tzinfo is None: ts = ts.replace(tzinfo=timezone.utc)
-                        
-                        # 1. 보관 기간 만료
-                        if ts < history_threshold:
-                            total_deleted += 1
-                            continue
-                            
-                        # 2. 최근 3일 데이터는 무조건 보관
-                        if ts >= recent_threshold:
-                            new_rows.append(row)
-                            continue
-                            
-                        # 3. 과거 데이터 지능형 필터링
-                        curr_price = row[price_idx] if price_idx != -1 else ""
-                        curr_seller = row[seller_idx] if seller_idx != -1 else ""
-                        curr_date = ts.date()
-                        
-                        is_change = (curr_price != last_kept_price or curr_seller != last_kept_seller)
-                        is_first_of_day = (curr_date != last_kept_date)
-                        
-                        if is_change or is_first_of_day:
-                            new_rows.append(row)
-                            last_kept_price = curr_price
-                            last_kept_seller = curr_seller
-                            last_kept_date = curr_date
-                        else:
-                            total_deleted += 1
-                            
-                    except (ValueError, IndexError):
-                        new_rows.append(row)
+            # 6단계: 시트 크기 축소 (빈 행 정리)
+            self.resize_to_content(name)
             
-            if total_deleted > 0:
-                ws.clear()
-                # 헤더와 데이터 분리 저장 (대량 데이터 대응)
-                ws.update('A1', new_rows)
-                logger.info(f"시트 '{name}' 지능형 최적화 완료: {total_deleted}건 정리됨 (현재 {len(new_rows)}행)")
-                self.resize_to_content(name)
+            # 캐시 무효화 (데이터 변경됨)
+            if hasattr(self, '_records_cache'):
+                self._records_cache.pop(name, None)
+            
+            logger.info(f"시트 '{name}' 고속 정리 완료: {delete_count}건 삭제됨 (잔여 약 {total_rows - 1 - delete_count}건)")
                 
         except Exception as e:
             logger.error(f"시트 '{name}' 데이터 정리 실패: {e}")
@@ -292,18 +259,32 @@ class GoogleSheetStore:
         self._records_cache[cache_key] = records
         return records
 
-    def _maybe_cleanup(self):
-        """하루 1회만 구글 시트 데이터 정리를 실행하여 셀 사용량을 관리합니다."""
-        today = datetime.now(timezone.utc).date()
-        if hasattr(self, "_last_cleanup_date") and self._last_cleanup_date == today:
-            return
+    def _maybe_cleanup(self, last_cleanup_date_str: str | None = None) -> str | None:
+        """하루 1회만 구글 시트 데이터 정리를 실행하여 셀 사용량을 관리합니다.
+        
+        Args:
+            last_cleanup_date_str: 외부에서 전달받은 마지막 정리 날짜 (YYYY-MM-DD 형식).
+                깃허브 액션 등 매번 새 프로세스에서 실행되는 환경을 위해,
+                dashboard_data.json 등 영속 파일에서 읽어 전달합니다.
+        
+        Returns:
+            정리 작업이 실행된 경우 오늘 날짜(YYYY-MM-DD), 실행하지 않은 경우 None.
+        """
+        from datetime import datetime, timedelta, timezone
+        kst = timezone(timedelta(hours=9))
+        today_kst = datetime.now(kst).strftime("%Y-%m-%d")
+        
+        # 오늘 이미 정리한 경우 건너뜀
+        if last_cleanup_date_str == today_kst:
+            logger.info(f"오늘({today_kst}) 이미 시트 정리가 완료되었습니다. 건너뜁니다.")
+            return None
             
-        logger.info("일일 시트 데이터 정리 작업을 시작합니다 (지능형 최적화 및 보관 주기 연장)...")
-        # 보관 기간을 대폭 늘려도 지능형 필터링 덕분에 셀 사용량이 매우 적게 유지됩니다.
+        logger.info(f"일일 시트 데이터 고속 정리 작업을 시작합니다 (이전 정리일: {last_cleanup_date_str or '없음'})...")
         self.cleanup_old_records("mall_observations", days=5) 
         self.cleanup_old_records("observations", days=60)    
         self.cleanup_old_records("ranking_history", days=60) 
-        self._last_cleanup_date = today
+        logger.info("일일 시트 데이터 정리 작업이 완료되었습니다.")
+        return today_kst
 
     def insert(self, payload: dict[str, Any]):
         """단일 상품 수집 기록 저장 (내부적으로 insert_batch 활용)"""

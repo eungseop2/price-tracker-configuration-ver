@@ -618,6 +618,35 @@ async def run_once(app_config, artifacts_dir: str, gsheet_id: str, summary_json:
             store.insert_mall_records_batch(batch_payloads)
         except Exception as e:
             logger.error(f"쇼핑몰 리포트 저장 중 오류: {e}")
+    # ---------- [일일 시트 정리 (고속)] ----------
+    # dashboard_data.json에서 마지막 정리 날짜를 읽어 하루 1회만 실행
+    try:
+        cleanup_state_path = Path("dashboard_data.json")
+        last_cleanup_date = None
+        if cleanup_state_path.exists():
+            try:
+                import json as _json
+                state_data = _json.loads(cleanup_state_path.read_text(encoding="utf-8"))
+                last_cleanup_date = state_data.get("last_cleanup")
+            except Exception:
+                pass
+        
+        cleanup_result = store._maybe_cleanup(last_cleanup_date)
+        if cleanup_result:
+            # 정리 날짜를 dashboard_data.json에 영속 저장
+            try:
+                if cleanup_state_path.exists():
+                    import json as _json
+                    state_data = _json.loads(cleanup_state_path.read_text(encoding="utf-8"))
+                else:
+                    state_data = {}
+                state_data["last_cleanup"] = cleanup_result
+                cleanup_state_path.write_text(dump_json(state_data), encoding="utf-8")
+                logger.info(f"시트 정리 날짜 저장 완료: {cleanup_result}")
+            except Exception as e:
+                logger.warning(f"시트 정리 날짜 저장 실패 (다음 실행 시 재시도): {e}")
+    except Exception as e:
+        logger.error(f"일일 시트 정리 중 오류 발생 (수집은 정상 완료됨): {e}")
 
     store.close()
 
@@ -780,6 +809,34 @@ def main() -> None:
             Path("dashboard_data.json").write_text(dump_json(data), encoding="utf-8")
             logger.info("UI 데이터 내보내기 완료: dashboard_data.json (Google Sheets 기반 + 매칭 로직 적용)")
         finally:
+            # ---------- [일일 시트 정리 (고속)] ----------
+            try:
+                cleanup_state_path = Path("dashboard_data.json")
+                last_cleanup_date = None
+                if cleanup_state_path.exists():
+                    try:
+                        import json as _json
+                        state_data = _json.loads(cleanup_state_path.read_text(encoding="utf-8"))
+                        last_cleanup_date = state_data.get("last_cleanup")
+                    except Exception:
+                        pass
+                
+                cleanup_result = store._maybe_cleanup(last_cleanup_date)
+                if cleanup_result:
+                    try:
+                        if cleanup_state_path.exists():
+                            import json as _json
+                            state_data = _json.loads(cleanup_state_path.read_text(encoding="utf-8"))
+                        else:
+                            state_data = {}
+                        state_data["last_cleanup"] = cleanup_result
+                        cleanup_state_path.write_text(dump_json(state_data), encoding="utf-8")
+                        logger.info(f"시트 정리 날짜 저장 완료: {cleanup_result}")
+                    except Exception as e:
+                        logger.warning(f"시트 정리 날짜 저장 실패: {e}")
+            except Exception as e:
+                logger.error(f"일일 시트 정리 중 오류 발생: {e}")
+            
             store.close()
 
 
